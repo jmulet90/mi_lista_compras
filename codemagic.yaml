@@ -1,0 +1,22 @@
+workflows:
+  ios-ipa:
+    name: iOS IPA
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+      cocoapods: default
+      flutter: stable
+    scripts:
+      - name: Obtener dependencias
+        script: flutter pub get
+      - name: Compilar iOS sin firma
+        script: flutter build ios --release --no-codesign
+      - name: Empaquetar IPA
+        script: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/
+          zip -r $CM_BUILD_DIR/mi_lista_compras.ipa Payload
+    artifacts:
+      - mi_lista_compras.ipa
