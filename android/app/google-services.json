@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "732132166753",
+    "project_id": "mi-lista-compras",
+    "storage_bucket": "mi-lista-compras.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:732132166753:android:c86083724c0a79c138ae20",
+        "android_client_info": {
+          "package_name": "com.example.mi_lista_compras"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBU8AMSfesSYj0-Dsdb_xT_DeJc-1HXuTA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

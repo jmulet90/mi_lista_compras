@@ -1,0 +1,1 @@
+import 'package:mi_lista_compras/screens/manage_collaborators_screen.dart';
