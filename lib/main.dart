@@ -140,6 +140,23 @@ void main() async {
   var categoryBox = await Hive.openBox<CategoryItem>('categoriesBox');
   var productBox = await Hive.openBox<Product>('productsBox');
 
+  // MIGRACIÓN: normaliza la clave de cada producto a su nameKey y fusiona
+  // duplicados físicos heredados (claves numéricas de versiones anteriores)
+  final mergedProducts = <String, Product>{};
+  for (var p in productBox.values) {
+    final cleanKey = p.nameKey.trim();
+    mergedProducts[cleanKey] = Product(
+      nameKey: cleanKey,
+      categoryKey: p.categoryKey,
+      isToBuy: p.isToBuy,
+      emoji: p.emoji,
+      imagePath: p.imagePath,
+      isBuyScreen: p.isBuyScreen,
+    );
+  }
+  await productBox.clear();
+  await productBox.putAll(mergedProducts);
+
   // Inicializar Sincronización si hay un usuario autenticado
   if (FirebaseAuth.instance.currentUser != null) {
     SyncService().startSync();
@@ -428,13 +445,16 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen> {
             final rawProducts = productBox.values.toList();
             final uniqueMap = <String, Product>{};
             for (var p in rawProducts) {
-              final uniqueKey = '${p.categoryKey}_${p.nameKey.trim().toLowerCase()}_${p.isToBuy}';
+              final uniqueKey = '${p.categoryKey}_${p.nameKey.trim().toLowerCase()}';
               uniqueMap[uniqueKey] = p;
             }
             final products = uniqueMap.values.toList();
 
-            final buyProductsCount = products.where((p) => p.isToBuy == true).length;
-            final stockProductsCount = products.where((p) => p.isToBuy == false).length;
+            final categoryKeys = categories.map((c) => c.key).toSet();
+            final buyProductsCount =
+                products.where((p) => p.isToBuy == true && categoryKeys.contains(p.categoryKey)).length;
+            final stockProductsCount =
+                products.where((p) => p.isToBuy == false && categoryKeys.contains(p.categoryKey)).length;
 
             return Scaffold(
               body: CategoryContainerScreen(
@@ -1173,8 +1193,11 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
               }
 
               for (var key in keysToDelete) {
+                final prod = productBox.get(key);
                 await productBox.delete(key);
-                await SyncService().syncProductDelete(key.toString());
+                if (prod != null) {
+                  await SyncService().syncProductDelete(prod.nameKey.trim());
+                }
               }
 
               await category.delete();
@@ -1361,9 +1384,11 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () async {
               if (product.isInBox) {
-                final key = product.key.toString();
+                final docId = product.nameKey.trim();
                 await product.delete();
-                await SyncService().syncProductDelete(key);
+                await SyncService().syncProductDelete(docId);
+              } else {
+                await product.delete();
               }
               if (context.mounted) Navigator.pop(context);
             },
@@ -1860,9 +1885,9 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                             );
                             if (delete == true) {
                               if (product.isInBox) {
-                                final key = product.key.toString();
+                                final docId = product.nameKey.trim();
                                 await product.delete();
-                                await SyncService().syncProductDelete(key);
+                                await SyncService().syncProductDelete(docId);
                               } else {
                                 await product.delete();
                               }
@@ -2591,8 +2616,8 @@ class _AddProductDialogState extends State<AddProductDialog> {
                 imagePath: _imagePath,
               );
 
-              final productKey = await productBox.add(newProduct);
-              await SyncService().syncProductUp(productKey.toString(), newProduct);
+              await productBox.put(trimmedName.trim(), newProduct);
+              await SyncService().syncProductUp(trimmedName.trim(), newProduct);
 
               if (context.mounted) {
                 Navigator.pop(context, true); // Devolvemos true para indicar que se creó con éxito
