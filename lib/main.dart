@@ -1,8 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 // Imports de Firebase
@@ -11,14 +9,11 @@ import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:mi_lista_compras/models/product.dart';
-import 'package:mi_lista_compras/models/category_item.dart';
 import 'package:mi_lista_compras/screens/login_screen.dart';
 import '/services/auth_service.dart';
 
 // NUEVOS IMPORTS: Para la pantalla de permisos y el gestor de emojis
 import 'package:mi_lista_compras/screens/manage_collaborators_screen.dart';
-import 'package:mi_lista_compras/utils/emoji_manager.dart';
 
 part 'main.g.dart';
 
@@ -43,7 +38,7 @@ class SyncService {
         return snapshot.docs.first.get('ownerEmail') as String?;
       }
     } catch (e) {
-      print("Error obteniendo owner para sincronización: $e");
+      debugPrint("Error obteniendo owner para sincronización: $e");
     }
     return user.email; // Es el dueño
   }
@@ -101,7 +96,7 @@ class SyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
-      print("Error al subir producto a la nube: $e");
+      debugPrint("Error al subir producto a la nube: $e");
     }
   }
 
@@ -116,8 +111,8 @@ class SyncService {
           .collection('products')
           .doc(productId)
           .delete();
-    } catch (e) {
-      print("Error al eliminar producto de la nube: $e");
+    } catch (err) {
+      debugPrint("Error al eliminar producto de la nube: $err");
     }
   }
 }
@@ -132,8 +127,8 @@ void main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-  } catch (e) {
-    print("Firebase ya estaba inicializado: $e");
+  } catch (err) {
+    debugPrint("Firebase ya estaba inicializado: $err");
   }
 
   // 2. Inicialización de Hive
@@ -213,7 +208,7 @@ void main() async {
 }
 
 class AppSettings extends InheritedNotifier<ValueNotifier<AppSettingsData>> {
-  AppSettings({super.key, required ValueNotifier<AppSettingsData> notifier, required super.child})
+  const AppSettings({super.key, required ValueNotifier<AppSettingsData> notifier, required super.child})
       : super(notifier: notifier);
 
   static AppSettingsData of(BuildContext context) {
@@ -389,6 +384,7 @@ class Product extends HiveObject {
 
 @HiveType(typeId: 1)
 class CategoryItem extends HiveObject {
+  @override
   @HiveField(0)
   String key;
 
@@ -642,29 +638,27 @@ class _AppDrawerState extends State<AppDrawer> {
                   : 'Español',
             ),
             children: [
-              RadioListTile<String>(
-                title: const Text('Español'),
-                value: 'es',
+              RadioGroup<String>(
                 groupValue: settings.language,
                 onChanged: (val) {
                   if (val != null) settingsNotifier.value = settings.copyWith(language: val);
                 },
-              ),
-              RadioListTile<String>(
-                title: const Text('English'),
-                value: 'en',
-                groupValue: settings.language,
-                onChanged: (val) {
-                  if (val != null) settingsNotifier.value = settings.copyWith(language: val);
-                },
-              ),
-              RadioListTile<String>(
-                title: const Text('Português (Portugal)'),
-                value: 'pt',
-                groupValue: settings.language,
-                onChanged: (val) {
-                  if (val != null) settingsNotifier.value = settings.copyWith(language: val);
-                },
+                child: Column(
+                  children: [
+                    RadioListTile<String>(
+                      title: const Text('Español'),
+                      value: 'es',
+                    ),
+                    RadioListTile<String>(
+                      title: const Text('English'),
+                      value: 'en',
+                    ),
+                    RadioListTile<String>(
+                      title: const Text('Português (Portugal)'),
+                      value: 'pt',
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -777,7 +771,7 @@ class _AppDrawerState extends State<AppDrawer> {
                               ),
                               const SizedBox(height: 8),
                               DropdownButtonFormField<String>(
-                                value: selectedRole,
+                                initialValue: selectedRole,
                                 decoration: const InputDecoration(
                                   border: OutlineInputBorder(),
                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -2457,7 +2451,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
             const SizedBox(height: 16),
             if (widget.categories.isNotEmpty)
               DropdownButtonFormField<String>(
-                value: _selectedCategory.isNotEmpty ? _selectedCategory : null,
+                initialValue: _selectedCategory.isNotEmpty ? _selectedCategory : null,
                 decoration: InputDecoration(labelText: t.categoryView.split(' ').first),
                 items: widget.categories.map((catKey) {
                   return DropdownMenuItem(

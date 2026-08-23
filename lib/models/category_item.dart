@@ -4,6 +4,7 @@ part 'category_item.g.dart';
 
 @HiveType(typeId: 1)
 class CategoryItem extends HiveObject {
+  @override
   @HiveField(0)
   String key;
 

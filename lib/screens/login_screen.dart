@@ -56,11 +56,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 var user = await _authService.signInWithEmailAndPassword(email, password);
 
                 // 2. Si no existe (falla el login), intentamos registrarlo automáticamente
-                if (user == null) {
-                  user = await _authService.registerWithEmailAndPassword(email, password);
-                }
+                user ??= await _authService.registerWithEmailAndPassword(email, password);
 
                 setState(() => _isLoading = false);
+
+                if (!context.mounted) return;
 
                 if (user == null) {
                   // Si aun así falla, mostramos error (contraseña corta, formato inválido, etc.)

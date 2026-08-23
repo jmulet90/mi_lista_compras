@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -22,7 +23,7 @@ class AuthService {
       );
       return result.user;
     } catch (e) {
-      print("Error en Login: $e");
+      debugPrint("Error en Login: $e");
       return null;
     }
   }
@@ -36,7 +37,7 @@ class AuthService {
       );
       return result.user;
     } catch (e) {
-      print("Error en Registro: $e");
+      debugPrint("Error en Registro: $e");
       return null;
     }
   }
@@ -59,7 +60,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print("Error al buscar colaborador: $e");
+      debugPrint("Error al buscar colaborador: $e");
       return null;
     }
   }
