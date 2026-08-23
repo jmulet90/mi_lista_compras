@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 // Imports de Firebase
@@ -9,16 +11,19 @@ import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:mi_lista_compras/models/product.dart';
+import 'package:mi_lista_compras/models/category_item.dart';
 import 'package:mi_lista_compras/screens/login_screen.dart';
 import '/services/auth_service.dart';
 
 // NUEVOS IMPORTS: Para la pantalla de permisos y el gestor de emojis
 import 'package:mi_lista_compras/screens/manage_collaborators_screen.dart';
+import 'package:mi_lista_compras/utils/emoji_manager.dart';
 
 part 'main.g.dart';
 
 // ==========================================
-// SERVICIO DE SINCRONIZACIÓN HIVE <-> FIRESTORE NEW
+// SERVICIO DE SINCRONIZACIÓN HIVE <-> FIRESTORE
 // ==========================================
 class SyncService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
