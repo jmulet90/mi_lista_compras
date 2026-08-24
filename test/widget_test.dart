@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mi_lista_compras/main.dart';
+import 'package:mi_lista_compras/presentation/app_settings.dart';
 
 void main() {
   test('AppSettingsData copyWith conserva valores no modificados', () {

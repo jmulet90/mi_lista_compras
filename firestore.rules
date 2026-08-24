@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    // Premium gestionado por la propietaria desde la consola de Firebase.
+    // Cada usuario solo puede leer su propio documento; nadie escribe
+    // desde la app (solo se edita a mano en la consola).
+    match /premium_users/{email} {
+      allow get, list: if signedIn() && myEmail() == email;
+      allow write: if false;
+    }
+
+    // Resto de colecciones (users_data, collaborators, ...):
+    // cualquier usuario autenticado, igual que hasta ahora.
+    match /{collection}/{document=**} {
+      allow read, write: if signedIn() && collection != 'premium_users';
+    }
+  }
+}

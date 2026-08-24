@@ -21,10 +21,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDummyKeyForTestingOnly123456789',
-    appId: '1:732132166753:android:c86083724c0a79c138ae20',
+    apiKey: 'AIzaSyBU8AMSfesSYj0-Dsdb_xT_DeJc-1HXuTA',
+    appId: '1:732132166753:android:2b6394799c3e666c38ae20',
     messagingSenderId: '732132166753',
     projectId: 'mi-lista-compras',
-    storageBucket: 'mi-lista-compras.appspot.com',
+    storageBucket: 'mi-lista-compras.firebasestorage.app',
   );
 }

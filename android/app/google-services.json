@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:732132166753:android:2b6394799c3e666c38ae20",
+        "android_client_info": {
+          "package_name": "com.buy_stock.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBU8AMSfesSYj0-Dsdb_xT_DeJc-1HXuTA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:732132166753:android:c86083724c0a79c138ae20",
         "android_client_info": {
           "package_name": "com.example.mi_lista_compras"
