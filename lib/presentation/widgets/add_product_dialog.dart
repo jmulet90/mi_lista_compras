@@ -1,12 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/di.dart';
 import '../../core/failures.dart';
+import '../../core/utils/image_storage.dart';
+import '../../core/utils/product_asset_catalog.dart';
 import '../../domain/usecases/add_product.dart';
 import '../localization/app_localizations.dart';
+import 'dialog_kit.dart';
 import 'premium_limits.dart';
 import 'show_failure.dart';
 
@@ -31,6 +32,8 @@ class _AddProductDialogState extends State<AddProductDialog> {
   late String _selectedCategory;
   String? _selectedEmoji;
   String? _imagePath;
+  double? _quantity;
+  String? _unit;
 
   static const List<String> _emojis = ['🥛', '🍞', '🍎', '🍐', '🍊', '🍋', '🍉', '🍇', '🍓', '🫐', '🍒', '🥭','🍍', '🥥', '🥝', '🥑', '🥩', '☕', '🥐', '🧀', '🍌', '🍅', '🧻', '🧼', '🧊'];
   final ImagePicker _picker = ImagePicker();
@@ -50,10 +53,16 @@ class _AddProductDialogState extends State<AddProductDialog> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? image = await _picker.pickImage(source: source, imageQuality: 70);
-    if (image != null) {
+    final XFile? image = await _picker.pickImage(
+      source: source,
+      imageQuality: 70,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
+    final savedPath = await persistPickedImage(image);
+    if (savedPath != null) {
       setState(() {
-        _imagePath = image.path;
+        _imagePath = savedPath;
         _selectedEmoji = null;
       });
     }
@@ -62,13 +71,24 @@ class _AddProductDialogState extends State<AddProductDialog> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
 
     bool categoryExists = widget.categories.contains(_selectedCategory);
     if (!categoryExists && widget.categories.isNotEmpty) {
       _selectedCategory = widget.categories.first;
     }
 
-    return AlertDialog(
+    final pngs = ProductAssetCatalog.instance.pngsFor(_selectedCategory);
+    if (pngs.isNotEmpty && !pngs.contains(_selectedEmoji)) {
+      _selectedEmoji = pngs.first;
+    } else if (pngs.isEmpty &&
+        _selectedEmoji != null &&
+        DialogKit.isAssetRef(_selectedEmoji)) {
+      _selectedEmoji = _emojis.first;
+    }
+
+    return DialogKit.frame(
+      context,
       title: Text(t.add),
       content: SingleChildScrollView(
         child: Column(
@@ -78,16 +98,18 @@ class _AddProductDialogState extends State<AddProductDialog> {
             TextField(
               controller: _nameController,
               autofocus: true,
-              decoration: InputDecoration(
-                labelText: t.nameLabel,
-                hintText: t.exampleProductHint,
+              decoration: DialogKit.input(
+                context,
+                accent,
+                label: t.nameLabel,
+                hint: t.exampleProductHint,
               ),
             ),
             const SizedBox(height: 16),
             if (widget.categories.isNotEmpty)
               DropdownButtonFormField<String>(
                 initialValue: _selectedCategory.isNotEmpty ? _selectedCategory : null,
-                decoration: InputDecoration(labelText: t.categoryLabel),
+                decoration: DialogKit.input(context, accent, label: t.categoryLabel),
                 items: widget.categories.map((catKey) {
                   return DropdownMenuItem(
                     value: catKey,
@@ -103,99 +125,80 @@ class _AddProductDialogState extends State<AddProductDialog> {
                 },
               ),
             const SizedBox(height: 16),
-            Text(t.visualCustomization, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+            DialogKit.quantityUnitRow(
+              context: context,
+              accent: accent,
+              quantity: _quantity,
+              unit: _unit,
+              onQuantityChanged: (val) => setState(() => _quantity = val),
+              onUnitChanged: (val) => setState(() => _unit = val),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              t.visualCustomization,
+              style: TextStyle(
+                fontSize: 12,
+                color: DialogKit.isDark(context)
+                    ? Colors.grey.shade400
+                    : Colors.grey.shade600,
+              ),
+            ),
             const SizedBox(height: 8),
             Center(
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.green.shade700, width: 2),
-                ),
-                child: ClipOval(
-                  child: _imagePath != null
-                      ? Image.file(File(_imagePath!), fit: BoxFit.cover)
-                      : Center(
-                    child: Text(
-                      _selectedEmoji ?? '🏠',
-                      style: const TextStyle(fontSize: 28),
-                    ),
-                  ),
-                ),
+              child: DialogKit.previewCircle(
+                accent: accent,
+                imagePath: _imagePath,
+                emoji: _selectedEmoji ?? '🏠',
               ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.maxFinite,
-              height: 70,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _emojis.length,
-                itemBuilder: (context, index) {
-                  final emoji = _emojis[index];
-                  final isSelected = _selectedEmoji == emoji && _imagePath == null;
-
-                  return SizedBox(
-                    width: 65,
-                    height: 65,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(30),
-                        onTap: () {
-                          setState(() {
-                            _selectedEmoji = emoji;
-                            _imagePath = null;
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.green.withValues(alpha: 0.2) : Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                emoji,
-                                style: const TextStyle(fontSize: 40),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
+            if (pngs.isNotEmpty)
+              DialogKit.assetStrip(
+                context: context,
+                accent: accent,
+                assets: pngs,
+                selected: _selectedEmoji,
+                onSelect: (asset) {
+                  setState(() {
+                    _selectedEmoji = asset;
+                    _imagePath = null;
+                  });
+                },
+              )
+            else
+              DialogKit.emojiStrip(
+                context: context,
+                accent: accent,
+                emojis: _emojis,
+                selected: _selectedEmoji,
+                onSelect: (emoji) {
+                  setState(() {
+                    _selectedEmoji = emoji;
+                    _imagePath = null;
+                  });
                 },
               ),
-            ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => _pickImage(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt, size: 18),
-                  label: Text(t.camera),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => _pickImage(ImageSource.gallery),
-                  icon: const Icon(Icons.image, size: 18),
-                  label: Text(t.galleryPicker),
-                ),
-              ],
+            DialogKit.mediaRow(
+              context,
+              cameraLabel: t.camera,
+              galleryLabel: t.galleryPicker,
+              onCamera: () => _pickImage(ImageSource.camera),
+              onGallery: () => _pickImage(ImageSource.gallery),
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(
+        DialogKit.cancelButton(
+          context,
+          t.cancel,
           onPressed: () => Navigator.pop(context, false),
-          child: Text(t.cancel),
         ),
-        ElevatedButton(
+        DialogKit.saveButton(
+          context,
+          t.save,
+          accent,
           onPressed: () async {
             final trimmedName = _nameController.text.trim();
             if (trimmedName.isNotEmpty && _selectedCategory.isNotEmpty) {
@@ -210,17 +213,18 @@ class _AddProductDialogState extends State<AddProductDialog> {
                   isBuyScreen: widget.isBuyScreen,
                   emoji: _selectedEmoji,
                   imagePath: _imagePath,
+                  quantity: _quantity,
+                  unit: _unit,
                 );
 
                 if (context.mounted) {
-                  Navigator.pop(context, true); // Devolvemos true para indicar que se creó con éxito
+                  Navigator.pop(context, true);
                 }
               } on Failure catch (failure) {
                 if (context.mounted) showFailure(context, failure);
               }
             }
           },
-          child: Text(t.save),
         ),
       ],
     );

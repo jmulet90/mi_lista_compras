@@ -23,13 +23,16 @@ class ProductModelAdapter extends TypeAdapter<ProductModel> {
       emoji: fields[3] as String?,
       imagePath: fields[4] as String?,
       isBuyScreen: fields[5] as bool,
+      imageId: fields[6] as String?,
+      quantity: fields[7] as double?,
+      unit: fields[8] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ProductModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.nameKey)
       ..writeByte(1)
@@ -41,7 +44,13 @@ class ProductModelAdapter extends TypeAdapter<ProductModel> {
       ..writeByte(4)
       ..write(obj.imagePath)
       ..writeByte(5)
-      ..write(obj.isBuyScreen);
+      ..write(obj.isBuyScreen)
+      ..writeByte(6)
+      ..write(obj.imageId)
+      ..writeByte(7)
+      ..write(obj.quantity)
+      ..writeByte(8)
+      ..write(obj.unit);
   }
 
   @override

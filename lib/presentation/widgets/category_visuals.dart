@@ -36,9 +36,12 @@ class CategoryVisuals {
       return Image.asset(assetPath, fit: BoxFit.cover);
     }
     return Center(
-      child: Text(
-        emoji ?? fallbackEmoji,
-        style: TextStyle(fontSize: emojiSize),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          emoji ?? fallbackEmoji,
+          style: TextStyle(fontSize: emojiSize),
+        ),
       ),
     );
   }

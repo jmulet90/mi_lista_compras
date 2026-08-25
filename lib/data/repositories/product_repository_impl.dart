@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/failures.dart';
 import '../../core/logger.dart';
+import '../../core/utils/image_storage.dart';
 
 // Los constructores usan parámetros con nombre descriptivos en las llamadas.
 // ignore_for_file: prefer_initializing_formals
@@ -31,14 +35,20 @@ class ProductRepositoryImpl implements ProductRepository {
   final AppLogger _logger;
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _syncSub;
+  Timer? _imageRetryTimer;
+  String? _activeOwnerEmail;
 
   @override
   Future<void> startRemoteSync({bool fullRefresh = false}) async {
     await _syncSub?.cancel();
     _syncSub = null;
+    _imageRetryTimer?.cancel();
+    _imageRetryTimer = null;
 
     final access = await _collaboratorRepository.resolveMyAccess();
     if (access == null) return;
+
+    _activeOwnerEmail = access.ownerEmail;
 
     // Foto completa del estado remoto al entrar como colaborador o tras un
     // cambio de cuenta: evita mezclar datos locales del usuario anterior.
@@ -51,6 +61,10 @@ class ProductRepositoryImpl implements ProductRepository {
       }
     }
 
+    // Descarga las fotos que faltan en disco (primer arranque de un
+    // colaborador o imágenes pendientes de reintentos anteriores).
+    unawaited(_hydrateMissingImages(access.ownerEmail));
+
     _syncSub = _remote
         .watchProducts(access.ownerEmail)
         .listen(_applyRemoteChanges, onError: (Object e) {
@@ -58,7 +72,10 @@ class ProductRepositoryImpl implements ProductRepository {
     });
   }
 
-  void _applyRemoteChanges(QuerySnapshot<Map<String, dynamic>> snapshot) {
+  Future<void> _applyRemoteChanges(
+      QuerySnapshot<Map<String, dynamic>> snapshot) async {
+    final ownerEmail = _activeOwnerEmail;
+
     for (final change in snapshot.docChanges) {
       switch (change.type) {
         case DocumentChangeType.added:
@@ -67,14 +84,109 @@ class ProductRepositoryImpl implements ProductRepository {
           if (data == null) continue;
           final model = ProductModel.fromMap(data);
           if (model.nameKey.trim().isEmpty) continue;
+          final key = model.nameKey.trim();
+
+          await _mergeImageState(model, existing: _local.getByKey(key),
+              ownerEmail: ownerEmail);
+
           // La clave única en Hive es el nameKey limpio.
-          _local.put(model, key: model.nameKey.trim());
+          await _local.put(model, key: key);
           break;
         case DocumentChangeType.removed:
-          _local.deleteByKey(change.doc.id);
+          await _local.deleteByKey(change.doc.id);
           break;
       }
     }
+  }
+
+  /// Resuelve el estado de la imagen de [model] contra el registro local:
+  /// descarga fotos nuevas de la nube y conserva el archivo local cuando la
+  /// imagen remota es la misma (los bytes nunca viajan en el doc del producto).
+  Future<void> _mergeImageState(
+    ProductModel model, {
+    required ProductModel? existing,
+    required String? ownerEmail,
+  }) async {
+    if (_sameImageId(model.imageId, existing?.imageId)) {
+      // Misma imagen (o ninguna): conservar el archivo ya descargado.
+      model.imagePath = _validLocalPath(existing);
+      return;
+    }
+
+    if (model.imageId != null && ownerEmail == null) {
+      // Sesión todavía sin resolver: conservar lo que haya localmente.
+      model.imagePath = _validLocalPath(existing);
+      return;
+    }
+
+    if (model.imageId != null) {
+      // Foto nueva o actualizada en la nube: descargarla.
+      final saved = await _downloadImage(ownerEmail!, model.imageId!);
+      if (saved != null) {
+        model.imagePath = saved;
+        return;
+      }
+      // Fallo temporal: se reintenta luego. Mientras tanto no se pisa el
+      // imageId local para que el próximo evento vuelva a intentarlo y se
+      // sigue mostrando la foto anterior si existe.
+      if (existing != null) {
+        model.imageId = existing.imageId;
+      }
+      model.imagePath = _validLocalPath(existing);
+      _scheduleImageRetry(ownerEmail);
+      return;
+    }
+
+    // model.imageId == null: la foto fue quitada en un dispositivo autorizado.
+    model.imagePath = null;
+  }
+
+  String? _validLocalPath(ProductModel? model) {
+    final path = model?.imagePath;
+    if (path == null || path.isEmpty) return null;
+    return File(path).existsSync() ? path : null;
+  }
+
+  bool _sameImageId(String? a, String? b) => a == b;
+
+  Future<String?> _downloadImage(String ownerEmail, String imageId) async {
+    try {
+      final base64Data =
+          await _remote.fetchImage(ownerEmail: ownerEmail, imageId: imageId);
+      if (base64Data == null || base64Data.isEmpty) return null;
+      return await persistImageBytes(
+        base64Decode(base64Data),
+        name: '$imageId.jpg',
+      );
+    } catch (e) {
+      _logger.error('Error al descargar imagen de producto', e);
+      return null;
+    }
+  }
+
+  /// Descarga todas las fotos referenciadas que falten en disco.
+  Future<void> _hydrateMissingImages(String ownerEmail) async {
+    for (final model in _local.getAll()) {
+      final imageId = model.imageId;
+      if (imageId == null) continue;
+      if (_validLocalPath(model) != null) continue;
+      try {
+        final saved = await _downloadImage(ownerEmail, imageId);
+        if (saved != null) {
+          model.imagePath = saved;
+          await _local.put(model, key: model.nameKey.trim());
+        }
+      } catch (_) {
+        // Best-effort: los reintentos o el siguiente evento lo cubrirán.
+      }
+    }
+  }
+
+  void _scheduleImageRetry(String ownerEmail) {
+    _imageRetryTimer?.cancel();
+    _imageRetryTimer = Timer(const Duration(seconds: 20), () {
+      unawaited(_hydrateMissingImages(ownerEmail));
+    });
   }
 
   @override
@@ -89,18 +201,45 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<void> upsert(Product product) async {
+    final key = product.id.trim();
+    final existing = _local.getByKey(key);
+    final model = ProductModel.fromEntity(product);
+
+    // La imagen solo se sube cuando cambió el archivo; toggles y ediciones
+    // de texto reutilizan el mismo imageId.
+    final pathChanged = existing?.imagePath != model.imagePath;
+    String? removedImageId;
+    if (pathChanged) {
+      if (model.imagePath != null) {
+        model.imageId = _generateImageId();
+      } else {
+        removedImageId = existing?.imageId;
+        model.imageId = null;
+      }
+    } else {
+      model.imageId = existing?.imageId;
+    }
+
     try {
-      await _local.put(ProductModel.fromEntity(product));
+      await _local.put(model);
     } catch (e) {
       throw CacheFailure('No se pudo guardar el producto: $e');
     }
 
-    await _safeSyncUp(product);
+    await _safeSyncUp(model, imageChanged: pathChanged, removedImageId: removedImageId);
+  }
+
+  String _generateImageId() {
+    final rnd = Random.secure();
+    final suffix = List.generate(4, (_) => rnd.nextInt(16)).join();
+    return 'img_${DateTime.now().microsecondsSinceEpoch}_$suffix';
   }
 
   @override
   Future<void> deleteById(String id) async {
     final docId = id.trim();
+    final existing = _local.getByKey(docId);
+    final imageId = existing?.imageId;
 
     try {
       await _local.deleteByKey(docId);
@@ -112,6 +251,10 @@ class ProductRepositoryImpl implements ProductRepository {
       final access = await _collaboratorRepository.resolveMyAccess();
       if (access == null || !access.canMoveItems) return;
       await _remote.deleteDoc(ownerEmail: access.ownerEmail, id: docId);
+      if (imageId != null) {
+        await _remote.deleteImage(
+            ownerEmail: access.ownerEmail, imageId: imageId);
+      }
     } catch (e) {
       _logger.error('Error al eliminar producto de la nube', e);
     }
@@ -126,18 +269,37 @@ class ProductRepositoryImpl implements ProductRepository {
     }
   }
 
-  Future<void> _safeSyncUp(Product product) async {
+  Future<void> _safeSyncUp(
+    ProductModel model, {
+    required bool imageChanged,
+    String? removedImageId,
+  }) async {
     try {
       final access = await _collaboratorRepository.resolveMyAccess();
       if (access == null || !access.canMoveItems) return;
-      await _remote.upload(
-        ownerEmail: access.ownerEmail,
-        data: ProductModel.fromEntity(product).toMap(),
-      );
+      final ownerEmail = access.ownerEmail;
+
+      await _remote.upload(ownerEmail: ownerEmail, data: model.toMap());
+
+      if (imageChanged && model.imagePath != null) {
+        final file = File(model.imagePath!);
+        if (await file.exists()) {
+          final base64Data = base64Encode(await file.readAsBytes());
+          await _remote.uploadImage(
+            ownerEmail: ownerEmail,
+            imageId: model.imageId!,
+            base64Data: base64Data,
+          );
+        }
+      }
+
+      if (removedImageId != null) {
+        await _remote.deleteImage(ownerEmail: ownerEmail, imageId: removedImageId);
+      }
     } catch (e) {
       // La sincronización con la nube es best-effort: el cambio local ya
       // quedó guardado y se propagará en el próximo arranque o edición.
-      _logger.error('Error al subir producto a la nube', e);
+      _logger.error('Error al sincronizar producto con la nube', e);
     }
   }
 

@@ -17,6 +17,6 @@ workflows:
           cd build/ios/iphoneos
           mkdir Payload
           cp -r Runner.app Payload/
-          zip -r $CM_BUILD_DIR/mi_lista_compras.ipa Payload
+          zip -r $CM_BUILD_DIR/buy_and_stock.ipa Payload
     artifacts:
-      - mi_lista_compras.ipa
+      - buy_and_stock.ipa

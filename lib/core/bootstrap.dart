@@ -18,6 +18,7 @@ import '../domain/repositories/collaborator_repository.dart';
 import '../domain/repositories/premium_repository.dart';
 import '../domain/repositories/product_repository.dart';
 import '../domain/services/access_guard.dart';
+import 'utils/product_asset_catalog.dart';
 import '../core/logger.dart';
 import '../domain/usecases/add_category.dart';
 import '../domain/usecases/add_product.dart';
@@ -40,6 +41,7 @@ import 'di.dart';
 Future<void> bootstrap() async {
   final initializer = AppInitializer();
   await initializer.initialize();
+  await ProductAssetCatalog.instance.ensureLoaded();
 
   final productLocal = initializer.products;
   final categoryLocal = initializer.categories;

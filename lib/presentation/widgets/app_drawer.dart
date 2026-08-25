@@ -13,6 +13,14 @@ import '../screens/manage_collaborators_screen.dart';
 import 'paywall_dialog.dart';
 import 'premium_limits.dart';
 
+/// Paleta compartida con las pantallas principales.
+class DrawerAccents {
+  static const emerald = Color(0xFF059669);
+  static const rose = Color(0xFFE11D48);
+  static const amber = Color(0xFFD97706);
+  static const ink = Color(0xFF0F172A);
+}
+
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
 
@@ -22,134 +30,232 @@ class AppDrawer extends StatelessWidget {
     final settings = AppSettings.of(context);
     final notifier = AppSettings.notifierOf(context);
     final user = FirebaseAuth.instance.currentUser;
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.grey.shade100 : DrawerAccents.ink;
+    final subColor = isDark ? Colors.grey.shade400 : Colors.grey.shade600;
 
     return Drawer(
-      child: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: theme.colorScheme.primary),
-              margin: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    t.appName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? const [Color(0xFF12171A), Color(0xFF0F1211)]
+                : const [Color(0xFFEAFBF3), Color(0xFFF7FBF9)],
+          ),
+        ),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              // Encabezado: ícono de app + nombre + correo.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 12, 4, 22),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: const BoxDecoration(
+                        color: DrawerAccents.emerald,
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t.appName,
+                            style: TextStyle(
+                              color: titleColor,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            user?.email ?? t.notAuthenticated,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: subColor, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Sección: preferencias.
+              _GlassSection(
+                isDark: isDark,
+                children: [
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    leading: _iconChip(Icons.language, DrawerAccents.emerald),
+                    title: Text(t.language, style: _titleStyle(titleColor)),
+                    subtitle: Text(
+                      '${t.currentLanguage.flag} ${t.currentLanguage.nativeName}',
+                      style: TextStyle(color: subColor, fontSize: 12.5),
+                    ),
+                    trailing: Icon(Icons.arrow_drop_down, color: subColor),
+                    onTap: () =>
+                        _openLanguageSheet(context, settings, notifier),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    user?.email ?? t.notAuthenticated,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 13,
+                  SwitchListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    secondary:
+                        _iconChip(Icons.dark_mode_outlined, DrawerAccents.emerald),
+                    title: Text(t.darkMode, style: _titleStyle(titleColor)),
+                    value: settings.themeMode == ThemeMode.dark,
+                    activeThumbColor: DrawerAccents.emerald,
+                    onChanged: (value) async {
+                      if (value &&
+                          !await PremiumLimits.canUseAppearanceFeature(
+                              context)) {
+                        return;
+                      }
+                      notifier.value = notifier.value.copyWith(
+                        themeMode:
+                            value ? ThemeMode.dark : ThemeMode.light,
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Sección: colaboradores.
+              _GlassSection(
+                isDark: isDark,
+                children: [
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    leading: _iconChip(
+                        Icons.person_add_alt_outlined, DrawerAccents.emerald),
+                    title:
+                        Text(t.addCollaborator, style: _titleStyle(titleColor)),
+                    onTap: () async {
+                      if (!await PremiumLimits.canManageCollaborators(context)) {
+                        return;
+                      }
+                      if (!context.mounted) return;
+                      await _sendInvitation(context);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    leading: _iconChip(
+                        Icons.manage_accounts_outlined, DrawerAccents.emerald),
+                    title: Text(t.managePermissions,
+                        style: _titleStyle(titleColor)),
+                    subtitle: Text(
+                      t.managePermissionsSub,
+                      style: TextStyle(color: subColor, fontSize: 12.5),
+                    ),
+                    onTap: () async {
+                      if (!await PremiumLimits.canManageCollaborators(context)) {
+                        return;
+                      }
+                      if (!context.mounted) return;
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ManageCollaboratorsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Sección: premium.
+              _GlassSection(
+                isDark: isDark,
+                children: [_PremiumTile(isDark: isDark)],
+              ),
+              const SizedBox(height: 12),
+
+              // Sección: acerca de.
+              _GlassSection(
+                isDark: isDark,
+                children: [
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    leading: _iconChip(Icons.info_outline, DrawerAccents.emerald),
+                    title: Text(t.about, style: _titleStyle(titleColor)),
+                    subtitle: Text(
+                      '${t.appName} · ${t.version}',
+                      style: TextStyle(color: subColor, fontSize: 12.5),
                     ),
                   ),
                 ],
               ),
-            ),
 
-            // 1. Idioma
-            ListTile(
-              leading: const Icon(Icons.language),
-              title: Text(t.language),
-              subtitle: Text(
-                '${t.currentLanguage.flag} ${t.currentLanguage.nativeName}',
-              ),
-              trailing: const Icon(Icons.arrow_drop_down),
-              onTap: () =>
-                  _openLanguageSheet(context, settings, notifier),
-            ),
-
-            // 2. Modo oscuro (premium)
-            SwitchListTile(
-              secondary: const Icon(Icons.dark_mode_outlined),
-              title: Text(t.darkMode),
-              value: settings.themeMode == ThemeMode.dark,
-              onChanged: (value) async {
-                if (value &&
-                    !await PremiumLimits.canUseAppearanceFeature(context)) {
-                  return;
-                }
-                notifier.value = notifier.value.copyWith(
-                  themeMode:
-                      value ? ThemeMode.dark : ThemeMode.light,
-                );
-              },
-            ),
-
-            const Divider(),
-
-            // 3. Enviar invitación (premium)
-            ListTile(
-              leading: const Icon(Icons.person_add_alt_outlined),
-              title: Text(t.addCollaborator),
-              onTap: () async {
-                if (!await PremiumLimits.canManageCollaborators(context)) {
-                  return;
-                }
-                if (!context.mounted) return;
-                await _sendInvitation(context);
-              },
-            ),
-
-            // 4. Gestionar permisos (premium)
-            ListTile(
-              leading: const Icon(Icons.manage_accounts_outlined),
-              title: Text(t.managePermissions),
-              subtitle: Text(t.managePermissionsSub),
-              onTap: () async {
-                if (!await PremiumLimits.canManageCollaborators(context)) {
-                  return;
-                }
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ManageCollaboratorsScreen(),
+              // Cerrar sesión, fuera de las tarjetas.
+              Padding(
+                padding: const EdgeInsets.only(top: 14),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                );
-              },
-            ),
-
-            const Divider(),
-
-            // 5. Hazte Premium
-            const _PremiumTile(),
-
-            const Divider(),
-
-            // 6. Acerca de la app
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: Text(t.about),
-              subtitle: Text('${t.appName} · ${t.version}'),
-            ),
-
-            // 7. Cerrar sesión
-            ListTile(
-              leading:
-                  Icon(Icons.logout, color: Colors.red.shade700),
-              title: Text(
-                t.signOut,
-                style: TextStyle(color: Colors.red.shade700),
+                  leading: _iconChip(Icons.logout, DrawerAccents.rose),
+                  title: Text(
+                    t.signOut,
+                    style: TextStyle(
+                      color: DrawerAccents.rose,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await FirebaseAuth.instance.signOut();
+                  },
+                ),
               ),
-              onTap: () async {
-                Navigator.pop(context);
-                await FirebaseAuth.instance.signOut();
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  TextStyle _titleStyle(Color color) => TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 15,
+        letterSpacing: -0.1,
+        color: color,
+      );
+
+  /// Ícono dentro de un chip redondeado con tinte del acento.
+  Widget _iconChip(IconData icon, Color color) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 21, color: color),
     );
   }
 
@@ -206,7 +312,7 @@ class AppDrawer extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(t.savedSuccessfully),
-          backgroundColor: Colors.green.shade700,
+          backgroundColor: DrawerAccents.emerald,
         ),
       );
     } catch (_) {
@@ -214,7 +320,7 @@ class AppDrawer extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(t.errorSaving),
-          backgroundColor: Colors.red.shade700,
+          backgroundColor: DrawerAccents.rose,
         ),
       );
     }
@@ -270,8 +376,8 @@ class AppDrawer extends StatelessWidget {
                             style: const TextStyle(fontSize: 24)),
                         title: Text(lang.nativeName),
                         trailing: lang.code == current.code
-                            ? Icon(Icons.check_circle,
-                                color: Colors.green.shade600)
+                            ? const Icon(Icons.check_circle,
+                                color: DrawerAccents.emerald)
                             : null,
                         onTap: () {
                           notifier.value = notifier.value.copyWith(
@@ -291,8 +397,38 @@ class AppDrawer extends StatelessWidget {
   }
 }
 
+/// Tarjeta translúcida que agrupa opciones, igual al estilo de la
+/// pantalla principal.
+class _GlassSection extends StatelessWidget {
+  const _GlassSection({required this.isDark, required this.children});
+
+  final bool isDark;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.white.withValues(alpha: 0.62),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.8),
+        ),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
 class _PremiumTile extends StatelessWidget {
-  const _PremiumTile();
+  const _PremiumTile({required this.isDark});
+
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -310,19 +446,41 @@ class _PremiumTile extends StatelessWidget {
 
         if (status.isPremium) {
           return ListTile(
-            leading:
-                Icon(Icons.workspace_premium, color: Colors.amber.shade700),
-            title: Text(t.premiumTitle),
-            trailing:
-                Icon(Icons.check_circle, color: Colors.green.shade600),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            leading: _chip(),
+            title: Text(
+              t.premiumTitle,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: isDark ? Colors.grey.shade100 : DrawerAccents.ink,
+              ),
+            ),
+            trailing: const Icon(Icons.check_circle,
+                color: DrawerAccents.emerald),
           );
         }
 
         return ListTile(
-          leading:
-              Icon(Icons.workspace_premium, color: Colors.amber.shade700),
-          title: Text(t.premiumTitle),
-          subtitle: Text(status.priceText ?? t.premiumPriceFallback),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          leading: _chip(),
+          title: Text(
+            t.premiumTitle,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: isDark ? Colors.grey.shade100 : DrawerAccents.ink,
+            ),
+          ),
+          subtitle: Text(
+            status.priceText ?? t.premiumPriceFallback,
+            style: TextStyle(
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              fontSize: 12.5,
+            ),
+          ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => showPaywall(context),
           onLongPress: kDebugMode
@@ -330,6 +488,23 @@ class _PremiumTile extends StatelessWidget {
               : null,
         );
       },
+    );
+  }
+
+  Widget _chip() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: DrawerAccents.amber.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.workspace_premium,
+        size: 21,
+        color: DrawerAccents.amber,
+      ),
     );
   }
 }

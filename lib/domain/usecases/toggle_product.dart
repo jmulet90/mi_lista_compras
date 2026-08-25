@@ -13,6 +13,12 @@ class ToggleProductUseCase {
     await _guard.ensureCanMoveItems();
 
     product.isToBuy = !product.isToBuy;
+
+    if (!product.isToBuy) {
+      product.quantity = null;
+      product.unit = null;
+    }
+
     await _products.upsert(product);
   }
 }

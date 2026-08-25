@@ -1,11 +1,11 @@
-import 'dart:io';
-
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/di.dart';
 import '../../core/failures.dart';
+import '../../core/utils/image_storage.dart';
+import '../../core/utils/product_asset_catalog.dart';
 import '../../domain/entities/category_item.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/usecases/delete_category.dart';
@@ -18,6 +18,7 @@ import '../widgets/add_category_dialog.dart';
 import '../widgets/add_product_dialog.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/category_visuals.dart';
+import '../widgets/dialog_kit.dart';
 import '../widgets/expandable_category_card.dart';
 import '../widgets/premium_limits.dart';
 import '../widgets/show_failure.dart';
@@ -27,12 +28,14 @@ class CategoryContainerScreen extends StatefulWidget {
   final bool isBuyScreen;
   final List<Product> products;
   final List<CategoryItem> categories;
+  final bool isLoading;
 
   const CategoryContainerScreen({
     super.key,
     required this.isBuyScreen,
     required this.products,
     required this.categories,
+    this.isLoading = false,
   });
 
   @override
@@ -139,16 +142,18 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
 
   void _showEditCategoryDialog(BuildContext context, CategoryItem category) {
     final t = AppLocalizations.of(context);
+    const accent = DialogAccents.emerald;
     final nameController = TextEditingController(text: t.getCategoryName(category.key));
     String? selectedEmoji = category.emoji;
     String? imagePath = category.imagePath;
-    const List<String> emojis = ['🍲', '🥩', '☕', '🥐', '🧀', '🍞', '🥞', '🥓',  '🍎', '🍌', '🥦', '🥔','🥂', '🍷', '🍺', '🧃', '🥛', '☕', '🫖', '🧽', '✨', '🧼', '🧻', '🧹', '🧺',  '📦', '🛒', '🏠', '💡', '🐾', '💊', '🍼', '🔋'];
+    const List<String> emojis = ['ðŸ²', 'ðŸ¥©', 'â˜•', 'ðŸ¥', 'ðŸ§€', 'ðŸž', 'ðŸ¥ž', 'ðŸ¥“',  'ðŸŽ', 'ðŸŒ', 'ðŸ¥¦', 'ðŸ¥”','ðŸ¥‚', 'ðŸ·', 'ðŸº', 'ðŸ§ƒ', 'ðŸ¥›', 'â˜•', 'ðŸ«–', 'ðŸ§½', 'âœ¨', 'ðŸ§¼', 'ðŸ§»', 'ðŸ§¹', 'ðŸ§º',  'ðŸ“¦', 'ðŸ›’', 'ðŸ ', 'ðŸ’¡', 'ðŸ¾', 'ðŸ’Š', 'ðŸ¼', 'ðŸ”‹'];
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
+          return DialogKit.frame(
+            context,
             title: Text(t.editCategory),
             content: SingleChildScrollView(
               child: Column(
@@ -158,74 +163,28 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                   TextField(
                     controller: nameController,
                     autofocus: true,
-                    decoration: InputDecoration(labelText: t.editCategory),
+                    decoration: DialogKit.input(context, accent, label: t.editCategory),
                   ),
                   const SizedBox(height: 16),
                   Center(
-                    child: Container(
-                      width: 75,
-                      height: 75,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.green.shade700, width: 2),
-                      ),
-                      child: ClipOval(
-                        child: imagePath != null
-                            ? Image.file(File(imagePath!), fit: BoxFit.cover, width: double.infinity, height: double.infinity)
-                            : Center(
-                          child: Text(
-                            selectedEmoji ?? '📦',
-                            style: const TextStyle(fontSize: 38),
-                          ),
-                        ),
-                      ),
+                    child: DialogKit.previewCircle(
+                      accent: accent,
+                      imagePath: imagePath,
+                      emoji: selectedEmoji ?? 'ðŸ“¦',
                     ),
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.maxFinite,
-                    height: 70,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: emojis.length,
-                      itemBuilder: (context, index) {
-                        final emoji = emojis[index];
-                        final isSelected = selectedEmoji == emoji && imagePath == null;
-
-                        return SizedBox(
-                          width: 65,
-                          height: 65,
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(30),
-                              onTap: () {
-                                setDialogState(() {
-                                  selectedEmoji = emoji;
-                                  imagePath = null;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.green.withValues(alpha: 0.2) : Colors.transparent,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      emoji,
-                                      style: const TextStyle(fontSize: 40),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                  DialogKit.emojiStrip(
+                    context: context,
+                    accent: accent,
+                    emojis: emojis,
+                    selected: imagePath == null ? selectedEmoji : null,
+                    onSelect: (emoji) {
+                      setDialogState(() {
+                        selectedEmoji = emoji;
+                        imagePath = null;
+                      });
+                    },
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -234,10 +193,16 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                       OutlinedButton.icon(
                         onPressed: () async {
                           final picker = ImagePicker();
-                          final image = await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
-                          if (image != null) {
+                          final image = await picker.pickImage(
+                            source: ImageSource.camera,
+                            imageQuality: 70,
+                            maxWidth: 1200,
+                            maxHeight: 1200,
+                          );
+                          final savedPath = await persistPickedImage(image);
+                          if (savedPath != null) {
                             setDialogState(() {
-                              imagePath = image.path;
+                              imagePath = savedPath;
                               selectedEmoji = null;
                             });
                           }
@@ -248,10 +213,16 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                       OutlinedButton.icon(
                         onPressed: () async {
                           final picker = ImagePicker();
-                          final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-                          if (image != null) {
+                          final image = await picker.pickImage(
+                            source: ImageSource.gallery,
+                            imageQuality: 70,
+                            maxWidth: 1200,
+                            maxHeight: 1200,
+                          );
+                          final savedPath = await persistPickedImage(image);
+                          if (savedPath != null) {
                             setDialogState(() {
-                              imagePath = image.path;
+                              imagePath = savedPath;
                               selectedEmoji = null;
                             });
                           }
@@ -265,8 +236,11 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text(t.cancel)),
-              ElevatedButton(
+              DialogKit.cancelButton(context, t.cancel),
+              DialogKit.saveButton(
+                context,
+                t.save,
+                accent,
                 onPressed: () async {
                   final messenger = ScaffoldMessenger.of(context);
                   if (nameController.text.trim().isNotEmpty) {
@@ -289,7 +263,6 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                     }
                   }
                 },
-                child: Text(t.save),
               ),
             ],
           );
@@ -329,19 +302,29 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
 
   void _showEditProductDialog(BuildContext context, Product product) {
     final t = AppLocalizations.of(context);
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
     final nameController =
         TextEditingController(text: t.getProductName(product.nameKey));
 
     String? selectedEmoji = product.emoji ?? '📦';
     String? imagePath = product.imagePath;
+    double? quantity = product.quantity;
+    String? unit = product.unit;
 
     const List<String> emojis = ['🥛', '🍞', '🍎', '🍐', '🍊', '🍋', '🍉', '🍇', '🍓', '🫐', '🍒', '🥭','🍍', '🥥', '🥝', '🥑', '🥩', '☕', '🥐', '🧀', '🍌', '🍅', '🧻', '🧼', '🧊'];
+    final pngs = ProductAssetCatalog.instance.pngsFor(product.categoryKey);
+    if (pngs.isNotEmpty && !pngs.contains(selectedEmoji)) {
+      selectedEmoji = imagePath == null ? pngs.first : null;
+    } else if (pngs.isEmpty && DialogKit.isAssetRef(selectedEmoji)) {
+      selectedEmoji = emojis.first;
+    }
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
+          return DialogKit.frame(
+            context,
             title: Text(t.edit),
             content: SingleChildScrollView(
               child: Column(
@@ -351,77 +334,62 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                   TextField(
                     controller: nameController,
                     autofocus: true,
-                    decoration: InputDecoration(labelText: t.edit),
+                    decoration: DialogKit.input(context, accent, label: t.edit),
+                  ),
+                  const SizedBox(height: 16),
+                  DialogKit.quantityUnitRow(
+                    context: context,
+                    accent: accent,
+                    quantity: quantity,
+                    unit: unit,
+                    onQuantityChanged: (val) => setDialogState(() => quantity = val),
+                    onUnitChanged: (val) => setDialogState(() => unit = val),
                   ),
                   const SizedBox(height: 16),
                   Center(
-                    child: Container(
-                      width: 75,
-                      height: 75,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.green.shade700, width: 2),
-                      ),
-                      child: ClipOval(
-                        child: imagePath != null
-                            ? Image.file(File(imagePath!), fit: BoxFit.cover, width: double.infinity, height: double.infinity)
-                            : Center(
-                          child: Text(
-                            selectedEmoji ?? '📦',
-                            style: const TextStyle(fontSize: 38),
-                          ),
-                        ),
-                      ),
+                    child: DialogKit.previewCircle(
+                      accent: accent,
+                      imagePath: imagePath,
+                      emoji: selectedEmoji ?? '📦',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: DialogKit.previewCircle(
+                      accent: accent,
+                      imagePath: imagePath,
+                      emoji: selectedEmoji ?? 'ðŸ“¦',
                     ),
                   ),
                   const SizedBox(height: 12),
-                   Text(t.visualCustomization, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                   Text(t.visualCustomization, style: TextStyle(fontSize: 12, color: DialogKit.isDark(context) ? Colors.grey.shade400 : Colors.grey.shade600)),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.maxFinite,
-                    height: 70,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: emojis.length,
-                      itemBuilder: (context, index) {
-                        final emoji = emojis[index];
-                        final isSelected = (selectedEmoji == emoji) && (imagePath == null);
-
-                        return SizedBox(
-                          width: 65,
-                          height: 65,
-                          child: Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(30),
-                              onTap: () {
-                                setDialogState(() {
-                                  selectedEmoji = emoji;
-                                  imagePath = null;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.green.withValues(alpha: 0.3) : Colors.transparent,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      emoji,
-                                      style: const TextStyle(fontSize: 40),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
+                  if (pngs.isNotEmpty)
+                    DialogKit.assetStrip(
+                      context: context,
+                      accent: accent,
+                      assets: pngs,
+                      selected: imagePath == null ? selectedEmoji : null,
+                      onSelect: (asset) {
+                        setDialogState(() {
+                          selectedEmoji = asset;
+                          imagePath = null;
+                        });
+                      },
+                    )
+                  else
+                    DialogKit.emojiStrip(
+                      context: context,
+                      accent: accent,
+                      emojis: emojis,
+                      selected: imagePath == null ? selectedEmoji : null,
+                      onSelect: (emoji) {
+                        setDialogState(() {
+                          selectedEmoji = emoji;
+                          imagePath = null;
+                        });
                       },
                     ),
-                  ),
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -429,10 +397,16 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                       OutlinedButton.icon(
                         onPressed: () async {
                           final picker = ImagePicker();
-                          final image = await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
-                          if (image != null) {
+                          final image = await picker.pickImage(
+                            source: ImageSource.camera,
+                            imageQuality: 70,
+                            maxWidth: 1200,
+                            maxHeight: 1200,
+                          );
+                          final savedPath = await persistPickedImage(image);
+                          if (savedPath != null) {
                             setDialogState(() {
-                              imagePath = image.path;
+                              imagePath = savedPath;
                               selectedEmoji = null;
                             });
                           }
@@ -443,10 +417,16 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                       OutlinedButton.icon(
                         onPressed: () async {
                           final picker = ImagePicker();
-                          final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-                          if (image != null) {
+                          final image = await picker.pickImage(
+                            source: ImageSource.gallery,
+                            imageQuality: 70,
+                            maxWidth: 1200,
+                            maxHeight: 1200,
+                          );
+                          final savedPath = await persistPickedImage(image);
+                          if (savedPath != null) {
                             setDialogState(() {
-                              imagePath = image.path;
+                              imagePath = savedPath;
                               selectedEmoji = null;
                             });
                           }
@@ -460,8 +440,11 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: Text(t.cancel)),
-              ElevatedButton(
+              DialogKit.cancelButton(context, t.cancel),
+              DialogKit.saveButton(
+                context,
+                t.save,
+                accent,
                 onPressed: () async {
                   final messenger = ScaffoldMessenger.of(context);
                   if (nameController.text.trim().isNotEmpty) {
@@ -473,6 +456,8 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                                 nameController.text.trim(),
                         emoji: selectedEmoji,
                         imagePath: imagePath,
+                        quantity: quantity,
+                        unit: unit,
                       );
 
                       if (context.mounted) {
@@ -485,7 +470,6 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                     }
                   }
                 },
-                child: Text(t.save),
               ),
             ],
           );
@@ -531,13 +515,38 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
     _lastIsGridView = settings.isGridView;
     final t = AppLocalizations.of(context);
     final title = widget.isBuyScreen ? t.buyTitle : t.stockTitle;
+    final isBuy = widget.isBuyScreen;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isBuy ? const Color(0xFFE11D48) : const Color(0xFF059669);
+    final gradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: isDark
+          ? (isBuy
+              ? const [Color(0xFF27141B), Color(0xFF141018)]
+              : const [Color(0xFF11281F), Color(0xFF131712)])
+          : (isBuy
+              ? const [Color(0xFFFFF1F2), Color(0xFFFCF8F8)]
+              : const [Color(0xFFEAFBF3), Color(0xFFF7FBF9)]),
+    );
 
     return Scaffold(
       drawer: const AppDrawer(),
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: widget.isBuyScreen ? Colors.red.shade700 : Colors.green.shade700,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
+        titleTextStyle: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+          color: isDark ? Colors.white : const Color(0xFF0F172A),
+        ),
+        systemOverlayStyle:
+            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        flexibleSpace: Container(decoration: BoxDecoration(gradient: gradient)),
       ),
       floatingActionButton: AnimatedBuilder(
         animation: Listenable.merge([_expandAnimation, _viewExpandAnimation]),
@@ -546,7 +555,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Opciones de vistas: crecen pegadas al botón de vistas.
+              // Opciones de vistas: crecen pegadas al botÃ³n de vistas.
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
@@ -602,7 +611,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                     : const SizedBox.shrink(),
               ),
               const SizedBox(height: 10),
-              // Botón de vistas; sube cuando se despliega el abanico de crear.
+              // BotÃ³n de vistas; sube cuando se despliega el abanico de crear.
               Padding(
                 padding: const EdgeInsets.only(bottom: 2.0),
                 child: FloatingActionButton(
@@ -621,7 +630,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                 ),
               ),
               const SizedBox(height: 10),
-              // Abanico de crear: entre el botón principal y el de vistas.
+              // Abanico de crear: entre el botÃ³n principal y el de vistas.
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
@@ -683,7 +692,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
               const SizedBox(height: 10),
               FloatingActionButton(
                 heroTag: 'btn_main',
-                backgroundColor: widget.isBuyScreen ? Colors.red.shade700 : Colors.green.shade700,
+                backgroundColor: accent,
                 foregroundColor: Colors.white,
                 elevation: 4,
                 shape: const CircleBorder(),
@@ -697,14 +706,26 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
           );
         },
       ),
-      body: widget.categories.isEmpty
+      body: Container(
+        decoration: BoxDecoration(gradient: gradient),
+        child: widget.isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: widget.isBuyScreen ? const Color(0xFFE11D48) : const Color(0xFF059669),
+              ),
+            )
+          : widget.categories.isEmpty
           ? Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('🗂️', style: TextStyle(fontSize: 72)),
+                    Icon(
+                      Icons.folder_open_rounded,
+                      size: 72,
+                      color: isDark ? Colors.white24 : Colors.blueGrey.shade200,
+                    ),
                     const SizedBox(height: 12),
                     Text(
                       t.noCategories,
@@ -712,14 +733,14 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blueGrey.shade800,
+                        color: isDark ? Colors.white70 : Colors.blueGrey.shade800,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       t.emptyCategoriesSubtitle,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                      style: TextStyle(color: isDark ? Colors.white38 : Colors.grey.shade600, fontSize: 14),
                     ),
                     const SizedBox(height: 20),
                     FilledButton.icon(
@@ -734,12 +755,12 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
           : settings.isGridView
               ? GridView.builder(
               key: ValueKey('grid-$_layoutGeneration'),
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(12.0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           childAspectRatio: 0.82,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
         ),
         itemCount: widget.categories.length,
         itemBuilder: (context, index) {
@@ -753,10 +774,21 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
           return _StaggeredItem(
             index: index,
             child: Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 0,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.white.withValues(alpha: 0.62),
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.white.withValues(alpha: 0.8),
+              ),
+            ),
             child: InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(20),
               onTap: () async {
                 await Navigator.push(
                   context,
@@ -816,9 +848,17 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                                 height: 90,
                                 decoration: BoxDecoration(
                                   color: hasProducts
-                                      ? activeColor.withValues(alpha: 0.25)
-                                      : Colors.grey.shade200,
+                                      ? activeColor.withValues(alpha: 0.10)
+                                      : (isDark
+                                          ? Colors.white.withValues(alpha: 0.06)
+                                          : Colors.grey.shade100),
                                   shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: hasProducts
+                                        ? activeColor.withValues(alpha: 0.35)
+                                        : Colors.transparent,
+                                    width: 2,
+                                  ),
                                 ),
                                 child: ClipOval(
                                   child: CategoryVisuals.circleChild(
@@ -861,11 +901,12 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      localizedCategoryName.toUpperCase(),
+                      localizedCategoryName,
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Colors.blueGrey.shade700,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5,
+                        letterSpacing: 0.1,
+                        color: isDark ? Colors.grey.shade200 : const Color(0xFF334155),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -940,6 +981,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
         );
               },
             ),
+          ),
     );
   }
 }

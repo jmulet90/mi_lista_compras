@@ -15,8 +15,15 @@ abstract class CollaboratorRepository {
   Stream<List<Collaborator>> watchCollaborators(String ownerEmail);
 
   Future<void> updateRole({
+    required String docId,
     required String ownerEmail,
     required String collaboratorEmail,
     required String role,
+  });
+
+  /// Revoca el acceso del colaborador eliminando su documento.
+  Future<void> removeCollaborator({
+    required String docId,
+    required String collaboratorEmail,
   });
 }

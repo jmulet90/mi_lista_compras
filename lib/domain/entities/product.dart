@@ -6,6 +6,9 @@ class Product {
     this.emoji,
     this.imagePath,
     this.isBuyScreen = true,
+    this.imageId,
+    this.quantity,
+    this.unit,
   });
 
   String nameKey;
@@ -14,6 +17,9 @@ class Product {
   String? emoji;
   String? imagePath;
   bool isBuyScreen;
+  String? imageId;
+  double? quantity;
+  String? unit;
 
   String get id => nameKey.trim();
 
@@ -26,6 +32,9 @@ class Product {
     String? emoji,
     String? imagePath,
     bool? isBuyScreen,
+    String? imageId,
+    double? quantity,
+    String? unit,
   }) {
     return Product(
       nameKey: nameKey ?? this.nameKey,
@@ -34,6 +43,9 @@ class Product {
       emoji: emoji ?? this.emoji,
       imagePath: imagePath ?? this.imagePath,
       isBuyScreen: isBuyScreen ?? this.isBuyScreen,
+      imageId: imageId ?? this.imageId,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
     );
   }
 }

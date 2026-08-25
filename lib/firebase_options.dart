@@ -13,6 +13,8 @@ class DefaultFirebaseOptions {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
+      case TargetPlatform.iOS:
+        return ios;
       default:
         throw UnsupportedError(
           'DefaultFirebaseOptions are not supported for this platform.',
@@ -26,5 +28,14 @@ class DefaultFirebaseOptions {
     messagingSenderId: '732132166753',
     projectId: 'mi-lista-compras',
     storageBucket: 'mi-lista-compras.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyAKYQBFMFPTt5mvV4_Oq57bQkLWRyMs6A',
+    appId: '1:732132166753:ios:1e30b029ad6db4db38ae20',
+    messagingSenderId: '732132166753',
+    projectId: 'mi-lista-compras',
+    storageBucket: 'mi-lista-compras.firebasestorage.app',
+    iosBundleId: 'com.buy-stock.app',
   );
 }

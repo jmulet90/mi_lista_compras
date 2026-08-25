@@ -1,5 +1,5 @@
-name: mi_lista_compras
-description: "A new Flutter project."
+name: buy_and_stock
+description: "Buy&Stock - lista de compras e inventario de despensa."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -17,12 +17,12 @@ dependencies:
   cloud_firestore: ^5.6.12
   google_sign_in: ^6.2.1
   image_picker: ^1.0.7
+  path_provider: ^2.1.5
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   cupertino_icons: ^1.0.8
   google_fonts: ^8.2.1
   in_app_purchase: ^3.2.0
-  share_plus: ^10.0.0
 
 dev_dependencies:
   flutter_test:
@@ -40,6 +40,15 @@ flutter:
     - assets/images/logo.png
     - assets/images/emojis/categories/
     - assets/images/emojis/products/
+    # Las carpetas NO se incluyen en recursivo: una línea por categoría.
+    - assets/images/emojis/products/kitchen/
+    - assets/images/emojis/products/personal_care/
+    - assets/images/emojis/products/cleaning/
+    - assets/images/emojis/products/meats/
+    - assets/images/emojis/products/drinks/
+    - assets/images/emojis/products/breakfast/
+    - assets/images/emojis/products/fruits/
+    - assets/images/emojis/products/vegetables/
 
 flutter_launcher_icons:
   image_path: "assets/icons/app_icon.png"

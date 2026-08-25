@@ -71,4 +71,11 @@ class PremiumLimits {
         context,
         AppLocalizations.of(context).premiumFeatureExclusive,
       );
+
+  /// Cantidades y unidades en productos (solo premium).
+  static Future<bool> canUseQuantityFeature(BuildContext context) =>
+      isPremium ? Future.value(true) : _gate(
+        context,
+        AppLocalizations.of(context).premiumFeatureExclusive,
+      );
 }

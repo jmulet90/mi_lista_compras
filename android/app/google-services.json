@@ -1,4 +1,4 @@
-{
+﻿{
   "project_info": {
     "project_number": "732132166753",
     "project_id": "mi-lista-compras",
@@ -12,7 +12,28 @@
           "package_name": "com.buy_stock.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "732132166753-2ldo8b03oqch9is5u3qicavirvg98381.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.buy_stock.app",
+            "certificate_hash": "c347e7f6965770a14b0d8e3df2bfa682e918bd43"
+          }
+        },
+        {
+          "client_id": "732132166753-v461po44v4k261pr9ljtlchosdrjubnh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.buy_stock.app",
+            "certificate_hash": "efcd13e3bac2d24d4e6b1a1b2d2919fe766a218d"
+          }
+        },
+        {
+          "client_id": "732132166753-k6lgro7g3jb7q678p1fgaeci11kvjrs8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBU8AMSfesSYj0-Dsdb_xT_DeJc-1HXuTA"
@@ -20,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "732132166753-k6lgro7g3jb7q678p1fgaeci11kvjrs8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "732132166753-do64ji6185vjl327i1l7tp34845nnood.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.buy-stock.app"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +64,12 @@
           "package_name": "com.example.mi_lista_compras"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "732132166753-k6lgro7g3jb7q678p1fgaeci11kvjrs8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBU8AMSfesSYj0-Dsdb_xT_DeJc-1HXuTA"
@@ -39,7 +77,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "732132166753-k6lgro7g3jb7q678p1fgaeci11kvjrs8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "732132166753-do64ji6185vjl327i1l7tp34845nnood.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.buy-stock.app"
+              }
+            }
+          ]
         }
       }
     }

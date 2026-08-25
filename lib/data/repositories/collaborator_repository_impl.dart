@@ -59,24 +59,36 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
 
   @override
   Stream<List<Collaborator>> watchCollaborators(String ownerEmail) {
-    return _remote
-        .watchCollaborators(ownerEmail)
-        .map((snapshot) => snapshot.docs
-            .map((d) => d.data())
-            .map(_remote.toCollaborator)
-            .toList());
+    return _remote.watchCollaborators(ownerEmail).map(
+          (snapshot) => snapshot.docs
+              .map((d) => _remote.toCollaborator(d.id, d.data()))
+              .toList(),
+        );
   }
 
   @override
   Future<void> updateRole({
+    required String docId,
     required String ownerEmail,
     required String collaboratorEmail,
     required String role,
   }) async {
     await _remote.updateRole(
+      docId: docId,
       ownerEmail: ownerEmail,
       collaboratorEmail: collaboratorEmail,
       role: role,
+    );
+  }
+
+  @override
+  Future<void> removeCollaborator({
+    required String docId,
+    required String collaboratorEmail,
+  }) async {
+    await _remote.deleteCollaborator(
+      docId: docId,
+      collaboratorEmail: collaboratorEmail,
     );
   }
 }

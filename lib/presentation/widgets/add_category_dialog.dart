@@ -1,12 +1,12 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/di.dart';
 import '../../core/failures.dart';
+import '../../core/utils/image_storage.dart';
 import '../../domain/usecases/add_category.dart';
 import '../localization/app_localizations.dart';
+import 'dialog_kit.dart';
 import 'show_failure.dart';
 
 class AddCategoryDialog extends StatefulWidget {
@@ -38,10 +38,16 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? image = await _picker.pickImage(source: source, imageQuality: 70);
-    if (image != null) {
+    final XFile? image = await _picker.pickImage(
+      source: source,
+      imageQuality: 70,
+      maxWidth: 1200,
+      maxHeight: 1200,
+    );
+    final savedPath = await persistPickedImage(image);
+    if (savedPath != null) {
       setState(() {
-        _imagePath = image.path;
+        _imagePath = savedPath;
         _selectedEmoji = null;
       });
     }
@@ -50,8 +56,10 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    const accent = DialogAccents.emerald;
 
-    return AlertDialog(
+    return DialogKit.frame(
+      context,
       title: Text(t.addCategory),
       content: SingleChildScrollView(
         child: Column(
@@ -61,105 +69,61 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
             TextField(
               controller: _nameController,
               autofocus: true,
-              decoration: InputDecoration(
-                labelText: t.addCategory,
-                hintText: t.exampleCategoryHint,
+              decoration: DialogKit.input(
+                context,
+                accent,
+                label: t.addCategory,
+                hint: t.exampleCategoryHint,
               ),
             ),
             const SizedBox(height: 16),
-            Text(t.visualCustomization, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+            Text(
+              t.visualCustomization,
+              style: TextStyle(
+                fontSize: 12,
+                color: DialogKit.isDark(context)
+                    ? Colors.grey.shade400
+                    : Colors.grey.shade600,
+              ),
+            ),
             const SizedBox(height: 8),
             Center(
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.green.shade700, width: 2),
-                ),
-                child: ClipOval(
-                  child: _imagePath != null
-                      ? Image.file(File(_imagePath!), fit: BoxFit.cover)
-                      : Center(
-                    child: Text(
-                      _selectedEmoji ?? '📦',
-                      style: const TextStyle(fontSize: 32),
-                    ),
-                  ),
-                ),
+              child: DialogKit.previewCircle(
+                accent: accent,
+                imagePath: _imagePath,
+                emoji: _selectedEmoji ?? '📦',
               ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.maxFinite,
-              height: 70,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _emojis.length,
-                itemBuilder: (context, index) {
-                  final emoji = _emojis[index];
-                  final isSelected = _selectedEmoji == emoji && _imagePath == null;
-
-                  return SizedBox(
-                    width: 65,
-                    height: 65,
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(30),
-                        onTap: () {
-                          setState(() {
-                            _selectedEmoji = emoji;
-                            _imagePath = null;
-                          });
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isSelected ? Colors.green.withValues(alpha: 0.2) : Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                emoji,
-                                style: const TextStyle(fontSize: 40),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+            DialogKit.emojiStrip(
+              context: context,
+              accent: accent,
+              emojis: _emojis,
+              selected: _selectedEmoji,
+              onSelect: (emoji) {
+                setState(() {
+                  _selectedEmoji = emoji;
+                  _imagePath = null;
+                });
+              },
             ),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => _pickImage(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt, size: 18),
-                  label: Text(t.camera),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => _pickImage(ImageSource.gallery),
-                  icon: const Icon(Icons.image, size: 18),
-                  label: Text(t.galleryPicker),
-                ),
-              ],
+            DialogKit.mediaRow(
+              context,
+              cameraLabel: t.camera,
+              galleryLabel: t.galleryPicker,
+              onCamera: () => _pickImage(ImageSource.camera),
+              onGallery: () => _pickImage(ImageSource.gallery),
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(t.cancel),
-        ),
-        ElevatedButton(
+        DialogKit.cancelButton(context, t.cancel),
+        DialogKit.saveButton(
+          context,
+          t.save,
+          accent,
           onPressed: () async {
             if (_nameController.text.trim().isNotEmpty) {
               try {
@@ -177,7 +141,6 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
               }
             }
           },
-          child: Text(t.save),
         ),
       ],
     );

@@ -1,8 +1,9 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+
+import 'product_visuals.dart';
 
 enum ProductMoveTarget { pantry, cart }
 
@@ -18,19 +19,12 @@ class MoveVisuals {
 
 Widget buildMovePreview({String? imagePath, String? emoji}) {
   return ClipOval(
-    child: imagePath != null
-        ? Image.file(
-            File(imagePath),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          )
-        : Center(
-            child: Text(
-              emoji ?? '📦',
-              style: const TextStyle(fontSize: 28),
-            ),
-          ),
+    child: ProductVisuals.circleChild(
+      imagePath: imagePath,
+      emoji: emoji,
+      emojiSize: 28,
+      fallbackEmoji: '📦',
+    ),
   );
 }
 

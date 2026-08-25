@@ -81,9 +81,9 @@ class AppLocalizations {
 
   static const Map<String, Map<String, String>> _strings = {
     'appName': {
-      'es': 'Mi Lista y Stock', 'en': 'My List & Stock', 'pt': 'Minha Lista e Estoque',
-      'fr': 'Ma Liste et Mon Stock', 'de': 'Meine Liste & Vorrat', 'it': 'La Mia Lista e Dispensa',
-      'zh': '我的清单与库存', 'hi': 'मेरी सूची और स्टॉक', 'ar': 'قائمتي ومؤنتي', 'ru': 'Мой список и запасы',
+      'es': 'Buy&Stock', 'en': 'Buy&Stock', 'pt': 'Buy&Stock',
+      'fr': 'Buy&Stock', 'de': 'Buy&Stock', 'it': 'Buy&Stock',
+      'zh': 'Buy&Stock', 'hi': 'Buy&Stock', 'ar': 'Buy&Stock', 'ru': 'Buy&Stock',
     },
     'buyTitle': {
       'es': 'Comprar - Lista de Compras', 'en': 'Buy - Shopping List', 'pt': 'Comprar - Lista de Compras',
@@ -337,6 +337,30 @@ class AppLocalizations {
       'hi': 'आपके पास अभी कोई सहयोगी नहीं है।',
       'ar': 'ليس لديك متعاونون بعد.',
       'ru': 'У вас пока нет соавторов.',
+    },
+    'removeCollaboratorConfirm': {
+      'es': '¿Quitar a {name} como colaborador? Ya no podrá acceder a tus listas.',
+      'en': 'Remove {name} as a collaborator? They will lose access to your lists.',
+      'pt': 'Remover {name} como colaborador? Ele perderá o acesso às suas listas.',
+      'fr': 'Retirer {name} des collaborateurs ? Il perdra l’accès à vos listes.',
+      'de': '{name} als Mitarbeiter entfernen? Der Zugriff auf Ihre Listen wird aufgehoben.',
+      'it': 'Rimuovere {name} come collaboratore? Perderà l’accesso ai tuoi elenchi.',
+      'zh': '移除协作者 {name}？对方将无法再访问你的清单。',
+      'hi': '{name} को सहयोगी के रूप में हटाएँ? वे आपकी सूचियों तक पहुँच खो देंगे।',
+      'ar': 'إزالة {name} كمتعاون؟ سيفقد الوصول إلى قوائمك.',
+      'ru': 'Удалить {name} из соавторов? Он потеряет доступ к вашим спискам.',
+    },
+    'collaboratorRemoved': {
+      'es': 'Colaborador eliminado',
+      'en': 'Collaborator removed',
+      'pt': 'Colaborador removido',
+      'fr': 'Collaborateur retiré',
+      'de': 'Mitarbeiter entfernt',
+      'it': 'Collaboratore rimosso',
+      'zh': '协作者已移除',
+      'hi': 'सहयोगी हटाया गया',
+      'ar': 'تمت إزالة المتعاون',
+      'ru': 'Соавтор удалён',
     },
     'permissionPrefix': {
       'es': 'Permiso:', 'en': 'Permission:', 'pt': 'Permissão:', 'fr': 'Autorisation :',
@@ -717,6 +741,16 @@ class AppLocalizations {
       'ar': 'هذه الميزة حصرية للنسخة المميزة.',
       'ru': 'Эта функция доступна только в Premium.',
     },
+    'quantityLabel': {
+      'es': 'Cantidad', 'en': 'Quantity', 'pt': 'Quantidade',
+      'fr': 'Quantité', 'de': 'Menge', 'it': 'Quantità',
+      'zh': '数量', 'hi': 'मात्रा', 'ar': 'الكمية', 'ru': 'Количество',
+    },
+    'unitLabel': {
+      'es': 'Unidad', 'en': 'Unit', 'pt': 'Unidade',
+      'fr': 'Unité', 'de': 'Einheit', 'it': 'Unità',
+      'zh': '单位', 'hi': 'इकाई', 'ar': 'الوحدة', 'ru': 'Единица',
+    },
   };
 
   static const Map<String, Map<String, String>> _names = {
@@ -898,6 +932,8 @@ class AppLocalizations {
   String get premiumBenefitGalleryView => _s('premiumBenefitGalleryView');
   String get premiumLimitCollaborators => _s('premiumLimitCollaborators');
   String get premiumFeatureExclusive => _s('premiumFeatureExclusive');
+  String get quantityLabel => _s('quantityLabel');
+  String get unitLabel => _s('unitLabel');
 
   String unlockFor(String price) =>
       interpolate('unlockFor', {'price': price});
@@ -906,4 +942,8 @@ class AppLocalizations {
       interpolate('deleteProductConfirm', {'name': name});
   String deleteCategoryConfirm(String name) =>
       interpolate('deleteCategoryConfirm', {'name': name});
+  String removeCollaboratorConfirm(String name) =>
+      interpolate('removeCollaboratorConfirm', {'name': name});
+
+  String get collaboratorRemoved => _s('collaboratorRemoved');
 }

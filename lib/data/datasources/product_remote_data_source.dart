@@ -12,6 +12,13 @@ class ProductRemoteDataSource {
     return _db.collection('users_data').doc(ownerEmail).collection('products');
   }
 
+  CollectionReference<Map<String, dynamic>> _imagesRef(String ownerEmail) {
+    return _db
+        .collection('users_data')
+        .doc(ownerEmail)
+        .collection('product_images');
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> watchProducts(
     String ownerEmail,
   ) {
@@ -42,5 +49,36 @@ class ProductRemoteDataSource {
     required String id,
   }) async {
     await _productsRef(ownerEmail).doc(id).delete();
+  }
+
+  /// Sube los bytes (base64) de la foto del producto. El documento remoto
+  /// queda identificado por [imageId] para que otros dispositivos sepan si
+  /// necesitan descargarla.
+  Future<void> uploadImage({
+    required String ownerEmail,
+    required String imageId,
+    required String base64Data,
+  }) async {
+    await _imagesRef(ownerEmail).doc(imageId).set({
+      'data': base64Data,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  /// Devuelve los bytes (base64) de la imagen o null si no existe.
+  Future<String?> fetchImage({
+    required String ownerEmail,
+    required String imageId,
+  }) async {
+    final doc = await _imagesRef(ownerEmail).doc(imageId).get();
+    final data = doc.data();
+    return data?['data'] as String?;
+  }
+
+  Future<void> deleteImage({
+    required String ownerEmail,
+    required String imageId,
+  }) async {
+    await _imagesRef(ownerEmail).doc(imageId).delete();
   }
 }

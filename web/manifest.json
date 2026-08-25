@@ -1,6 +1,6 @@
 {
-    "name": "mi_lista_compras",
-    "short_name": "mi_lista_compras",
+    "name": "Buy&Stock",
+    "short_name": "Buy&Stock",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

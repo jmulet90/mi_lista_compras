@@ -30,17 +30,37 @@ class CollaboratorRemoteDataSource {
   String? get currentUserUid => _auth.currentUser?.uid;
   String? get currentUserEmail => _auth.currentUser?.email;
 
-  static String docId(String email) =>
+  static String docIdOf(String email) =>
       email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
 
   /// Devuelve el documento de colaborador del email dado, o null si no existe.
+  /// Si el ID canónico no existe, busca por email (soporta documentos
+  /// creados con esquemas de ID anteriores).
   Future<Map<String, dynamic>?> fetchCollaboratorDoc(String email) async {
     try {
       final snapshot = await _db
           .collection('collaborators')
-          .doc(docId(email))
+          .doc(docIdOf(email))
           .get();
-      return snapshot.data();
+      final direct = snapshot.data();
+      if (direct != null) return direct;
+
+      final query = await _db
+          .collection('collaborators')
+          .where('collaboratorEmail', isEqualTo: email)
+          .limit(1)
+          .get();
+      if (query.docs.isNotEmpty) return query.docs.first.data();
+
+      if (email.toLowerCase() != email) {
+        final lower = await _db
+            .collection('collaborators')
+            .where('collaboratorEmail', isEqualTo: email.toLowerCase())
+            .limit(1)
+            .get();
+        if (lower.docs.isNotEmpty) return lower.docs.first.data();
+      }
+      return null;
     } catch (e) {
       throw CloudFailure('No se pudo verificar el estado de colaborador: $e');
     }
@@ -50,15 +70,19 @@ class CollaboratorRemoteDataSource {
     final user = _auth.currentUser;
     if (user == null) throw const AuthFailure('Usuario no autenticado');
 
-    await _db
-        .collection('collaborators')
-        .doc(docId(invite.collaboratorEmail))
-        .set({
-      'ownerEmail': user.email ?? invite.ownerEmail,
-      'collaboratorEmail': invite.collaboratorEmail,
-      'permissionRole': invite.role,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    try {
+      await _db
+          .collection('collaborators')
+          .doc(docIdOf(invite.collaboratorEmail))
+          .set({
+        'ownerEmail': user.email ?? invite.ownerEmail,
+        'collaboratorEmail': invite.collaboratorEmail,
+        'permissionRole': invite.role,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      throw CloudFailure('No se pudo invitar al colaborador: $e');
+    }
   }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> watchCollaborators(
@@ -70,19 +94,42 @@ class CollaboratorRemoteDataSource {
         .snapshots();
   }
 
+  /// Escribe el rol sobre el documento real (docId) que muestra la lista.
+  /// Con set+merge: funciona aunque falten campos y nunca crea duplicados.
   Future<void> updateRole({
+    required String docId,
     required String ownerEmail,
     required String collaboratorEmail,
     required String role,
   }) async {
-    await _db.collection('collaborators').doc(docId(collaboratorEmail)).update({
-      'permissionRole': role,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final effectiveDoc = docId.isNotEmpty ? docId : docIdOf(collaboratorEmail);
+    try {
+      await _db.collection('collaborators').doc(effectiveDoc).set({
+        'ownerEmail': ownerEmail,
+        'collaboratorEmail': collaboratorEmail,
+        'permissionRole': role,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      throw CloudFailure('No se pudo actualizar el permiso: $e');
+    }
   }
 
-  Collaborator toCollaborator(Map<String, dynamic> data) {
+  Future<void> deleteCollaborator({
+    required String docId,
+    required String collaboratorEmail,
+  }) async {
+    final effectiveDoc = docId.isNotEmpty ? docId : docIdOf(collaboratorEmail);
+    try {
+      await _db.collection('collaborators').doc(effectiveDoc).delete();
+    } catch (e) {
+      throw CloudFailure('No se pudo eliminar al colaborador: $e');
+    }
+  }
+
+  Collaborator toCollaborator(String docId, Map<String, dynamic> data) {
     return Collaborator(
+      docId: docId,
       email: data['collaboratorEmail'] as String? ?? 'Sin correo',
       role: data['permissionRole'] as String? ?? 'read',
     );

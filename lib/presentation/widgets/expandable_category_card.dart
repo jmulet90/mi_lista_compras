@@ -1,17 +1,19 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/di.dart';
+import '../../core/failures.dart';
 import '../../domain/entities/category_item.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/usecases/delete_product.dart';
 import '../../domain/usecases/toggle_product.dart';
-import '../../core/failures.dart';
+import '../../domain/usecases/update_product.dart';
 import '../localization/app_localizations.dart';
 import 'category_visuals.dart';
+import 'dialog_kit.dart';
+import 'premium_limits.dart';
 import 'product_move_animation.dart';
+import 'product_visuals.dart';
 import 'show_failure.dart';
 
 class ExpandableCategoryCard extends StatefulWidget {
@@ -51,15 +53,27 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final hasProducts = widget.catProducts.isNotEmpty;
-    final activeColor = widget.isBuyScreen ? Colors.red : Colors.green;
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      color: dark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.white.withValues(alpha: 0.62),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: dark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.8),
+        ),
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         onTap: widget.onTapCard,
         onLongPress: widget.onLongPressCard,
         child: Padding(
@@ -74,10 +88,12 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: hasProducts
-                            ? activeColor.withValues(alpha: 0.25)
-                            : Colors.grey.shade200,
                         shape: BoxShape.circle,
+                        color: accent.withValues(alpha: 0.10),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.35),
+                          width: 2,
+                        ),
                       ),
                       child: ClipOval(
                         child: CategoryVisuals.circleChild(
@@ -95,11 +111,12 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.localizedCategoryName.toUpperCase(),
+                          widget.localizedCategoryName,
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: Colors.blueGrey.shade800,
+                            letterSpacing: -0.2,
+                            color: dark ? Colors.grey.shade100 : const Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -107,16 +124,18 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: hasProducts
-                                ? activeColor.withValues(alpha: 0.2)
+                                ? accent.withValues(alpha: 0.15)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '${widget.catProducts.length} ${widget.t.productsCount}',
                             style: TextStyle(
-                              color: hasProducts ? activeColor.shade700 : Colors.grey,
+                              color: hasProducts
+                                  ? accent
+                                  : (dark ? Colors.grey.shade500 : Colors.grey),
                               fontSize: 12,
-                              fontWeight: hasProducts ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: hasProducts ? FontWeight.w600 : FontWeight.normal,
                             ),
                           ),
                         ),
@@ -126,7 +145,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                   IconButton(
                     icon: Icon(
                       _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                      color: Colors.grey,
+                      color: dark ? Colors.grey.shade400 : Colors.grey,
                     ),
                     onPressed: () {
                       setState(() {
@@ -143,7 +162,10 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
                       widget.t.noProducts,
-                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                      style: TextStyle(
+                        color: dark ? Colors.grey.shade500 : Colors.grey,
+                        fontSize: 13,
+                      ),
                     ),
                   )
                 else
@@ -156,13 +178,13 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                       return Dismissible(
                         key: Key('product_${product.uniqueKey}_$pIndex'),
                         background: Container(
-                          color: Colors.green,
+                          color: const Color(0xFF059669),
                           alignment: Alignment.centerLeft,
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: const Icon(Icons.swap_horiz, color: Colors.white),
                         ),
                         secondaryBackground: Container(
-                          color: Colors.red,
+                          color: const Color(0xFFE11D48),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: const Icon(Icons.delete, color: Colors.white),
@@ -195,22 +217,18 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                           } else {
                             bool? delete = await showDialog<bool>(
                               context: context,
-                              builder: (ctx) => AlertDialog(
+                              builder: (ctx) => DialogKit.frame(
+                                ctx,
                                 title: Text(widget.t.delete),
                                 content: Text(widget.t
                                     .deleteProductConfirm(widget.t.getProductName(product.nameKey))),
                                 actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: Text(widget.t.cancel),
-                                  ),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
-                                    ),
+                                  DialogKit.cancelButton(ctx, widget.t.cancel),
+                                  DialogKit.saveButton(
+                                    ctx,
+                                    widget.t.delete,
+                                    DialogAccents.rose,
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: Text(widget.t.delete),
                                   ),
                                 ],
                               ),
@@ -232,29 +250,51 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                           key: _rowKeyFor(product),
                           child: InkWell(
                             onLongPress: () => widget.onEditProduct(context, product),
-                            child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                            leading: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: const BoxDecoration(shape: BoxShape.circle),
-                              child: ClipOval(
-                                child: product.imagePath != null
-                                    ? Image.file(File(product.imagePath!), fit: BoxFit.cover)
-                                    : Center(
-                                  child: Text(
-                                    product.emoji ?? (widget.isBuyScreen ? '🛒' : '📦'),
-                                    style: const TextStyle(fontSize: 35),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: accent.withValues(alpha: 0.10),
+                                      border: Border.all(
+                                        color: accent.withValues(alpha: 0.35),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: ClipOval(
+                                      child: ProductVisuals.circleChild(
+                                        imagePath: product.imagePath,
+                                        emoji: product.emoji,
+                                        emojiSize: 30,
+                                        fallbackEmoji: widget.isBuyScreen ? '🛒' : '📦',
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      widget.t.getProductName(product.nameKey),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: dark ? Colors.grey.shade200 : const Color(0xFF334155),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  _InlineQtyUnit(
+                                    product: product,
+                                    isBuyScreen: widget.isBuyScreen,
+                                    accent: accent,
+                                  ),
+                                ],
                               ),
                             ),
-                            title: Text(
-                              widget.t.getProductName(product.nameKey),
-                              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15),
-                            ),
                           ),
-                        ),
                         ),
                       );
                     },
@@ -264,6 +304,171 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _InlineQtyUnit extends StatefulWidget {
+  final Product product;
+  final bool isBuyScreen;
+  final Color accent;
+
+  const _InlineQtyUnit({
+    required this.product,
+    required this.isBuyScreen,
+    required this.accent,
+  });
+
+  @override
+  State<_InlineQtyUnit> createState() => _InlineQtyUnitState();
+}
+
+class _InlineQtyUnitState extends State<_InlineQtyUnit> {
+  late double? _qty;
+  late String? _unit;
+
+  @override
+  void initState() {
+    super.initState();
+    _qty = widget.product.quantity;
+    _unit = widget.product.unit;
+  }
+
+  @override
+  void didUpdateWidget(covariant _InlineQtyUnit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.product.quantity != widget.product.quantity) _qty = widget.product.quantity;
+    if (oldWidget.product.unit != widget.product.unit) _unit = widget.product.unit;
+  }
+
+  Future<void> _update({double? qty, String? unit}) async {
+    setState(() {
+      _qty = qty;
+      _unit = unit;
+    });
+    try {
+      await sl<UpdateProductUseCase>()(
+        product: widget.product,
+        newName: widget.product.nameKey,
+        emoji: widget.product.emoji,
+        imagePath: widget.product.imagePath,
+        quantity: qty,
+        unit: unit,
+      );
+    } on Failure catch (_) {}
+  }
+
+  void _showQtyInput() async {
+    if (!await PremiumLimits.canUseQuantityFeature(context)) return;
+    if (!mounted) return;
+    final ctrl = TextEditingController(text: _qty != null ? DialogKit.formatQuantity(_qty!) : '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cantidad', style: TextStyle(fontSize: 16)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            hintText: 'Ej: 2',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () {
+              final val = double.tryParse(ctrl.text.trim());
+              _update(qty: val, unit: _unit);
+              Navigator.pop(ctx);
+              if (val != null && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Cantidad: ${DialogKit.formatQuantity(val)}'),
+                    duration: const Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUnitPicker() async {
+    if (!await PremiumLimits.canUseQuantityFeature(context)) return;
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Unidad', style: TextStyle(fontSize: 16)),
+        children: DialogKit.unitOptions.map((u) {
+          final selected = u == _unit;
+          return SimpleDialogOption(
+            onPressed: () {
+              _update(qty: _qty, unit: u);
+              Navigator.pop(ctx);
+            },
+            child: Text(
+              u,
+              style: TextStyle(
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                color: selected ? widget.accent : null,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final textSub = dark ? Colors.grey.shade400 : Colors.grey.shade600;
+    final showQty = _qty != null && PremiumLimits.isPremium;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: _showQtyInput,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: widget.accent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: widget.accent.withValues(alpha: 0.25)),
+            ),
+            child: showQty
+                ? Text(
+                    DialogKit.formatQuantity(_qty!),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textSub),
+                  )
+                : Icon(Icons.add, size: 16, color: widget.accent),
+          ),
+        ),
+        const SizedBox(width: 6),
+        GestureDetector(
+          onTap: _showUnitPicker,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: widget.accent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: widget.accent.withValues(alpha: 0.25)),
+            ),
+            child: Text(
+              _unit ?? 'un',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: textSub),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mi_lista_compras"
+        android:label="Buy&amp;Stock"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

@@ -25,6 +25,8 @@ class ProductLocalDataSource {
     }
   }
 
+  ProductModel? getByKey(String key) => _box.get(key);
+
   Future<void> put(ProductModel model, {String? key}) async {
     await _box.put(key ?? model.nameKey.trim(), model);
   }

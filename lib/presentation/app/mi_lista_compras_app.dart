@@ -35,13 +35,14 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
   AppSettingsData _loadSettings() {
     try {
       final box = sl<AppInitializer>().settings;
+      final storedLang = box.get('language') as String? ?? 'es';
       return AppSettingsData(
         themeMode: ThemeMode.values.firstWhere(
           (mode) => mode.name == box.get('themeMode'),
           orElse: () => ThemeMode.light,
         ),
         isGridView: box.get('isGridView') as bool? ?? false,
-        language: box.get('language') as String? ?? 'es',
+        language: AppLocalizations.isSupported(storedLang) ? storedLang : 'es',
       );
     } catch (_) {
       return AppSettingsData(
@@ -98,7 +99,7 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
         builder: (context, settings, child) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'Mi Lista y Stock',
+            title: 'Buy&Stock',
             onGenerateTitle: (context) =>
                 AppLocalizations.of(context).appName,
             localizationsDelegates: const [

@@ -15,6 +15,8 @@ class UpdateProductUseCase {
     required String newName,
     String? emoji,
     String? imagePath,
+    double? quantity,
+    String? unit,
   }) async {
     await _guard.ensureCanFullyEdit();
 
@@ -27,11 +29,12 @@ class UpdateProductUseCase {
     product
       ..nameKey = nameKey
       ..emoji = emoji
-      ..imagePath = imagePath;
+      ..imagePath = imagePath
+      ..quantity = quantity
+      ..unit = unit;
 
     await _products.upsert(product);
 
-    // Si cambió el nombre, la clave local anterior queda huérfana: se limpia.
     if (oldId != product.id) {
       await _products.deleteById(oldId);
     }

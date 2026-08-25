@@ -59,11 +59,14 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
     return StreamBuilder<List<CategoryItem>>(
       stream: _categoriesStream,
       builder: (context, categorySnapshot) {
+        final categoriesLoading = !categorySnapshot.hasData;
         final categories = categorySnapshot.data ?? const <CategoryItem>[];
         return StreamBuilder<List<Product>>(
           stream: _productsStream,
           builder: (context, productSnapshot) {
+            final productsLoading = !productSnapshot.hasData;
             final products = productSnapshot.data ?? const <Product>[];
+            final isLoading = categoriesLoading || productsLoading;
 
             final categoryKeys = categories.map((c) => c.key).toSet();
             final buyProductsCount = products
@@ -78,9 +81,18 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
                 isBuyScreen: _currentIndex == 0,
                 products: products,
                 categories: categories,
+                isLoading: isLoading,
               ),
               bottomNavigationBar: NavigationBar(
                 selectedIndex: _currentIndex,
+                height: 68,
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? null
+                    : Colors.white,
+                indicatorColor: (_currentIndex == 0
+                        ? const Color(0xFFE11D48)
+                        : const Color(0xFF059669))
+                    .withValues(alpha: 0.12),
                 onDestinationSelected: (index) {
                   setState(() {
                     _currentIndex = index;
@@ -94,7 +106,7 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _currentIndex == 0 ? Colors.red.withValues(alpha: 0.15) : Colors.transparent,
+                            color: _currentIndex == 0 ? const Color(0xFFE11D48).withValues(alpha: 0.14) : Colors.transparent,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -102,7 +114,7 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
                                 ? Icons.shopping_cart
                                 : Icons.shopping_cart_outlined,
                             size: 26,
-                            color: _currentIndex == 0 ? Colors.red.shade700 : Colors.blueGrey.shade400,
+                            color: _currentIndex == 0 ? const Color(0xFFE11D48) : Colors.blueGrey.shade400,
                           ),
                         ),
                         if (buyProductsCount > 0)
@@ -123,7 +135,7 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: const BoxDecoration(
-                                  color: Colors.red,
+                                  color: Color(0xFFE11D48),
                                   shape: BoxShape.circle,
                                 ),
                                 constraints: const BoxConstraints(
@@ -153,7 +165,7 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: _currentIndex == 1 ? Colors.green.withValues(alpha: 0.15) : Colors.transparent,
+                            color: _currentIndex == 1 ? const Color(0xFF059669).withValues(alpha: 0.14) : Colors.transparent,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -161,7 +173,7 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
                                 ? Icons.home_rounded
                                 : Icons.home_outlined,
                             size: 26,
-                            color: _currentIndex == 1 ? Colors.green.shade700 : Colors.blueGrey.shade400,
+                            color: _currentIndex == 1 ? const Color(0xFF059669) : Colors.blueGrey.shade400,
                           ),
                         ),
                         if (stockProductsCount > 0)
@@ -171,7 +183,7 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(
-                                color: Colors.green,
+                                  color: Color(0xFF059669),
                                 shape: BoxShape.circle,
                               ),
                               constraints: const BoxConstraints(
@@ -202,3 +214,5 @@ class MainNavigatorScreenState extends State<MainNavigatorScreen>
     );
   }
 }
+
+

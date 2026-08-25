@@ -24,6 +24,15 @@ class ProductModel extends HiveObject {
   @HiveField(5)
   bool isBuyScreen;
 
+  @HiveField(6)
+  String? imageId;
+
+  @HiveField(7)
+  double? quantity;
+
+  @HiveField(8)
+  String? unit;
+
   ProductModel({
     required this.nameKey,
     required this.categoryKey,
@@ -31,6 +40,9 @@ class ProductModel extends HiveObject {
     this.emoji,
     this.imagePath,
     this.isBuyScreen = true,
+    this.imageId,
+    this.quantity,
+    this.unit,
   });
 
   String get uniqueKey => '${categoryKey}_${nameKey.trim().toLowerCase()}';
@@ -43,6 +55,9 @@ class ProductModel extends HiveObject {
       emoji: product.emoji,
       imagePath: product.imagePath,
       isBuyScreen: product.isBuyScreen,
+      imageId: product.imageId,
+      quantity: product.quantity,
+      unit: product.unit,
     );
   }
 
@@ -52,7 +67,11 @@ class ProductModel extends HiveObject {
       categoryKey: map['categoryKey'] as String? ?? '',
       isToBuy: map['isToBuy'] as bool? ?? false,
       emoji: map['emoji'] as String?,
+      imagePath: map['imagePath'] as String?,
       isBuyScreen: map['isBuyScreen'] as bool? ?? false,
+      imageId: map['imageId'] as String?,
+      quantity: (map['quantity'] as num?)?.toDouble(),
+      unit: map['unit'] as String?,
     );
   }
 
@@ -64,11 +83,15 @@ class ProductModel extends HiveObject {
       emoji: emoji,
       imagePath: imagePath,
       isBuyScreen: isBuyScreen,
+      imageId: imageId,
+      quantity: quantity,
+      unit: unit,
     );
   }
 
-  /// Campos sincronizados con Firestore (igual que el SyncService original:
-  /// imagePath NO se sube a la nube).
+  /// Campos sincronizados con Firestore. Los bytes de la imagen viajan en la
+  /// subcolección `product_images` referenciada por [imageId]; el archivo
+  /// local [imagePath] nunca se sube.
   Map<String, dynamic> toMap() {
     return {
       'nameKey': nameKey,
@@ -76,6 +99,9 @@ class ProductModel extends HiveObject {
       'isToBuy': isToBuy,
       'emoji': emoji,
       'isBuyScreen': isBuyScreen,
+      'imageId': imageId,
+      'quantity': quantity,
+      'unit': unit,
     };
   }
 }

@@ -15,6 +15,8 @@ class AddProductUseCase {
     required bool isBuyScreen,
     String? emoji,
     String? imagePath,
+    double? quantity,
+    String? unit,
   }) async {
     await _guard.ensureCanFullyEdit();
 
@@ -37,6 +39,8 @@ class AddProductUseCase {
       isBuyScreen: isBuyScreen,
       emoji: emoji,
       imagePath: imagePath,
+      quantity: quantity,
+      unit: unit,
     ));
   }
 }
