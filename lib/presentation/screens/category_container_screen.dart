@@ -51,8 +51,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
   late final AnimationController _viewFabController;
   late final Animation<double> _viewExpandAnimation;
 
-  bool? _lastIsGridView;
-  int _layoutGeneration = 0;
+
 
   @override
   void initState() {
@@ -509,10 +508,6 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
   @override
   Widget build(BuildContext context) {
     final settings = AppSettings.of(context);
-    if (_lastIsGridView != null && _lastIsGridView != settings.isGridView) {
-      _layoutGeneration++;
-    }
-    _lastIsGridView = settings.isGridView;
     final t = AppLocalizations.of(context);
     final title = widget.isBuyScreen ? t.buyTitle : t.stockTitle;
     final isBuy = widget.isBuyScreen;
@@ -754,7 +749,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
             )
           : settings.isGridView
               ? GridView.builder(
-              key: ValueKey('grid-$_layoutGeneration'),
+              key: const ValueKey('grid'),
               padding: const EdgeInsets.all(12.0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
@@ -920,7 +915,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
         },
       )
           : ListView.builder(
-              key: ValueKey('list-$_layoutGeneration'),
+              key: const ValueKey('list'),
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               itemCount: widget.categories.length,
               itemBuilder: (context, index) {
