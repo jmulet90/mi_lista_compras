@@ -31,11 +31,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAKYQBFMFPTt5mvV4_Oq57bQkLWRyMs6A',
-    appId: '1:732132166753:ios:1e30b029ad6db4db38ae20',
+    apiKey: 'AIzaSyAKYQBFMFPTtm5mvV4_Oq57bQkLWRyMs6A',
+    appId: '1:732132166753:ios:95bb2b232180290938ae20',
     messagingSenderId: '732132166753',
     projectId: 'mi-lista-compras',
     storageBucket: 'mi-lista-compras.firebasestorage.app',
-    iosBundleId: 'com.buy-stock.app',
+    iosBundleId: 'com.buystock.app',
   );
 }

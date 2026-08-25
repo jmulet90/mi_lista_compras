@@ -10,6 +10,8 @@ workflows:
     scripts:
       - name: Obtener dependencias
         script: flutter pub get
+      - name: Instalar CocoaPods
+        script: cd ios && pod install
       - name: Compilar iOS sin firma
         script: flutter build ios --release --no-codesign
       - name: Empaquetar IPA

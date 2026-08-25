@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../../core/crash_overlay.dart';
 import '../../core/logger.dart';
 import '../../firebase_options.dart';
 import '../datasources/category_local_data_source.dart';
@@ -99,8 +100,11 @@ class AppInitializer {
   };
 
   Future<void> initialize() async {
+    CrashOverlay.log('AppInitializer.initialize() started');
     await _initFirebase();
+    CrashOverlay.log('Firebase initialized, starting Hive...');
     await _initHive();
+    CrashOverlay.log('Hive initialized');
 
     categories = CategoryLocalDataSource(
       Hive.box<CategoryModel>(CategoryLocalDataSource.boxName),
@@ -110,9 +114,13 @@ class AppInitializer {
     );
     settings = Hive.box(settingsBoxName);
 
+    CrashOverlay.log('Running product key normalization...');
     _normalizeProductKeys();
+    CrashOverlay.log('Running legacy category migration...');
     await _migrateLegacyCategories();
+    CrashOverlay.log('Seeding defaults...');
     await _seedDefaults();
+    CrashOverlay.log('AppInitializer.initialize() completed');
   }
 
   /// Vacía los datos locales del usuario anterior (categorías y productos).
@@ -126,25 +134,39 @@ class AppInitializer {
   /// (primer arranque de un usuario sin datos en la nube).
   Future<void> seedIfEmpty() => _seedDefaults();
 
-  Future<void> _initFirebase() async {    try {
+  Future<void> _initFirebase() async {
+    try {
+      CrashOverlay.log('Firebase.initializeApp() calling...');
+      CrashOverlay.log('Firebase apps count: ${Firebase.apps.length}');
       if (Firebase.apps.isEmpty) {
+        final options = DefaultFirebaseOptions.currentPlatform;
+        CrashOverlay.log('Firebase options appId: ${options.appId}');
+        CrashOverlay.log('Firebase options apiKey: ${options.apiKey.substring(0, 10)}...');
         await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
+          options: options,
         );
+        CrashOverlay.log('Firebase.initializeApp() SUCCESS');
+      } else {
+        CrashOverlay.log('Firebase already initialized, skipping');
       }
-    } catch (err) {
+    } catch (err, st) {
+      CrashOverlay.logError('Firebase init failed', err, st);
       logger.info('Firebase ya estaba inicializado: $err');
     }
   }
 
   Future<void> _initHive() async {
+    CrashOverlay.log('Hive.initFlutter() calling...');
     await Hive.initFlutter();
+    CrashOverlay.log('Registering Hive adapters...');
     Hive.registerAdapter(ProductModelAdapter());
     Hive.registerAdapter(CategoryModelAdapter());
 
+    CrashOverlay.log('Opening Hive boxes...');
     await Hive.openBox<CategoryModel>(CategoryLocalDataSource.boxName);
     await Hive.openBox<ProductModel>(ProductLocalDataSource.boxName);
     await Hive.openBox<dynamic>(settingsBoxName);
+    CrashOverlay.log('All Hive boxes opened successfully');
   }
 
   /// MIGRACIÓN: normaliza la clave de cada producto a su nameKey y fusiona

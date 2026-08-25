@@ -54,12 +54,12 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.732132166753-do64ji6185vjl327i1l7tp34845nnood</string>
+				<string>com.googleusercontent.apps.732132166753-blmivfvumj5t6bur240o2a2oguhiev29</string>
 			</array>
 		</dict>
 	</array>
 	<key>GIDClientID</key>
-	<string>732132166753-do64ji6185vjl327i1l7tp34845nnood.apps.googleusercontent.com</string>
+	<string>732132166753-blmivfvumj5t6bur240o2a2oguhiev29.apps.googleusercontent.com</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

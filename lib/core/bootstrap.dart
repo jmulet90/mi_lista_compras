@@ -19,6 +19,7 @@ import '../domain/repositories/premium_repository.dart';
 import '../domain/repositories/product_repository.dart';
 import '../domain/services/access_guard.dart';
 import 'utils/product_asset_catalog.dart';
+import '../core/crash_overlay.dart';
 import '../core/logger.dart';
 import '../domain/usecases/add_category.dart';
 import '../domain/usecases/add_product.dart';
@@ -39,13 +40,17 @@ import 'di.dart';
 ///
 /// Debe llamarse después de [WidgetsFlutterBinding.ensureInitialized].
 Future<void> bootstrap() async {
+  CrashOverlay.log('bootstrap() started');
   final initializer = AppInitializer();
   await initializer.initialize();
+  CrashOverlay.log('Asset catalog loading...');
   await ProductAssetCatalog.instance.ensureLoaded();
+  CrashOverlay.log('Asset catalog loaded');
 
   final productLocal = initializer.products;
   final categoryLocal = initializer.categories;
 
+  CrashOverlay.log('Registering DI services...');
   sl.registerLazySingleton<AppInitializer>(() => initializer);
   sl.registerLazySingleton<ProductRemoteDataSource>(
     () => ProductRemoteDataSource(FirebaseFirestore.instance),
@@ -124,9 +129,18 @@ Future<void> bootstrap() async {
       () => PurchasePremiumUseCase(sl<PremiumRepository>()));
   sl.registerLazySingleton(
       () => RestorePurchasesUseCase(sl<PremiumRepository>()));
-  await sl<PremiumRepository>().init();
+  CrashOverlay.log('DI services registered, initializing PremiumRepository...');
+  try {
+    await sl<PremiumRepository>().init();
+    CrashOverlay.log('PremiumRepository initialized');
+  } catch (e, st) {
+    CrashOverlay.logError('Error inicializando PremiumRepository', e, st);
+    const AppLogger().error('Error inicializando PremiumRepository', e);
+  }
 
+  CrashOverlay.log('Setting up auth state watcher...');
   _watchAuthState(initializer);
+  CrashOverlay.log('bootstrap() completed');
 }
 
 /// Cuenta cuyos datos están cargados localmente (null = sin sesión).
@@ -137,8 +151,10 @@ bool _syncRunning = false;
 /// locales del usuario anterior y carga los de la cuenta nueva, o los
 /// valores por defecto si es su primer arranque.
 void _watchAuthState(AppInitializer initializer) {
+  CrashOverlay.log('Watching auth state changes...');
   FirebaseAuth.instance.authStateChanges().listen((user) async {
     try {
+      CrashOverlay.log('Auth state changed: ${user?.uid ?? "null (logged out)"}');
       final access = await sl<CollaboratorRepository>().resolveMyAccess();
       final owner = access?.ownerEmail.trim().toLowerCase();
 
@@ -160,7 +176,8 @@ void _watchAuthState(AppInitializer initializer) {
       await _startSync(fullRefresh: true);
       // ...y valores por defecto solo si no tenía nada guardado.
       await initializer.seedIfEmpty();
-    } catch (e) {
+    } catch (e, st) {
+      CrashOverlay.logError('Error al cambiar de cuenta', e, st);
       const AppLogger().error('Error al cambiar de cuenta', e);
     }
   });

@@ -3,32 +3,34 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>732132166753-do64ji6185vjl327i1l7tp34845nnood.apps.googleusercontent.com</string>
+	<string>732132166753-blmivfvumj5t6bur240o2a2oguhiev29.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.732132166753-do64ji6185vjl327i1l7tp34845nnood</string>
+	<string>com.googleusercontent.apps.732132166753-blmivfvumj5t6bur240o2a2oguhiev29</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>732132166753-2ldo8b03oqch9is5u3qicavirvg98381.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyAKYQBFMFPTt5mvV4_Oq57bQkLWRyMs6A</string>
+	<string>AIzaSyAKYQBFMFPTtm5mvV4_Oq57bQkLWRyMs6A</string>
 	<key>GCM_SENDER_ID</key>
 	<string>732132166753</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.buy-stock.app</string>
+	<string>com.buystock.app</string>
 	<key>PROJECT_ID</key>
 	<string>mi-lista-compras</string>
 	<key>STORAGE_BUCKET</key>
 	<string>mi-lista-compras.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_APPINVITE_ENABLED</key>
-	<false/>
+	<true></true>
 	<key>IS_GCM_ENABLED</key>
-	<false/>
+	<true></true>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:732132166753:ios:1e30b029ad6db4db38ae20</string>
+	<string>1:732132166753:ios:95bb2b232180290938ae20</string>
 </dict>
 </plist>
