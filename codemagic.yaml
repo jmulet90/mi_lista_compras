@@ -40,7 +40,6 @@ workflows:
           ")
           xcrun simctl install "$DEVICE_ID" build/ios/iphonesimulator/Runner.app
       - name: Lanzar app y capturar logs
-        timeout: 120
         script: |
           DEVICE_ID=$(xcrun simctl list devices booted -j | python3 -c "
           import sys, json
