@@ -56,6 +56,19 @@ class PremiumRemoteDataSource {
     });
   }
 
+  /// Verifica si un email tiene premium en Firestore (lectura única).
+  Future<bool> checkPremium(String email) async {
+    try {
+      final doc = await _db
+          .collection('premium_users')
+          .doc(docId(email))
+          .get();
+      return doc.exists && _grantedFrom(doc.data());
+    } catch (_) {
+      return false;
+    }
+  }
+
   void dispose() {
     _sub?.cancel();
     _sub = null;
