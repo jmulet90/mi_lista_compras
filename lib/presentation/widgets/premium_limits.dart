@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/di.dart';
 import '../../domain/repositories/category_repository.dart';
+import '../../data/datasources/premium_remote_data_source.dart';
+import '../../domain/repositories/collaborator_repository.dart';
 import '../../domain/repositories/premium_repository.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../localization/app_localizations.dart';
@@ -19,6 +21,18 @@ class PremiumLimits {
 
   static bool get isPremium => sl<PremiumRepository>().current().isPremium;
 
+  /// Premium directo o colaborador de un owner premium.
+  static Future<bool> isPremiumEffective() async {
+    if (isPremium) return true;
+    try {
+      final access = await sl<CollaboratorRepository>().resolveMyAccess();
+      if (access == null || access.isOwner) return false;
+      return await sl<PremiumRemoteDataSource>().checkPremium(access.ownerEmail);
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<bool> _gate(
     BuildContext context,
     String? reason,
@@ -30,7 +44,7 @@ class PremiumLimits {
   /// Verifica si puede crearse una categoría más; si se alcanzó el tope
   /// gratuito muestra el paywall y devuelve false.
   static Future<bool> canAddCategory(BuildContext context) async {
-    if (isPremium) return true;
+    if (await isPremiumEffective()) return true;
     final t = AppLocalizations.of(context);
     final categories = await sl<CategoryRepository>().getAll();
     if (categories.length < maxFreeCategories) return true;
@@ -45,7 +59,7 @@ class PremiumLimits {
     BuildContext context,
     String categoryKey,
   ) async {
-    if (isPremium) return true;
+    if (await isPremiumEffective()) return true;
     final t = AppLocalizations.of(context);
     final normalized = categoryKey.trim().toLowerCase();
     final products = await sl<ProductRepository>().getAll();
@@ -58,24 +72,27 @@ class PremiumLimits {
     return false;
   }
 
-  /// Gestión e invitación de colaboradores (solo premium).
-  static Future<bool> canManageCollaborators(BuildContext context) =>
-      isPremium ? Future.value(true) : _gate(
-        context,
-        AppLocalizations.of(context).premiumLimitCollaborators,
-      );
+  /// Gestión e invitación de colaboradores (solo el owner con premium).
+  static Future<bool> canManageCollaborators(BuildContext context) async {
+    final access = await sl<CollaboratorRepository>().resolveMyAccess();
+    final isOwner = access == null || access.isOwner;
+    if (!isOwner) return _gate(context, null);
+    if (isPremium) return true;
+    return _gate(
+      context,
+      AppLocalizations.of(context).premiumLimitCollaborators,
+    );
+  }
 
   /// Funciones de apariencia exclusivas de premium (modo oscuro, galería).
-  static Future<bool> canUseAppearanceFeature(BuildContext context) =>
-      isPremium ? Future.value(true) : _gate(
-        context,
-        AppLocalizations.of(context).premiumFeatureExclusive,
-      );
+  static Future<bool> canUseAppearanceFeature(BuildContext context) async {
+    if (await isPremiumEffective()) return true;
+    return _gate(context, AppLocalizations.of(context).premiumFeatureExclusive);
+  }
 
   /// Cantidades y unidades en productos (solo premium).
-  static Future<bool> canUseQuantityFeature(BuildContext context) =>
-      isPremium ? Future.value(true) : _gate(
-        context,
-        AppLocalizations.of(context).premiumFeatureExclusive,
-      );
+  static Future<bool> canUseQuantityFeature(BuildContext context) async {
+    if (await isPremiumEffective()) return true;
+    return _gate(context, AppLocalizations.of(context).premiumFeatureExclusive);
+  }
 }

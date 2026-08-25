@@ -3,10 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/di.dart';
-import '../../domain/entities/premium_status.dart';
 import '../../domain/repositories/collaborator_repository.dart';
 import '../../domain/repositories/premium_repository.dart';
-import '../../domain/usecases/check_premium.dart';
 import '../app_settings.dart';
 import '../localization/app_localizations.dart';
 import '../screens/manage_collaborators_screen.dart';
@@ -21,8 +19,34 @@ class DrawerAccents {
   static const ink = Color(0xFF0F172A);
 }
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
+
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  bool _isOwner = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAccess();
+  }
+
+  Future<void> _loadAccess() async {
+    try {
+      final access = await sl<CollaboratorRepository>().resolveMyAccess();
+      if (mounted) {
+        setState(() {
+          _isOwner = access == null || access.isOwner;
+        });
+      }
+    } catch (_) {
+      // Default to showing everything on error.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,53 +160,54 @@ class AppDrawer extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Sección: colaboradores.
-              _GlassSection(
-                isDark: isDark,
-                children: [
-                  ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    leading: _iconChip(
-                        Icons.person_add_alt_outlined, DrawerAccents.emerald),
-                    title:
-                        Text(t.addCollaborator, style: _titleStyle(titleColor)),
-                    onTap: () async {
-                      if (!await PremiumLimits.canManageCollaborators(context)) {
-                        return;
-                      }
-                      if (!context.mounted) return;
-                      await _sendInvitation(context);
-                    },
-                  ),
-                  ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    leading: _iconChip(
-                        Icons.manage_accounts_outlined, DrawerAccents.emerald),
-                    title: Text(t.managePermissions,
-                        style: _titleStyle(titleColor)),
-                    subtitle: Text(
-                      t.managePermissionsSub,
-                      style: TextStyle(color: subColor, fontSize: 12.5),
+              // Sección: colaboradores (solo el owner).
+              if (_isOwner)
+                _GlassSection(
+                  isDark: isDark,
+                  children: [
+                    ListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      leading: _iconChip(
+                          Icons.person_add_alt_outlined, DrawerAccents.emerald),
+                      title:
+                          Text(t.addCollaborator, style: _titleStyle(titleColor)),
+                      onTap: () async {
+                        if (!await PremiumLimits.canManageCollaborators(context)) {
+                          return;
+                        }
+                        if (!context.mounted) return;
+                        await _sendInvitation(context);
+                      },
                     ),
-                    onTap: () async {
-                      if (!await PremiumLimits.canManageCollaborators(context)) {
-                        return;
-                      }
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ManageCollaboratorsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      leading: _iconChip(
+                          Icons.manage_accounts_outlined, DrawerAccents.emerald),
+                      title: Text(t.managePermissions,
+                          style: _titleStyle(titleColor)),
+                      subtitle: Text(
+                        t.managePermissionsSub,
+                        style: TextStyle(color: subColor, fontSize: 12.5),
+                      ),
+                      onTap: () async {
+                        if (!await PremiumLimits.canManageCollaborators(context)) {
+                          return;
+                        }
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ManageCollaboratorsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              if (_isOwner) const SizedBox(height: 12),
 
               // Sección: premium.
               _GlassSection(
@@ -425,69 +450,76 @@ class _GlassSection extends StatelessWidget {
   }
 }
 
-class _PremiumTile extends StatelessWidget {
+class _PremiumTile extends StatefulWidget {
   const _PremiumTile({required this.isDark});
 
   final bool isDark;
 
   @override
+  State<_PremiumTile> createState() => _PremiumTileState();
+}
+
+class _PremiumTileState extends State<_PremiumTile> {
+  bool _effectivePremium = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPremium();
+  }
+
+  Future<void> _checkPremium() async {
+    final effective = await PremiumLimits.isPremiumEffective();
+    if (mounted) setState(() => _effectivePremium = effective);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final isDark = widget.isDark;
 
-    return StreamBuilder<PremiumStatus>(
-      stream: sl<CheckPremiumUseCase>()(),
-      builder: (context, snapshot) {
-        final status =
-            snapshot.data ?? sl<PremiumRepository>().current();
-        debugPrint(
-          '[INFO] PremiumTile: isPremium=${status.isPremium} '
-          '(snapshot tiene datos: ${snapshot.hasData})',
-        );
-
-        if (status.isPremium) {
-          return ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-            leading: _chip(),
-            title: Text(
-              t.premiumTitle,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-                color: isDark ? Colors.grey.shade100 : DrawerAccents.ink,
-              ),
-            ),
-            trailing: const Icon(Icons.check_circle,
-                color: DrawerAccents.emerald),
-          );
-        }
-
-        return ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-          leading: _chip(),
-          title: Text(
-            t.premiumTitle,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-              color: isDark ? Colors.grey.shade100 : DrawerAccents.ink,
-            ),
+    if (_effectivePremium) {
+      return ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        leading: _chip(),
+        title: Text(
+          t.premiumTitle,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: isDark ? Colors.grey.shade100 : DrawerAccents.ink,
           ),
-          subtitle: Text(
-            status.priceText ?? t.premiumPriceFallback,
-            style: TextStyle(
-              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-              fontSize: 12.5,
-            ),
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => showPaywall(context),
-          onLongPress: kDebugMode
-              ? () => sl<PremiumRepository>().toggleDebugOverride()
-              : null,
-        );
-      },
+        ),
+        trailing: const Icon(Icons.check_circle,
+            color: DrawerAccents.emerald),
+      );
+    }
+
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      leading: _chip(),
+      title: Text(
+        t.premiumTitle,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+          color: isDark ? Colors.grey.shade100 : DrawerAccents.ink,
+        ),
+      ),
+      subtitle: Text(
+        sl<PremiumRepository>().current().priceText ?? t.premiumPriceFallback,
+        style: TextStyle(
+          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          fontSize: 12.5,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => showPaywall(context),
+      onLongPress: kDebugMode
+          ? () => sl<PremiumRepository>().toggleDebugOverride()
+          : null,
     );
   }
 
