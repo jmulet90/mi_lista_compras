@@ -19,7 +19,8 @@ import '../datasources/premium_remote_data_source.dart';
 /// - Además, acepta concesiones manuales por email desde Firestore
 ///   (`premium_users/{email}`), gestionadas desde la consola de Firebase.
 class PremiumRepositoryImpl implements PremiumRepository {
-  PremiumRepositoryImpl(this._billing, this._settingsBox, this._remote);
+  PremiumRepositoryImpl(this._billing, this._settingsBox, this._remote,
+      {this.onPremiumChanged});
 
   static const String _legacyPurchasedKey = 'premium_unlocked';
   static const String _legacyDebugKey = 'debug_premium_override';
@@ -29,6 +30,7 @@ class PremiumRepositoryImpl implements PremiumRepository {
   final BillingDataSource _billing;
   final Box<dynamic> _settingsBox;
   final PremiumRemoteDataSource _remote;
+  final void Function(bool isPremium)? onPremiumChanged;
 
   final _controller = StreamController<PremiumStatus>.broadcast();
 
@@ -69,8 +71,10 @@ class PremiumRepositoryImpl implements PremiumRepository {
       '[INFO] PremiumRepo emit: isPremium=${status.isPremium} '
       'cached=$_cachedFlag debug=$_debugOverride remote=$_remotePremium',
     );
+    final changed = _status.isPremium != status.isPremium;
     _status = status;
     _controller.add(status);
+    if (changed) onPremiumChanged?.call(status.isPremium);
   }
 
   @override
@@ -111,6 +115,9 @@ class PremiumRepositoryImpl implements PremiumRepository {
         ? false
         : (_settingsBox.get(_grantKey(user!.email!)) as bool? ?? false);
     _emit(PremiumStatus(isPremium: _isPremiumNow));
+
+    // Sincronizar premium con documentos de colaboradores al iniciar sesion.
+    onPremiumChanged?.call(_isPremiumNow);
 
     _remote.watch(email: user?.email, onChanged: (granted) async {
       debugPrint(

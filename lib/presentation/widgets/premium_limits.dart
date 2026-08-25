@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/di.dart';
 import '../../domain/repositories/category_repository.dart';
-import '../../data/datasources/premium_remote_data_source.dart';
 import '../../domain/repositories/collaborator_repository.dart';
 import '../../domain/repositories/premium_repository.dart';
 import '../../domain/repositories/product_repository.dart';
@@ -27,7 +26,7 @@ class PremiumLimits {
     try {
       final access = await sl<CollaboratorRepository>().resolveMyAccess();
       if (access == null || access.isOwner) return false;
-      return await sl<PremiumRemoteDataSource>().checkPremium(access.ownerEmail);
+      return access.ownerPremium;
     } catch (_) {
       return false;
     }

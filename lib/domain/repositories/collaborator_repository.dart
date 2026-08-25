@@ -26,4 +26,7 @@ abstract class CollaboratorRepository {
     required String docId,
     required String collaboratorEmail,
   });
+
+  /// Propaga el estado premium del owner a todos sus colaboradores.
+  Future<void> syncOwnerPremium({required bool isPremium});
 }

@@ -23,7 +23,7 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
       return _cachedAccess;
     }
 
-    try {
+      try {
       final data = await _remote.fetchCollaboratorDoc(email);
       if (data == null || (data['ownerEmail'] as String? ?? '').isEmpty) {
         _cachedAccess = AccessContext(ownerEmail: email);
@@ -31,6 +31,7 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
         _cachedAccess = AccessContext(
           ownerEmail: data['ownerEmail'] as String,
           role: data['permissionRole'] as String? ?? 'read',
+          ownerPremium: data['ownerPremium'] as bool? ?? false,
         );
       }
       _cachedForEmail = email;
@@ -90,5 +91,12 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
       docId: docId,
       collaboratorEmail: collaboratorEmail,
     );
+  }
+
+  @override
+  Future<void> syncOwnerPremium({required bool isPremium}) async {
+    final email = _remote.currentUserEmail;
+    if (email == null) return;
+    await _remote.syncOwnerPremium(ownerEmail: email, isPremium: isPremium);
   }
 }

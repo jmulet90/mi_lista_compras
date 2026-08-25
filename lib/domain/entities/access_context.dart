@@ -2,12 +2,19 @@
 ///
 /// [role] es null cuando el usuario es el dueño de los datos.
 class AccessContext {
-  const AccessContext({required this.ownerEmail, this.role});
+  const AccessContext({
+    required this.ownerEmail,
+    this.role,
+    this.ownerPremium = false,
+  });
 
   final String ownerEmail;
 
   /// `full`, `dynamic` o `read` para colaboradores; null para el dueño.
   final String? role;
+
+  /// true si el owner tiene premium (escrito en el doc del colaborador).
+  final bool ownerPremium;
 
   bool get isOwner => role == null;
 

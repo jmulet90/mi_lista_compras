@@ -122,6 +122,9 @@ Future<void> bootstrap() async {
       sl<BillingDataSource>(),
       initializer.settings,
       sl<PremiumRemoteDataSource>(),
+      onPremiumChanged: (isPremium) {
+        sl<CollaboratorRepository>().syncOwnerPremium(isPremium: isPremium);
+      },
     ),
   );
   sl.registerLazySingleton(() => CheckPremiumUseCase(sl<PremiumRepository>()));

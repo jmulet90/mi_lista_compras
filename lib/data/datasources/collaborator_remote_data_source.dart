@@ -127,6 +127,27 @@ class CollaboratorRemoteDataSource {
     }
   }
 
+  /// Actualiza el campo `ownerPremium` en todos los docs de colaboradores
+  /// del owner dado. Se llama cuando el premium del owner cambia.
+  Future<void> syncOwnerPremium({
+    required String ownerEmail,
+    required bool isPremium,
+  }) async {
+    try {
+      final snapshot = await _db
+          .collection('collaborators')
+          .where('ownerEmail', isEqualTo: ownerEmail)
+          .get();
+      final batch = _db.batch();
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {'ownerPremium': isPremium});
+      }
+      await batch.commit();
+    } catch (e) {
+      // Silently fail - collaborators will get stale premium status.
+    }
+  }
+
   Collaborator toCollaborator(String docId, Map<String, dynamic> data) {
     return Collaborator(
       docId: docId,
