@@ -177,8 +177,11 @@ void _watchAuthState(AppInitializer initializer) {
 
       // Foto completa de la nube para esta cuenta...
       await _startSync(fullRefresh: true);
-      // ...y valores por defecto solo si no tenía nada guardado.
-      await initializer.seedIfEmpty();
+      // Solo sembrar por defecto para el dueño; el colaborador solo
+      // debe ver lo que el dueño tiene en la nube.
+      if (access != null && access.isOwner) {
+        await initializer.seedIfEmpty();
+      }
     } catch (e, st) {
       CrashOverlay.logError('Error al cambiar de cuenta', e, st);
       const AppLogger().error('Error al cambiar de cuenta', e);
@@ -187,8 +190,6 @@ void _watchAuthState(AppInitializer initializer) {
 }
 
 /// Arranca la sincronización bidireccional (reiniciable por cuenta).
-Future<void> startSync() => _startSync();
-
 Future<void> _startSync({bool fullRefresh = false}) async {
   await sl<ProductRepository>().startRemoteSync(fullRefresh: fullRefresh);
   await sl<CategoryRepository>().startRemoteSync(fullRefresh: fullRefresh);

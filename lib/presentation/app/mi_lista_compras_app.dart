@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../core/bootstrap.dart';
 import '../../core/di.dart';
 import '../../data/bootstrap/app_initializer.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -24,7 +23,6 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
   final AuthRepository _authRepository = sl<AuthRepository>();
 
   late final _authChangesStream = _authRepository.authStateChanges();
-  String? _lastSyncedUid;
 
   @override
   void initState() {
@@ -122,14 +120,8 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
                   );
                 }
                 if (snapshot.hasData && snapshot.data != null) {
-                  final uid = snapshot.data!.uid;
-                  if (uid != _lastSyncedUid) {
-                    _lastSyncedUid = uid;
-                    startSync();
-                  }
                   return const MainNavigatorScreen();
                 }
-                _lastSyncedUid = null;
                 return const LoginScreen();
               },
             ),
