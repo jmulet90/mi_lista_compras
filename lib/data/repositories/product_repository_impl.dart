@@ -68,7 +68,10 @@ class ProductRepositoryImpl implements ProductRepository {
 
             // 1. Resolve tombstones: delete from Firestore any product
             //    the user intentionally removed, then clear the tombstone.
+            //    Track which keys were tombstoned so the merge skips them.
+            final tombstonedKeys = <String>{};
             for (final key in _deletedKeys.values.toList()) {
+              tombstonedKeys.add(key);
               if (remoteKeys.contains(key)) {
                 await _remote.deleteDoc(
                     ownerEmail: access.ownerEmail, id: key);
@@ -77,14 +80,14 @@ class ProductRepositoryImpl implements ProductRepository {
             }
 
             // 2. Merge: add remote products that are missing locally
-            //    (added on another device). Do NOT remove local-only
-            //    products — they were created offline or are pending push.
+            //    (added on another device). Do NOT import products that
+            //    were intentionally deleted (in tombstonedKeys).
             final localKeys = {
               for (final m in _local.getAll()) m.nameKey.trim()
             };
             for (final remote in remoteProducts) {
               final key = remote.nameKey.trim();
-              if (!localKeys.contains(key)) {
+              if (!localKeys.contains(key) && !tombstonedKeys.contains(key)) {
                 await _local.put(remote, key: key);
               }
             }

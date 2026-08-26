@@ -109,7 +109,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
 
             // 1. Resolve tombstones: delete from Firestore any category
             //    the user intentionally removed, then clear the tombstone.
+            final tombstonedKeys = <String>{};
             for (final key in _deletedKeys.values.toList()) {
+              tombstonedKeys.add(key);
               if (remoteKeys.contains(key)) {
                 await _remote.deleteDoc(
                     ownerEmail: access.ownerEmail, key: key);
@@ -117,13 +119,14 @@ class CategoryRepositoryImpl implements CategoryRepository {
               await _deletedKeys.delete(key);
             }
 
-            // 2. Merge: add remote categories missing locally.
+            // 2. Merge: add remote categories missing locally
+            //    (but not ones the user intentionally deleted).
             final localKeys = {
               for (final c in _local.getAll()) c.key.trim()
             };
             for (final remote in remoteCategories) {
               final key = remote.key.trim();
-              if (!localKeys.contains(key)) {
+              if (!localKeys.contains(key) && !tombstonedKeys.contains(key)) {
                 await _local.add(remote);
               }
             }
