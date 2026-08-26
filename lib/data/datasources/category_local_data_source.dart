@@ -39,6 +39,7 @@ class CategoryLocalDataSource {
   /// Reemplaza por completo el contenido local con [models]
   /// (usado cuando un colaborador recibe la foto inicial del dueño).
   Future<void> replaceAll(List<CategoryModel> models) async {
+    if (models.isEmpty) return;
     final map = <String, CategoryModel>{
       for (final model in models) model.key: model,
     };

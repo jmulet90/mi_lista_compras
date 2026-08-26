@@ -24,6 +24,7 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
   final AuthRepository _authRepository = sl<AuthRepository>();
 
   late final _authChangesStream = _authRepository.authStateChanges();
+  String? _lastSyncedUid;
 
   @override
   void initState() {
@@ -121,10 +122,14 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
                   );
                 }
                 if (snapshot.hasData && snapshot.data != null) {
-                  // Iniciamos la sincronización al autenticar
-                  startSync();
+                  final uid = snapshot.data!.uid;
+                  if (uid != _lastSyncedUid) {
+                    _lastSyncedUid = uid;
+                    startSync();
+                  }
                   return const MainNavigatorScreen();
                 }
+                _lastSyncedUid = null;
                 return const LoginScreen();
               },
             ),

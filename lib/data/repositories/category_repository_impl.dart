@@ -25,6 +25,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
   final AppLogger _logger;
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _syncSub;
+  bool _syncing = false;
 
   @override
   Stream<List<CategoryItem>> watchAll() {
@@ -83,28 +84,34 @@ class CategoryRepositoryImpl implements CategoryRepository {
 
   @override
   Future<void> startRemoteSync({bool fullRefresh = false}) async {
-    await _syncSub?.cancel();
-    _syncSub = null;
+    if (_syncing) return;
+    _syncing = true;
+    try {
+      await _syncSub?.cancel();
+      _syncSub = null;
 
-    final access = await _collaboratorRepository.resolveMyAccess();
-    if (access == null) return;
+      final access = await _collaboratorRepository.resolveMyAccess();
+      if (access == null) return;
 
-    // Foto completa del estado remoto al entrar como colaborador o tras un
-    // cambio de cuenta: evita mezclar datos locales del usuario anterior.
-    if (!access.isOwner || fullRefresh) {
-      try {
-        final remoteCategories = await _remote.fetchAll(access.ownerEmail);
-        await _local.replaceAll(remoteCategories);
-      } catch (e) {
-        _logger.error('Error trayendo foto inicial de categorías', e);
+      // Foto completa del estado remoto al entrar como colaborador o tras un
+      // cambio de cuenta: evita mezclar datos locales del usuario anterior.
+      if (!access.isOwner || fullRefresh) {
+        try {
+          final remoteCategories = await _remote.fetchAll(access.ownerEmail);
+          await _local.replaceAll(remoteCategories);
+        } catch (e) {
+          _logger.error('Error trayendo foto inicial de categorías', e);
+        }
       }
-    }
 
-    _syncSub = _remote
-        .watchCategories(access.ownerEmail)
-        .listen(_applyRemoteChanges, onError: (Object e) {
-      _logger.error('Error escuchando cambios remotos de categorías', e);
-    });
+      _syncSub = _remote
+          .watchCategories(access.ownerEmail)
+          .listen(_applyRemoteChanges, onError: (Object e) {
+        _logger.error('Error escuchando cambios remotos de categorías', e);
+      });
+    } finally {
+      _syncing = false;
+    }
   }
 
   void _applyRemoteChanges(QuerySnapshot<Map<String, dynamic>> snapshot) {

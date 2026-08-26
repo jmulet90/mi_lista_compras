@@ -34,6 +34,7 @@ class ProductLocalDataSource {
   /// Reemplaza por completo el contenido local con [models]
   /// (usado cuando un colaborador recibe la foto inicial del dueño).
   Future<void> replaceAll(List<ProductModel> models) async {
+    if (models.isEmpty) return;
     final map = <String, ProductModel>{
       for (final model in models) model.nameKey.trim(): model,
     };

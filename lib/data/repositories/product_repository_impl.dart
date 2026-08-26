@@ -37,39 +37,46 @@ class ProductRepositoryImpl implements ProductRepository {
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _syncSub;
   Timer? _imageRetryTimer;
   String? _activeOwnerEmail;
+  bool _syncing = false;
 
   @override
   Future<void> startRemoteSync({bool fullRefresh = false}) async {
-    await _syncSub?.cancel();
-    _syncSub = null;
-    _imageRetryTimer?.cancel();
-    _imageRetryTimer = null;
+    if (_syncing) return;
+    _syncing = true;
+    try {
+      await _syncSub?.cancel();
+      _syncSub = null;
+      _imageRetryTimer?.cancel();
+      _imageRetryTimer = null;
 
-    final access = await _collaboratorRepository.resolveMyAccess();
-    if (access == null) return;
+      final access = await _collaboratorRepository.resolveMyAccess();
+      if (access == null) return;
 
-    _activeOwnerEmail = access.ownerEmail;
+      _activeOwnerEmail = access.ownerEmail;
 
-    // Foto completa del estado remoto al entrar como colaborador o tras un
-    // cambio de cuenta: evita mezclar datos locales del usuario anterior.
-    if (!access.isOwner || fullRefresh) {
-      try {
-        final remoteProducts = await _remote.fetchAll(access.ownerEmail);
-        await _local.replaceAll(remoteProducts);
-      } catch (e) {
-        _logger.error('Error trayendo foto inicial de productos', e);
+      // Foto completa del estado remoto al entrar como colaborador o tras un
+      // cambio de cuenta: evita mezclar datos locales del usuario anterior.
+      if (!access.isOwner || fullRefresh) {
+        try {
+          final remoteProducts = await _remote.fetchAll(access.ownerEmail);
+          await _local.replaceAll(remoteProducts);
+        } catch (e) {
+          _logger.error('Error trayendo foto inicial de productos', e);
+        }
       }
+
+      // Descarga las fotos que faltan en disco (primer arranque de un
+      // colaborador o imágenes pendientes de reintentos anteriores).
+      unawaited(_hydrateMissingImages(access.ownerEmail));
+
+      _syncSub = _remote
+          .watchProducts(access.ownerEmail)
+          .listen(_applyRemoteChanges, onError: (Object e) {
+        _logger.error('Error escuchando cambios remotos de productos', e);
+      });
+    } finally {
+      _syncing = false;
     }
-
-    // Descarga las fotos que faltan en disco (primer arranque de un
-    // colaborador o imágenes pendientes de reintentos anteriores).
-    unawaited(_hydrateMissingImages(access.ownerEmail));
-
-    _syncSub = _remote
-        .watchProducts(access.ownerEmail)
-        .listen(_applyRemoteChanges, onError: (Object e) {
-      _logger.error('Error escuchando cambios remotos de productos', e);
-    });
   }
 
   Future<void> _applyRemoteChanges(
