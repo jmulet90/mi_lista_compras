@@ -430,7 +430,7 @@ class _InlineQtyUnitState extends State<_InlineQtyUnit> {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final textSub = dark ? Colors.grey.shade400 : Colors.grey.shade600;
-    final showQty = _qty != null && PremiumLimits.isPremium;
+    final showQty = _qty != null && PremiumLimits.isPremiumEffectiveSync;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

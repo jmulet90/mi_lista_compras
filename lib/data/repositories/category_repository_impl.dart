@@ -120,14 +120,18 @@ class CategoryRepositoryImpl implements CategoryRepository {
   Future<void> _pushLocalCategoriesToCloud(String ownerEmail) async {
     try {
       final localCategories = _local.getAll();
+      _logger.info('[pushCategories] count=${localCategories.length} owner=$ownerEmail');
       for (final category in localCategories) {
+        _logger.info('[pushCategories] uploading: ${category.key}');
         await _remote.upload(
           ownerEmail: ownerEmail,
           category: category,
         );
+        _logger.info('[pushCategories] uploaded: ${category.key}');
       }
+      _logger.info('[pushCategories] ALL DONE');
     } catch (e) {
-      _logger.error('Error subiendo categorías locales a la nube', e);
+      _logger.error('[pushCategories] ERROR', e);
     }
   }
 

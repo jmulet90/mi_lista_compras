@@ -20,6 +20,19 @@ class PremiumLimits {
 
   static bool get isPremium => sl<PremiumRepository>().current().isPremium;
 
+  /// Premium directo o colaborador de un owner premium (síncrono).
+  /// Usa el caché de acceso ya resuelto.
+  static bool get isPremiumEffectiveSync {
+    if (isPremium) return true;
+    try {
+      final access = sl<CollaboratorRepository>().currentAccess;
+      if (access == null || access.isOwner) return false;
+      return access.ownerPremium;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Premium directo o colaborador de un owner premium.
   static Future<bool> isPremiumEffective() async {
     if (isPremium) return true;

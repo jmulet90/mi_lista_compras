@@ -178,13 +178,16 @@ void _watchAuthState(AppInitializer initializer) {
 
       if (owner == null) return;
 
+      // Sembrar por defecto ANTES del sync para que el owner tenga
+      // datos locales que subir a Firestore.
+      if (access != null && access.isOwner) {
+        CrashOverlay.log('[_watchAuth] Seeding defaults for owner...');
+        await initializer.seedIfEmpty();
+        CrashOverlay.log('[_watchAuth] Seed done');
+      }
+
       // Foto completa de la nube para esta cuenta...
       await _startSync(fullRefresh: true);
-      // Solo sembrar por defecto para el dueño; el colaborador solo
-      // debe ver lo que el dueño tiene en la nube.
-      if (access != null && access.isOwner) {
-        await initializer.seedIfEmpty();
-      }
     } catch (e, st) {
       CrashOverlay.logError('Error al cambiar de cuenta', e, st);
       const AppLogger().error('Error al cambiar de cuenta', e);
@@ -196,7 +199,9 @@ void _watchAuthState(AppInitializer initializer) {
 Future<void> _startSync({bool fullRefresh = false}) async {
   sl<CollaboratorRepository>().invalidateAccessCache();
   final access = await sl<CollaboratorRepository>().resolveMyAccess();
+  CrashOverlay.log('[_startSync] access=${access != null ? "owner=${access.ownerEmail} isOwner=${access.isOwner}" : "NULL"}');
   await sl<ProductRepository>().startRemoteSync(fullRefresh: fullRefresh);
   await sl<CategoryRepository>().startRemoteSync(fullRefresh: fullRefresh);
   _syncRunning = true;
+  CrashOverlay.log('[_startSync] DONE');
 }

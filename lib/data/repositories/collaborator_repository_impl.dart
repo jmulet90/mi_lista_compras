@@ -94,6 +94,9 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
   }
 
   @override
+  AccessContext? get currentAccess => _cachedAccess;
+
+  @override
   void invalidateAccessCache() {
     _cachedAccess = null;
     _cachedForEmail = null;
