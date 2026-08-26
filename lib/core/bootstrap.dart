@@ -194,6 +194,8 @@ void _watchAuthState(AppInitializer initializer) {
 
 /// Arranca la sincronización bidireccional (reiniciable por cuenta).
 Future<void> _startSync({bool fullRefresh = false}) async {
+  sl<CollaboratorRepository>().invalidateAccessCache();
+  final access = await sl<CollaboratorRepository>().resolveMyAccess();
   await sl<ProductRepository>().startRemoteSync(fullRefresh: fullRefresh);
   await sl<CategoryRepository>().startRemoteSync(fullRefresh: fullRefresh);
   _syncRunning = true;

@@ -94,6 +94,12 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
   }
 
   @override
+  void invalidateAccessCache() {
+    _cachedAccess = null;
+    _cachedForEmail = null;
+  }
+
+  @override
   Future<void> syncOwnerPremium({required bool isPremium}) async {
     final email = _remote.currentUserEmail;
     if (email == null) return;

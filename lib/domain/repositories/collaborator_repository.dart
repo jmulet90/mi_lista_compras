@@ -29,4 +29,7 @@ abstract class CollaboratorRepository {
 
   /// Propaga el estado premium del owner a todos sus colaboradores.
   Future<void> syncOwnerPremium({required bool isPremium});
+
+  /// Invalida el cache de acceso para forzar re-lectura de Firestore.
+  void invalidateAccessCache();
 }

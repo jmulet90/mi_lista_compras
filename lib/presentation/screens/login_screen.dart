@@ -215,8 +215,11 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         );
       },
-    );
-    controller.dispose();
+    ).then((_) {
+      try {
+        controller.dispose();
+      } catch (_) {}
+    });
   }
 
   Future<void> _signInWithGoogle() async {

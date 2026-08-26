@@ -116,9 +116,6 @@ class PremiumRepositoryImpl implements PremiumRepository {
         : (_settingsBox.get(_grantKey(user!.email!)) as bool? ?? false);
     _emit(PremiumStatus(isPremium: _isPremiumNow));
 
-    // Sincronizar premium con documentos de colaboradores al iniciar sesion.
-    onPremiumChanged?.call(_isPremiumNow);
-
     _remote.watch(email: user?.email, onChanged: (granted) async {
       debugPrint(
         '[INFO] Premium cb: granted=$granted cuenta=$_accountKey '
