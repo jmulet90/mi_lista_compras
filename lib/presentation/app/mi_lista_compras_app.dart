@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -23,8 +24,6 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
   final AuthRepository _authRepository = sl<AuthRepository>();
 
   late final _authChangesStream = _authRepository.authStateChanges();
-
-  bool _authResolved = false;
 
   @override
   void initState() {
@@ -121,14 +120,10 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
                     body: Center(child: CircularProgressIndicator()),
                   );
                 }
-                if (snapshot.hasData && snapshot.data != null) {
-                  _authResolved = true;
+                final streamUser = snapshot.data;
+                final syncUser = FirebaseAuth.instance.currentUser;
+                if (streamUser != null || syncUser != null) {
                   return const MainNavigatorScreen();
-                }
-                if (!_authResolved) {
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
                 }
                 return const LoginScreen();
               },

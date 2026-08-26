@@ -102,9 +102,21 @@ class PremiumLimits {
     return _gate(context, AppLocalizations.of(context).premiumFeatureExclusive);
   }
 
-  /// Cantidades y unidades en productos (solo premium).
+  /// Cantidades y unidades en productos: owner y Control Total.
+  static bool get canAccessQuantity {
+    if (isPremium) return true;
+    try {
+      final access = sl<CollaboratorRepository>().currentAccess;
+      if (access == null) return false;
+      return access.canFullyEdit;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Cantidades y unidades en productos (solo premium / Control Total).
   static Future<bool> canUseQuantityFeature(BuildContext context) async {
-    if (await isPremiumEffective()) return true;
+    if (canAccessQuantity) return true;
     return _gate(context, AppLocalizations.of(context).premiumFeatureExclusive);
   }
 }
