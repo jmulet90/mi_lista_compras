@@ -1,12 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di.dart';
 import '../../data/bootstrap/app_initializer.dart';
-import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../app_settings.dart';
 import '../localization/app_localizations.dart';
@@ -24,18 +21,6 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
   late final ValueNotifier<AppSettingsData> _settingsNotifier;
 
   final AuthRepository _authRepository = sl<AuthRepository>();
-
-  late final Stream<AuthUser?> _authChangesStream =
-      _authRepository.authStateChanges();
-
-  /// Espera a que Firebase Auth emita el primer estado definitivo.
-  /// Si el stream emite null (sesión no restaurada aún), usa currentUser
-  /// como fallback. Solo devuelve null si ambos confirman sin sesión.
-  Future<AuthUser?> _waitForAuthState() async {
-    final syncUser = _authRepository.currentUser;
-    if (syncUser != null) return syncUser;
-    return _authChangesStream.first;
-  }
 
   @override
   void initState() {
@@ -75,7 +60,7 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
     } catch (_) {}
   }
 
-  static const Color _seedColor = Color(0xFF059669); // Esmeralda
+  static const Color _seedColor = Color(0xFF059669);
 
   ThemeData _buildTheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
@@ -124,19 +109,22 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
             theme: _buildTheme(Brightness.light),
             darkTheme: _buildTheme(Brightness.dark),
             themeMode: settings.themeMode,
-            home: FutureBuilder<AuthUser?>(
-              future: _waitForAuthState(),
+            home: StreamBuilder(
+              stream: _authRepository.authStateChanges(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
+                final streamUser = snapshot.data;
+                final syncUser = _authRepository.currentUser;
+
+                if (streamUser == null && syncUser == null) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  return const LoginScreen();
                 }
-                final authUser = snapshot.data;
-                if (authUser != null) {
-                  return const MainNavigatorScreen();
-                }
-                return const LoginScreen();
+
+                return const MainNavigatorScreen();
               },
             ),
           );

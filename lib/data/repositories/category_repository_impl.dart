@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../core/failures.dart';
 import '../../core/logger.dart';
@@ -16,12 +17,14 @@ class CategoryRepositoryImpl implements CategoryRepository {
     required this._local,
     required this._remote,
     required this._collaboratorRepository,
+    required Box<String> deletedKeys,
     this._logger = const AppLogger(),
-  });
+  }) : _deletedKeys = deletedKeys;
 
   final CategoryLocalDataSource _local;
   final CategoryRemoteDataSource _remote;
   final CollaboratorRepository _collaboratorRepository;
+  final Box<String> _deletedKeys;
   final AppLogger _logger;
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _syncSub;
@@ -74,6 +77,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
 
   @override
   Future<void> delete(String key) async {
+    // Record tombstone so sync doesn't resurrect this category.
+    await _deletedKeys.put(key, key);
+
     try {
       await _local.delete(key);
     } catch (e) {
@@ -97,14 +103,45 @@ class CategoryRepositoryImpl implements CategoryRepository {
         if (fullRefresh) {
           try {
             final remoteCategories = await _remote.fetchAll(access.ownerEmail);
-            if (remoteCategories.isNotEmpty) {
-              await _local.replaceAll(remoteCategories);
+            final remoteKeys = {
+              for (final c in remoteCategories) c.key.trim()
+            };
+
+            // 1. Resolve tombstones: delete from Firestore any category
+            //    the user intentionally removed, then clear the tombstone.
+            for (final key in _deletedKeys.values.toList()) {
+              if (remoteKeys.contains(key)) {
+                await _remote.deleteDoc(
+                    ownerEmail: access.ownerEmail, key: key);
+              }
+              await _deletedKeys.delete(key);
+            }
+
+            // 2. Merge: add remote categories missing locally.
+            final localKeys = {
+              for (final c in _local.getAll()) c.key.trim()
+            };
+            for (final remote in remoteCategories) {
+              final key = remote.key.trim();
+              if (!localKeys.contains(key)) {
+                await _local.add(remote);
+              }
+            }
+
+            // 3. Push local-only categories to remote.
+            final localCategories = _local.getAll();
+            for (final cat in localCategories) {
+              if (!remoteKeys.contains(cat.key.trim())) {
+                await _remote.upload(
+                    ownerEmail: access.ownerEmail, category: cat);
+              }
             }
           } catch (e) {
             _logger.error('Error trayendo categorías remotas del owner', e);
           }
+        } else {
+          await _pushLocalCategoriesToCloud(access.ownerEmail);
         }
-        await _pushLocalCategoriesToCloud(access.ownerEmail);
       } else if (fullRefresh) {
         try {
           final remoteCategories = await _remote.fetchAll(access.ownerEmail);
@@ -189,6 +226,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
     try {
       final access = await _collaboratorRepository.resolveMyAccess();
       if (access == null || !access.canFullyEdit) return;
+      await _deletedKeys.put(key, key);
       await _remote.deleteDoc(ownerEmail: access.ownerEmail, key: key);
     } catch (e) {
       _logger.error('Error al eliminar categoría en la nube', e);

@@ -83,11 +83,13 @@ Future<void> bootstrap() async {
         local: productLocal,
         remote: sl<ProductRemoteDataSource>(),
         collaboratorRepository: collaboratorRepository,
+        deletedKeys: initializer.deletedProductKeys,
       ));
   sl.registerLazySingleton<CategoryRepository>(() => CategoryRepositoryImpl(
         local: categoryLocal,
         remote: sl<CategoryRemoteDataSource>(),
         collaboratorRepository: collaboratorRepository,
+        deletedKeys: initializer.deletedCategoryKeys,
       ));
 
   sl.registerLazySingleton(() => AccessGuard(collaboratorRepository));
@@ -181,13 +183,6 @@ void _watchAuthState(AppInitializer initializer) {
 
       // Foto completa de la nube para esta cuenta...
       await _startSync(fullRefresh: true);
-
-      // Sembrar por defecto solo si Hive sigue vacío (primer arranque
-      // y la nube también está vacía). Si _startSync trajo datos reales,
-      // seedIfEmpty no añade nada.
-      if (access != null && access.isOwner) {
-        await initializer.seedIfEmpty();
-      }
     } catch (e, st) {
       CrashOverlay.logError('Error al cambiar de cuenta', e, st);
       const AppLogger().error('Error al cambiar de cuenta', e);

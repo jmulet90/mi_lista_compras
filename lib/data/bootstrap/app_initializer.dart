@@ -15,12 +15,16 @@ class AppInitializer {
   AppInitializer({this.logger = const AppLogger()});
 
   static const String settingsBoxName = 'settingsBox';
+  static const String deletedProductsBoxName = 'deletedProductKeys';
+  static const String deletedCategoriesBoxName = 'deletedCategoryKeys';
 
   final AppLogger logger;
 
   late final CategoryLocalDataSource categories;
   late final ProductLocalDataSource products;
   late final Box<dynamic> settings;
+  late final Box<String> deletedProductKeys;
+  late final Box<String> deletedCategoryKeys;
 
   /// Claves canónicas actuales de la app (deben coincidir con las semillas).
   static const List<String> _canonicalCategories = [
@@ -113,6 +117,8 @@ class AppInitializer {
       Hive.box<ProductModel>(ProductLocalDataSource.boxName),
     );
     settings = Hive.box(settingsBoxName);
+    deletedProductKeys = Hive.box(deletedProductsBoxName);
+    deletedCategoryKeys = Hive.box(deletedCategoriesBoxName);
 
     CrashOverlay.log('Running product key normalization...');
     _normalizeProductKeys();
@@ -166,6 +172,8 @@ class AppInitializer {
     await Hive.openBox<CategoryModel>(CategoryLocalDataSource.boxName);
     await Hive.openBox<ProductModel>(ProductLocalDataSource.boxName);
     await Hive.openBox<dynamic>(settingsBoxName);
+    await Hive.openBox<String>(deletedProductsBoxName);
+    await Hive.openBox<String>(deletedCategoriesBoxName);
     CrashOverlay.log('All Hive boxes opened successfully');
   }
 

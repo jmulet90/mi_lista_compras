@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../core/failures.dart';
 import '../../core/logger.dart';
@@ -23,15 +24,18 @@ class ProductRepositoryImpl implements ProductRepository {
     required ProductLocalDataSource local,
     required ProductRemoteDataSource remote,
     required CollaboratorRepository collaboratorRepository,
+    required Box<String> deletedKeys,
     AppLogger logger = const AppLogger(),
   })  : _local = local,
         _remote = remote,
         _collaboratorRepository = collaboratorRepository,
+        _deletedKeys = deletedKeys,
         _logger = logger;
 
   final ProductLocalDataSource _local;
   final ProductRemoteDataSource _remote;
   final CollaboratorRepository _collaboratorRepository;
+  final Box<String> _deletedKeys;
   final AppLogger _logger;
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _syncSub;
@@ -58,14 +62,47 @@ class ProductRepositoryImpl implements ProductRepository {
         if (fullRefresh) {
           try {
             final remoteProducts = await _remote.fetchAll(access.ownerEmail);
-            if (remoteProducts.isNotEmpty) {
-              await _local.replaceAll(remoteProducts);
+            final remoteKeys = {
+              for (final p in remoteProducts) p.nameKey.trim()
+            };
+
+            // 1. Resolve tombstones: delete from Firestore any product
+            //    the user intentionally removed, then clear the tombstone.
+            for (final key in _deletedKeys.values.toList()) {
+              if (remoteKeys.contains(key)) {
+                await _remote.deleteDoc(
+                    ownerEmail: access.ownerEmail, id: key);
+              }
+              await _deletedKeys.delete(key);
+            }
+
+            // 2. Merge: add remote products that are missing locally
+            //    (added on another device). Do NOT remove local-only
+            //    products — they were created offline or are pending push.
+            final localKeys = {
+              for (final m in _local.getAll()) m.nameKey.trim()
+            };
+            for (final remote in remoteProducts) {
+              final key = remote.nameKey.trim();
+              if (!localKeys.contains(key)) {
+                await _local.put(remote, key: key);
+              }
+            }
+
+            // 3. Push local-only products to remote (created offline).
+            final localProducts = _local.getAll();
+            for (final model in localProducts) {
+              if (!remoteKeys.contains(model.nameKey.trim())) {
+                await _remote.upload(
+                    ownerEmail: access.ownerEmail, data: model.toMap());
+              }
             }
           } catch (e) {
             _logger.error('Error trayendo productos remotos del owner', e);
           }
+        } else {
+          await _pushLocalProductsToCloud(access.ownerEmail);
         }
-        await _pushLocalProductsToCloud(access.ownerEmail);
       } else if (fullRefresh) {
         try {
           final remoteProducts = await _remote.fetchAll(access.ownerEmail);
@@ -276,6 +313,9 @@ class ProductRepositoryImpl implements ProductRepository {
     final existing = _local.getByKey(docId);
     final imageId = existing?.imageId;
 
+    // Record tombstone so sync doesn't resurrect this product.
+    await _deletedKeys.put(docId, docId);
+
     try {
       await _local.deleteByKey(docId);
     } catch (e) {
@@ -284,7 +324,7 @@ class ProductRepositoryImpl implements ProductRepository {
 
     try {
       final access = await _collaboratorRepository.resolveMyAccess();
-      if (access == null || !access.canMoveItems) return;
+      if (access == null || !access.canFullyEdit) return;
       await _remote.deleteDoc(ownerEmail: access.ownerEmail, id: docId);
       if (imageId != null) {
         await _remote.deleteImage(
@@ -342,6 +382,7 @@ class ProductRepositoryImpl implements ProductRepository {
     try {
       final access = await _collaboratorRepository.resolveMyAccess();
       if (access == null || !access.canFullyEdit) return;
+      await _deletedKeys.put(key, key);
       await _remote.deleteDoc(ownerEmail: access.ownerEmail, id: key);
     } catch (e) {
       _logger.error('Error al eliminar producto antiguo de la nube', e);
