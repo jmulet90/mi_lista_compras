@@ -32,14 +32,18 @@ class ProductLocalDataSource {
   }
 
   /// Reemplaza por completo el contenido local con [models]
-  /// (usado cuando un colaborador recibe la foto inicial del dueño).
+  /// de forma atómica para que el watch() nunca emita una lista vacía.
   Future<void> replaceAll(List<ProductModel> models) async {
     if (models.isEmpty) return;
     final map = <String, ProductModel>{
       for (final model in models) model.nameKey.trim(): model,
     };
-    await _box.clear();
+    // Primero se ponen los nuevos (sobreescribe existentes).
     await _box.putAll(map);
+    // Luego se eliminan las claves antiguas que ya no están.
+    final newKeys = map.keys.toSet();
+    final toDelete = _box.keys.where((k) => !newKeys.contains(k)).toList();
+    if (toDelete.isNotEmpty) await _box.deleteAll(toDelete);
   }
 
   Future<void> deleteByKey(String key) async {

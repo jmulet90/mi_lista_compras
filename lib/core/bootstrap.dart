@@ -200,8 +200,12 @@ Future<void> _startSync({bool fullRefresh = false}) async {
   sl<CollaboratorRepository>().invalidateAccessCache();
   final access = await sl<CollaboratorRepository>().resolveMyAccess();
   CrashOverlay.log('[_startSync] access=${access != null ? "owner=${access.ownerEmail} isOwner=${access.isOwner}" : "NULL"}');
-  await sl<ProductRepository>().startRemoteSync(fullRefresh: fullRefresh);
-  await sl<CategoryRepository>().startRemoteSync(fullRefresh: fullRefresh);
+
+  // Productos y categorías se sincronizan en paralelo para reducir el tiempo.
+  await Future.wait([
+    sl<ProductRepository>().startRemoteSync(fullRefresh: fullRefresh),
+    sl<CategoryRepository>().startRemoteSync(fullRefresh: fullRefresh),
+  ]);
   _syncRunning = true;
   CrashOverlay.log('[_startSync] DONE');
 }
