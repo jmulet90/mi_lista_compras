@@ -170,20 +170,19 @@ void _watchAuthState(AppInitializer initializer) {
         return;
       }
 
+      // Cambio de cuenta real (no arranque frío con la misma cuenta).
+      if (_loadedOwner != null) {
+        await initializer.clearUserData();
+      }
       _loadedOwner = owner;
       _syncRunning = false;
 
-      // Cambio de cuenta o cierre de sesión: partir de un estado limpio.
-      await initializer.clearUserData();
-
       if (owner == null) return;
 
-      // Sembrar por defecto ANTES del sync para que el owner tenga
-      // datos locales que subir a Firestore.
+      // Sembrar por defecto solo si Hive está vacío (primer arranque).
+      // NO borrar datos existentes en cada reinicio.
       if (access != null && access.isOwner) {
-        CrashOverlay.log('[_watchAuth] Seeding defaults for owner...');
         await initializer.seedIfEmpty();
-        CrashOverlay.log('[_watchAuth] Seed done');
       }
 
       // Foto completa de la nube para esta cuenta...
