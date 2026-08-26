@@ -179,14 +179,15 @@ void _watchAuthState(AppInitializer initializer) {
 
       if (owner == null) return;
 
-      // Sembrar por defecto solo si Hive está vacío (primer arranque).
-      // NO borrar datos existentes en cada reinicio.
+      // Foto completa de la nube para esta cuenta...
+      await _startSync(fullRefresh: true);
+
+      // Sembrar por defecto solo si Hive sigue vacío (primer arranque
+      // y la nube también está vacía). Si _startSync trajo datos reales,
+      // seedIfEmpty no añade nada.
       if (access != null && access.isOwner) {
         await initializer.seedIfEmpty();
       }
-
-      // Foto completa de la nube para esta cuenta...
-      await _startSync(fullRefresh: true);
     } catch (e, st) {
       CrashOverlay.logError('Error al cambiar de cuenta', e, st);
       const AppLogger().error('Error al cambiar de cuenta', e);

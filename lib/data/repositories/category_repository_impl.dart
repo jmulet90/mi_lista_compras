@@ -94,6 +94,16 @@ class CategoryRepositoryImpl implements CategoryRepository {
       if (access == null) return;
 
       if (access.isOwner) {
+        if (fullRefresh) {
+          try {
+            final remoteCategories = await _remote.fetchAll(access.ownerEmail);
+            if (remoteCategories.isNotEmpty) {
+              await _local.replaceAll(remoteCategories);
+            }
+          } catch (e) {
+            _logger.error('Error trayendo categorías remotas del owner', e);
+          }
+        }
         await _pushLocalCategoriesToCloud(access.ownerEmail);
       } else if (fullRefresh) {
         try {
@@ -120,18 +130,14 @@ class CategoryRepositoryImpl implements CategoryRepository {
   Future<void> _pushLocalCategoriesToCloud(String ownerEmail) async {
     try {
       final localCategories = _local.getAll();
-      _logger.info('[pushCategories] count=${localCategories.length} owner=$ownerEmail');
       for (final category in localCategories) {
-        _logger.info('[pushCategories] uploading: ${category.key}');
         await _remote.upload(
           ownerEmail: ownerEmail,
           category: category,
         );
-        _logger.info('[pushCategories] uploaded: ${category.key}');
       }
-      _logger.info('[pushCategories] ALL DONE');
     } catch (e) {
-      _logger.error('[pushCategories] ERROR', e);
+      _logger.error('Error subiendo categorías locales a la nube', e);
     }
   }
 

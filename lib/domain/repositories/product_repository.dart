@@ -7,7 +7,10 @@ abstract class ProductRepository {
 
   /// Guarda el producto localmente usando su [Product.id] como clave
   /// y lo sincroniza con la nube.
-  Future<void> upsert(Product product);
+  ///
+  /// Si se proporciona [previousId] y es distinto del id actual, elimina
+  /// el documento antiguo de la nube para evitar duplicados al renombrar.
+  Future<void> upsert(Product product, {String? previousId});
 
   /// Elimina el producto por id (local y en la nube).
   Future<void> deleteById(String id);

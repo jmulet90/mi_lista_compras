@@ -55,6 +55,16 @@ class ProductRepositoryImpl implements ProductRepository {
       _activeOwnerEmail = access.ownerEmail;
 
       if (access.isOwner) {
+        if (fullRefresh) {
+          try {
+            final remoteProducts = await _remote.fetchAll(access.ownerEmail);
+            if (remoteProducts.isNotEmpty) {
+              await _local.replaceAll(remoteProducts);
+            }
+          } catch (e) {
+            _logger.error('Error trayendo productos remotos del owner', e);
+          }
+        }
         await _pushLocalProductsToCloud(access.ownerEmail);
       } else if (fullRefresh) {
         try {
@@ -221,7 +231,7 @@ class ProductRepositoryImpl implements ProductRepository {
   }
 
   @override
-  Future<void> upsert(Product product) async {
+  Future<void> upsert(Product product, {String? previousId}) async {
     final key = product.id.trim();
     final existing = _local.getByKey(key);
     final model = ProductModel.fromEntity(product);
@@ -248,6 +258,10 @@ class ProductRepositoryImpl implements ProductRepository {
     }
 
     await _safeSyncUp(model, imageChanged: pathChanged, removedImageId: removedImageId);
+
+    if (previousId != null && previousId.trim() != key) {
+      await _safeDelete(previousId.trim());
+    }
   }
 
   String _generateImageId() {
@@ -321,6 +335,16 @@ class ProductRepositoryImpl implements ProductRepository {
       // La sincronización con la nube es best-effort: el cambio local ya
       // quedó guardado y se propagará en el próximo arranque o edición.
       _logger.error('Error al sincronizar producto con la nube', e);
+    }
+  }
+
+  Future<void> _safeDelete(String key) async {
+    try {
+      final access = await _collaboratorRepository.resolveMyAccess();
+      if (access == null || !access.canFullyEdit) return;
+      await _remote.deleteDoc(ownerEmail: access.ownerEmail, id: key);
+    } catch (e) {
+      _logger.error('Error al eliminar producto antiguo de la nube', e);
     }
   }
 

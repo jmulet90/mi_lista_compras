@@ -33,7 +33,7 @@ class UpdateProductUseCase {
       ..quantity = quantity
       ..unit = unit;
 
-    await _products.upsert(product);
+    await _products.upsert(product, previousId: oldId);
 
     if (oldId != product.id) {
       await _products.deleteById(oldId);
