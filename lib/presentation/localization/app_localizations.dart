@@ -796,6 +796,18 @@ class AppLocalizations {
       'ar': 'تم إرسال البريد. تحقق من صندوق الوارد.',
       'ru': 'Письмо отправлено. Проверьте входящие.',
     },
+    'permissionDenied': {
+      'es': 'No tienes permiso para esta acción.',
+      'en': 'You don\'t have permission for this action.',
+      'pt': 'Você não tem permissão para esta ação.',
+      'fr': 'Vous n\'avez pas la permission pour cette action.',
+      'de': 'Sie haben keine Berechtigung für diese Aktion.',
+      'it': 'Non hai il permesso per questa azione.',
+      'zh': '您没有权限执行此操作。',
+      'hi': 'आपके पास इस क्रिया की अनुमति नहीं है।',
+      'ar': 'ليس لديك صلاحية لهذا الإجراء.',
+      'ru': 'У вас нет разрешения на это действие.',
+    },
   };
 
   static const Map<String, Map<String, String>> _names = {
@@ -996,4 +1008,5 @@ class AppLocalizations {
       interpolate('removeCollaboratorConfirm', {'name': name});
 
   String get collaboratorRemoved => _s('collaboratorRemoved');
+  String get permissionDenied => _s('permissionDenied');
 }

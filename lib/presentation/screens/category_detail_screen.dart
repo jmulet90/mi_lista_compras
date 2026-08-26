@@ -521,11 +521,13 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ),
                   confirmDismiss: (direction) async {
                     if (direction == DismissDirection.startToEnd) {
+                      if (!PremiumLimits.checkCanMove(context)) return false;
                       final rowRect =
                           rectOfContext(_productRowKeys[product.id]?.currentContext);
                       await _toggleProduct(product, fromRect: rowRect);
                       return false;
                     } else {
+                      if (!PremiumLimits.checkCanEdit(context)) return false;
                       bool? delete = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => DialogKit.frame(
@@ -572,8 +574,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () => _showQtyUnitDialog(product),
-                    onLongPress: () => _showProductOptionsBottomSheet(context, product),
+                    onTap: () {
+                      if (!PremiumLimits.checkCanEdit(context)) return;
+                      _showQtyUnitDialog(product);
+                    },
+                    onLongPress: () {
+                      if (!PremiumLimits.checkCanEdit(context)) return;
+                      _showProductOptionsBottomSheet(context, product);
+                    },
                     child: Padding(
                       padding: const EdgeInsets.all(6.0),
                       child: Column(
@@ -672,11 +680,13 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ),
                   confirmDismiss: (direction) async {
                     if (direction == DismissDirection.startToEnd) {
+                      if (!PremiumLimits.checkCanMove(context)) return false;
                       final rowRect =
                           rectOfContext(_productRowKeys[product.id]?.currentContext);
                       await _toggleProduct(product, fromRect: rowRect);
                       return false;
                     } else {
+                      if (!PremiumLimits.checkCanEdit(context)) return false;
                       bool? delete = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => DialogKit.frame(
@@ -710,7 +720,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   child: KeyedSubtree(
                     key: _rowKeyFor(product),
                     child: InkWell(
-                      onLongPress: () => _showProductOptionsBottomSheet(context, product),
+                      onLongPress: () {
+                        if (!PremiumLimits.checkCanEdit(context)) return;
+                        _showProductOptionsBottomSheet(context, product);
+                      },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Row(
@@ -768,6 +781,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         backgroundColor: accent,
         foregroundColor: Colors.white,
         onPressed: () {
+          if (!PremiumLimits.checkCanEdit(context)) return;
           showDialog(
             context: context,
             builder: (context) => AddProductDialog(

@@ -110,6 +110,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
 
   Future<void> _applyViewMode(bool isGridView) async {
     HapticFeedback.selectionClick();
+    if (!PremiumLimits.checkCanEdit(context)) return;
     final notifier = AppSettings.notifierOf(context);
     if (isGridView &&
         !await PremiumLimits.canUseAppearanceFeature(context)) {
@@ -131,6 +132,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
   }
 
   Future<void> _showAdvancedAddCategoryDialog(BuildContext context) async {
+    if (!PremiumLimits.checkCanEdit(context)) return;
     if (!await PremiumLimits.canAddCategory(context)) return;
     if (!context.mounted) return;
     showDialog(
@@ -615,7 +617,10 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                   foregroundColor: Colors.blueGrey.shade800,
                   elevation: 4,
                   shape: const CircleBorder(),
-                  onPressed: _toggleViewFab,
+                  onPressed: () {
+                    if (!PremiumLimits.checkCanEdit(context)) return;
+                    _toggleViewFab();
+                  },
                   child: Transform.rotate(
                     angle: _viewExpandAnimation.value * 0.785398,
                     child: Icon(
@@ -667,6 +672,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                               borderRadius: BorderRadius.circular(30),
                             ),
                             onPressed: () {
+                              if (!PremiumLimits.checkCanEdit(context)) return;
                               _toggleFab();
                               _showAdvancedAddProductDialog(context);
                             },
@@ -691,7 +697,10 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                 foregroundColor: Colors.white,
                 elevation: 4,
                 shape: const CircleBorder(),
-                onPressed: _toggleFab,
+                onPressed: () {
+                  if (!PremiumLimits.checkCanEdit(context)) return;
+                  _toggleFab();
+                },
                 child: Transform.rotate(
                   angle: _expandAnimation.value * 0.785398,
                   child: const Icon(Icons.add, size: 28),
@@ -800,6 +809,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
                 }
               },
               onLongPress: () {
+                if (!PremiumLimits.checkCanEdit(context)) return;
                 showModalBottomSheet(
                   context: context,
                   builder: (context) => SafeArea(
@@ -944,6 +954,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen> with 
               if (mounted) setState(() {});
             },
             onLongPressCard: () {
+              if (!PremiumLimits.checkCanEdit(context)) return;
               showModalBottomSheet(
                 context: context,
                 builder: (context) => SafeArea(

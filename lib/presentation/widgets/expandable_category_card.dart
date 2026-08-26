@@ -191,6 +191,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                         ),
                         confirmDismiss: (direction) async {
                           if (direction == DismissDirection.startToEnd) {
+                            if (!PremiumLimits.checkCanMove(context)) return false;
                             final rowRect =
                                 rectOfContext(_productRowKeys[product.uniqueKey]?.currentContext);
                             try {
@@ -215,6 +216,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                               return false;
                             }
                           } else {
+                            if (!PremiumLimits.checkCanEdit(context)) return false;
                             bool? delete = await showDialog<bool>(
                               context: context,
                               builder: (ctx) => DialogKit.frame(
@@ -249,7 +251,10 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                         child: KeyedSubtree(
                           key: _rowKeyFor(product),
                           child: InkWell(
-                            onLongPress: () => widget.onEditProduct(context, product),
+                            onLongPress: () {
+                              if (!PremiumLimits.checkCanEdit(context)) return;
+                              widget.onEditProduct(context, product);
+                            },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               child: Row(

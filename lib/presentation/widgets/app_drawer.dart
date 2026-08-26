@@ -145,6 +145,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     value: settings.themeMode == ThemeMode.dark,
                     activeThumbColor: DrawerAccents.emerald,
                     onChanged: (value) async {
+                      if (!PremiumLimits.checkCanEdit(context)) return;
                       if (value &&
                           !await PremiumLimits.canUseAppearanceFeature(
                               context)) {

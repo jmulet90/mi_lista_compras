@@ -119,4 +119,35 @@ class PremiumLimits {
     if (canAccessQuantity) return true;
     return _gate(context, AppLocalizations.of(context).premiumFeatureExclusive);
   }
+
+  /// Verifica si el usuario puede editar (owner o Control Total).
+  /// Si no puede, muestra un snackbar con el mensaje localizado.
+  static bool checkCanEdit(BuildContext context) {
+    try {
+      final access = sl<CollaboratorRepository>().currentAccess;
+      if (access == null || access.canFullyEdit) return true;
+    } catch (_) {}
+    _showDeniedMessage(context);
+    return false;
+  }
+
+  /// Verifica si el usuario puede mover productos (owner, Control Total o Dinámico).
+  /// Si no puede, muestra un snackbar con el mensaje localizado.
+  static bool checkCanMove(BuildContext context) {
+    try {
+      final access = sl<CollaboratorRepository>().currentAccess;
+      if (access == null || access.canMoveItems) return true;
+    } catch (_) {}
+    _showDeniedMessage(context);
+    return false;
+  }
+
+  static void _showDeniedMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context).permissionDenied),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 }
