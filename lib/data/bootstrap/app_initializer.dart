@@ -308,44 +308,56 @@ class AppInitializer {
     }
 
     if (products.isEmpty) {
-      const defaultProducts = [
-        ('Milk', 'Breakfast', '🥛'),
-        ('Bread', 'Breakfast', '🍞'),
-        ('Butter', 'Breakfast', '🧈'),
-        ('Cheese', 'Breakfast', '🧀'),
-        ('Eggs', 'Breakfast', '🥚'),
-        ('Coffee', 'Breakfast', '☕'),
-        ('Apples', 'Fruits', '🍎'),
-        ('Bananas', 'Fruits', '🍌'),
-        ('Oranges', 'Fruits', '🍊'),
-        ('Tomatoes', 'Vegetables', '🍅'),
-        ('Potatoes', 'Vegetables', '🥔'),
-        ('Onions', 'Vegetables', '🧅'),
-        ('Chicken', 'Meats', '🍗'),
-        ('Minced Meat', 'Meats', '🥩'),
-        ('Fish', 'Meats', '🐟'),
-        ('Rice', 'Kitchen', '🍚'),
-        ('Pasta', 'Kitchen', '🍝'),
-        ('Olive Oil', 'Kitchen', '🫒'),
-        ('Salt', 'Kitchen', '🧂'),
-        ('Water', 'Drinks', '💧'),
-        ('Juice', 'Drinks', '🧃'),
-        ('Wine', 'Drinks', '🍷'),
-        ('Detergent', 'Cleaning', '🧼'),
-        ('Toilet Paper', 'Cleaning', '🧻'),
-        ('Trash Bags', 'Cleaning', '🗑️'),
-        ('Toothpaste', 'Personal care', '🦷'),
-        ('Shampoo', 'Personal care', '🧴'),
-      ];
+      // Seed from asset PNGs. Only categories that have at least one
+      // product PNG in assets/images/emojis/products/<folder>/ get seeded.
+      // Categories without any PNGs (cleaning, drinks, personal_care)
+      // are left empty — the user can add products manually.
+      const Map<String, List<({String nameKey, String png})>> _assetProducts = {
+        'Breakfast': [
+          (nameKey: 'bread', png: 'bread'),
+          (nameKey: 'ball bread', png: 'ball bread'),
+          (nameKey: 'coffee', png: 'coffee'),
+          (nameKey: 'croissant', png: 'croassaint'),
+          (nameKey: 'milk', png: 'milk'),
+          (nameKey: 'mini baguette', png: 'mini baguette'),
+        ],
+        'Fruits': [
+          (nameKey: 'apples', png: 'apples'),
+          (nameKey: 'orange', png: 'orange'),
+          (nameKey: 'white grapes', png: 'white grapes'),
+        ],
+        'Kitchen': [
+          (nameKey: 'black beans', png: 'black beans'),
+          (nameKey: 'chickpea', png: 'chickpea'),
+        ],
+        'Meats': [
+          (nameKey: 'chicken', png: 'chicken'),
+          (nameKey: 'cow', png: 'cow'),
+          (nameKey: 'fish', png: 'fish'),
+          (nameKey: 'pork', png: 'pork'),
+          (nameKey: 'salmon', png: 'Salmon'),
+        ],
+        'Vegetables': [
+          (nameKey: 'avocado', png: 'avocado'),
+          (nameKey: 'beet', png: 'beet'),
+          (nameKey: 'carrot', png: 'carrot'),
+          (nameKey: 'cucumber', png: 'cucumber'),
+          (nameKey: 'lettuce', png: 'lettuce'),
+          (nameKey: 'tomatoes', png: 'tomatoes'),
+        ],
+      };
 
-      for (final (name, category, emoji) in defaultProducts) {
-        await products.put(ProductModel(
-          nameKey: name,
-          categoryKey: category,
-          isToBuy: false,
-          emoji: emoji,
-          isBuyScreen: false,
-        ));
+      for (final entry in _assetProducts.entries) {
+        final category = entry.key;
+        for (final p in entry.value) {
+          await products.put(ProductModel(
+            nameKey: p.nameKey,
+            categoryKey: category,
+            isToBuy: false,
+            emoji: 'assets/images/emojis/products/$category/${p.png}.png',
+            isBuyScreen: false,
+          ));
+        }
       }
     }
   }
