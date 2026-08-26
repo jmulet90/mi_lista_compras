@@ -605,7 +605,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          if (product.quantity != null && PremiumLimits.isPremiumEffectiveSync)
+                          if (product.quantity != null)
                             Text(
                               '${DialogKit.formatQuantity(product.quantity!)}${product.unit != null ? ' ${product.unit}' : ''}',
                               style: TextStyle(
@@ -876,7 +876,7 @@ class _InlineQtyUnitDetailState extends State<_InlineQtyUnitDetail> {
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final textSub = dark ? Colors.grey.shade400 : Colors.grey.shade600;
-    final showQty = _qty != null && PremiumLimits.isPremiumEffectiveSync;
+    final showQty = _qty != null;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

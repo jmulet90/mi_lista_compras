@@ -24,6 +24,8 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
 
   late final _authChangesStream = _authRepository.authStateChanges();
 
+  bool _authResolved = false;
+
   @override
   void initState() {
     super.initState();
@@ -120,7 +122,13 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
                   );
                 }
                 if (snapshot.hasData && snapshot.data != null) {
+                  _authResolved = true;
                   return const MainNavigatorScreen();
+                }
+                if (!_authResolved) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
                 }
                 return const LoginScreen();
               },
