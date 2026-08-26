@@ -181,7 +181,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
     }
   }
 
-  void _applyRemoteChanges(QuerySnapshot<Map<String, dynamic>> snapshot) {
+  Future<void> _applyRemoteChanges(QuerySnapshot<Map<String, dynamic>> snapshot) async {
     for (final change in snapshot.docChanges) {
       switch (change.type) {
         case DocumentChangeType.added:
@@ -190,6 +190,20 @@ class CategoryRepositoryImpl implements CategoryRepository {
           if (data == null) break;
           final key = data['key'] as String? ?? '';
           if (key.trim().isEmpty) break;
+
+          // Skip categories the user intentionally deleted.
+          if (_deletedKeys.containsKey(key)) {
+            try {
+              final access =
+                  await _collaboratorRepository.resolveMyAccess();
+              if (access != null && access.canFullyEdit) {
+                await _remote.deleteDoc(
+                    ownerEmail: access.ownerEmail, key: key);
+              }
+            } catch (_) {}
+            break;
+          }
+
           _local.put(CategoryModel(
             key: key,
             emoji: data['emoji'] as String?,

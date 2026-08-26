@@ -157,6 +157,19 @@ class ProductRepositoryImpl implements ProductRepository {
           if (model.nameKey.trim().isEmpty) continue;
           final key = model.nameKey.trim();
 
+          // Skip products the user intentionally deleted.
+          if (_deletedKeys.containsKey(key)) {
+            try {
+              final access =
+                  await _collaboratorRepository.resolveMyAccess();
+              if (access != null && access.canFullyEdit) {
+                await _remote.deleteDoc(
+                    ownerEmail: access.ownerEmail, id: key);
+              }
+            } catch (_) {}
+            continue;
+          }
+
           await _mergeImageState(model, existing: _local.getByKey(key),
               ownerEmail: ownerEmail);
 

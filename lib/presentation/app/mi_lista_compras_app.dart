@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di.dart';
 import '../../data/bootstrap/app_initializer.dart';
+import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../app_settings.dart';
 import '../localization/app_localizations.dart';
@@ -21,12 +22,14 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
   late final ValueNotifier<AppSettingsData> _settingsNotifier;
 
   final AuthRepository _authRepository = sl<AuthRepository>();
+  late final Stream<AuthUser?> _authStateStream;
 
   @override
   void initState() {
     super.initState();
     _settingsNotifier = ValueNotifier(_loadSettings());
     _settingsNotifier.addListener(_persistSettings);
+    _authStateStream = _authRepository.authStateChanges();
   }
 
   AppSettingsData _loadSettings() {
@@ -110,7 +113,7 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
             darkTheme: _buildTheme(Brightness.dark),
             themeMode: settings.themeMode,
             home: StreamBuilder(
-              stream: _authRepository.authStateChanges(),
+              stream: _authStateStream,
               builder: (context, snapshot) {
                 final authUser =
                     snapshot.data ?? _authRepository.currentUser;
