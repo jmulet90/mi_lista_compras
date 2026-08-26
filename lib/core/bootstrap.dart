@@ -28,6 +28,7 @@ import '../domain/usecases/delete_category.dart';
 import '../domain/usecases/delete_product.dart';
 import '../domain/usecases/purchase_premium.dart';
 import '../domain/usecases/rename_category.dart';
+import '../domain/usecases/reset_password.dart';
 import '../domain/usecases/restore_premium.dart';
 import '../domain/usecases/sign_in.dart';
 import '../domain/usecases/sign_in_with_google.dart';
@@ -132,6 +133,8 @@ Future<void> bootstrap() async {
       () => PurchasePremiumUseCase(sl<PremiumRepository>()));
   sl.registerLazySingleton(
       () => RestorePurchasesUseCase(sl<PremiumRepository>()));
+  sl.registerLazySingleton(
+      () => ResetPasswordUseCase(sl<AuthRepository>()));
   CrashOverlay.log('DI services registered, initializing PremiumRepository...');
   try {
     await sl<PremiumRepository>().init();

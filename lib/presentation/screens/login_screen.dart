@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/di.dart';
 import '../../core/failures.dart';
+import '../../domain/usecases/reset_password.dart';
 import '../../domain/usecases/sign_in.dart';
 import '../../domain/usecases/sign_in_with_google.dart';
 import '../../domain/usecases/sign_up.dart';
@@ -108,6 +109,114 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorAction = null;
       });
     }
+  }
+
+  void _showResetPasswordDialog() {
+    final controller = TextEditingController(
+      text: _emailController.text.trim(),
+    );
+    bool sending = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              icon: Icon(Icons.lock_reset_rounded,
+                  size: 36, color: scheme.primary),
+              title: Text(t.resetPasswordTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    t.resetPasswordSubtitle,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  TextFormField(
+                    controller: controller,
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    decoration: InputDecoration(
+                      labelText: t.emailShort,
+                      prefixIcon: const Icon(Icons.mail_outline_rounded, size: 21),
+                      filled: true,
+                      fillColor: scheme.onSurface.withValues(alpha: 0.03),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(t.cancel),
+                ),
+                FilledButton(
+                  onPressed: sending
+                      ? null
+                      : () async {
+                          final email = controller.text.trim();
+                          if (email.isEmpty ||
+                              !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                                  .hasMatch(email)) {
+                            return;
+                          }
+                          setDialogState(() => sending = true);
+                          try {
+                            await sl<ResetPasswordUseCase>()(email: email);
+                            if (!ctx.mounted) return;
+                            Navigator.pop(ctx);
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(t.resetPasswordSuccess),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          } on Failure catch (failure) {
+                            setDialogState(() => sending = false);
+                            if (!ctx.mounted) return;
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(
+                                content: Text(failure.message),
+                                backgroundColor: scheme.error,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          } catch (_) {
+                            setDialogState(() => sending = false);
+                          }
+                        },
+                  child: sending
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(t.resetPasswordButton),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    controller.dispose();
   }
 
   Future<void> _signInWithGoogle() async {
@@ -355,13 +464,31 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         onPressed: () => setState(() => _obscure = !_obscure),
                       ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
+          if (_mode == _AuthMode.login)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: _busy ? null : _showResetPasswordDialog,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: Text(
+                  t.forgotPassword,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 4),
           AnimatedSize(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,

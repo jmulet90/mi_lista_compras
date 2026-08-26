@@ -751,6 +751,51 @@ class AppLocalizations {
       'fr': 'Unité', 'de': 'Einheit', 'it': 'Unità',
       'zh': '单位', 'hi': 'इकाई', 'ar': 'الوحدة', 'ru': 'Единица',
     },
+    'forgotPassword': {
+      'es': '¿Olvidaste la contraseña?', 'en': 'Forgot password?',
+      'pt': 'Esqueceu a senha?', 'fr': 'Mot de passe oublié ?',
+      'de': 'Passwort vergessen?', 'it': 'Password dimenticata?',
+      'zh': '忘记密码？', 'hi': 'पासवर्ड भूल गए?',
+      'ar': 'نسيت كلمة المرور؟', 'ru': 'Забыли пароль?',
+    },
+    'resetPasswordTitle': {
+      'es': 'Restablecer contraseña', 'en': 'Reset password',
+      'pt': 'Redefinir senha', 'fr': 'Réinitialiser le mot de passe',
+      'de': 'Passwort zurücksetzen', 'it': 'Reimposta password',
+      'zh': '重置密码', 'hi': 'पासवर्ड रीसेट करें',
+      'ar': 'إعادة تعيين كلمة المرور', 'ru': 'Сбросить пароль',
+    },
+    'resetPasswordSubtitle': {
+      'es': 'Te enviaremos un correo con un enlace para crear una nueva contraseña.',
+      'en': "We'll email you a link to create a new password.",
+      'pt': 'Enviaremos um e-mail com um link para criar uma nova senha.',
+      'fr': "Nous vous enverrons un lien par e-mail pour créer un nouveau mot de passe.",
+      'de': 'Wir senden Ihnen einen Link per E-Mail, um ein neues Passwort zu erstellen.',
+      'it': "Ti invieremo un'email con un link per creare una nuova password.",
+      'zh': '我们会发邮件给你，附上创建新密码的链接。',
+      'hi': 'हम आपको एक नया पासवर्ड बनाने के लिए एक लिंक ईमेल करेंगे।',
+      'ar': 'سنرسل لك بريدًا إلكترونيًا يحتوي على رابط لإنشاء كلمة مرور جديدة.',
+      'ru': 'Мы отправим вам ссылку для создания нового пароля.',
+    },
+    'resetPasswordButton': {
+      'es': 'Enviar correo', 'en': 'Send email',
+      'pt': 'Enviar e-mail', 'fr': 'Envoyer',
+      'de': 'E-Mail senden', 'it': 'Invia email',
+      'zh': '发送邮件', 'hi': 'ईमेल भेजें',
+      'ar': 'إرسال البريد', 'ru': 'Отправить',
+    },
+    'resetPasswordSuccess': {
+      'es': 'Correo enviado. Revisa tu bandeja de entrada.',
+      'en': 'Email sent. Check your inbox.',
+      'pt': 'E-mail enviado. Verifique sua caixa de entrada.',
+      'fr': 'E-mail envoyé. Vérifiez votre boîte de réception.',
+      'de': 'E-Mail gesendet. Überprüfen Sie Ihren Posteingang.',
+      'it': "Email inviata. Controlla la tua casella di posta.",
+      'zh': '邮件已发送，请查收收件箱。',
+      'hi': 'ईमेल भेज दिया गया। अपना इनबॉक्स देखें।',
+      'ar': 'تم إرسال البريد. تحقق من صندوق الوارد.',
+      'ru': 'Письмо отправлено. Проверьте входящие.',
+    },
   };
 
   static const Map<String, Map<String, String>> _names = {
@@ -934,6 +979,11 @@ class AppLocalizations {
   String get premiumFeatureExclusive => _s('premiumFeatureExclusive');
   String get quantityLabel => _s('quantityLabel');
   String get unitLabel => _s('unitLabel');
+  String get forgotPassword => _s('forgotPassword');
+  String get resetPasswordTitle => _s('resetPasswordTitle');
+  String get resetPasswordSubtitle => _s('resetPasswordSubtitle');
+  String get resetPasswordButton => _s('resetPasswordButton');
+  String get resetPasswordSuccess => _s('resetPasswordSuccess');
 
   String unlockFor(String price) =>
       interpolate('unlockFor', {'price': price});
