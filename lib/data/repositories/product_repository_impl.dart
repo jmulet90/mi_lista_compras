@@ -54,9 +54,9 @@ class ProductRepositoryImpl implements ProductRepository {
 
       _activeOwnerEmail = access.ownerEmail;
 
-      // Foto completa del estado remoto al entrar como colaborador o tras un
-      // cambio de cuenta: evita mezclar datos locales del usuario anterior.
-      if (!access.isOwner || fullRefresh) {
+      if (access.isOwner) {
+        await _pushLocalProductsToCloud(access.ownerEmail);
+      } else if (fullRefresh) {
         try {
           final remoteProducts = await _remote.fetchAll(access.ownerEmail);
           await _local.replaceAll(remoteProducts);
@@ -76,6 +76,20 @@ class ProductRepositoryImpl implements ProductRepository {
       });
     } finally {
       _syncing = false;
+    }
+  }
+
+  /// Sube todos los productos locales del owner a Firestore.
+  /// Esto garantiza que los productos que existían antes del sync
+  /// estén disponibles para los colaboradores.
+  Future<void> _pushLocalProductsToCloud(String ownerEmail) async {
+    try {
+      final localProducts = _local.getAll();
+      for (final model in localProducts) {
+        await _remote.upload(ownerEmail: ownerEmail, data: model.toMap());
+      }
+    } catch (e) {
+      _logger.error('Error subiendo productos locales a la nube', e);
     }
   }
 

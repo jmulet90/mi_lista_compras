@@ -93,9 +93,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
       final access = await _collaboratorRepository.resolveMyAccess();
       if (access == null) return;
 
-      // Foto completa del estado remoto al entrar como colaborador o tras un
-      // cambio de cuenta: evita mezclar datos locales del usuario anterior.
-      if (!access.isOwner || fullRefresh) {
+      if (access.isOwner) {
+        await _pushLocalCategoriesToCloud(access.ownerEmail);
+      } else if (fullRefresh) {
         try {
           final remoteCategories = await _remote.fetchAll(access.ownerEmail);
           await _local.replaceAll(remoteCategories);
@@ -111,6 +111,23 @@ class CategoryRepositoryImpl implements CategoryRepository {
       });
     } finally {
       _syncing = false;
+    }
+  }
+
+  /// Sube todas las categorías locales del owner a Firestore.
+  /// Esto garantiza que las categorías que existían antes del sync
+  /// estén disponibles para los colaboradores.
+  Future<void> _pushLocalCategoriesToCloud(String ownerEmail) async {
+    try {
+      final localCategories = _local.getAll();
+      for (final category in localCategories) {
+        await _remote.upload(
+          ownerEmail: ownerEmail,
+          category: category,
+        );
+      }
+    } catch (e) {
+      _logger.error('Error subiendo categorías locales a la nube', e);
     }
   }
 
