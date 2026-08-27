@@ -206,7 +206,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                                       : ProductMoveTarget.cart,
                                   preview: buildMovePreview(
                                     imagePath: product.imagePath,
-                                    emoji: product.emoji ?? (widget.isBuyScreen ? '🛒' : '📦'),
+                                    emoji: product.emoji,
                                   ),
                                 );
                               }
@@ -275,7 +275,6 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                                         imagePath: product.imagePath,
                                         emoji: product.emoji,
                                         emojiSize: 30,
-                                        fallbackEmoji: widget.isBuyScreen ? '🛒' : '📦',
                                       ),
                                     ),
                                   ),

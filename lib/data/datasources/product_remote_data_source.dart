@@ -37,7 +37,7 @@ class ProductRemoteDataSource {
     required String ownerEmail,
     required Map<String, dynamic> data,
   }) async {
-    final docId = (data['nameKey'] as String).trim();
+    final docId = (data['nameKey'] as String).trim().toLowerCase();
     await _productsRef(ownerEmail).doc(docId).set({
       ...data,
       'updatedAt': FieldValue.serverTimestamp(),

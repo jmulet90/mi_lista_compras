@@ -78,7 +78,7 @@ class DialogKit {
     );
   }
 
-  /// Círculo de vista previa (foto, PNG del catálogo o emoji) con anillo.
+  /// Círculo de vista previa (foto, PNG del catálogo o ícono por defecto) con anillo.
   static Widget previewCircle({
     required Color accent,
     String? imagePath,
@@ -104,12 +104,10 @@ class DialogKit {
                     child: Image.asset(emoji!, fit: BoxFit.contain),
                   )
                 : Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        emoji ?? '📦',
-                        style: const TextStyle(fontSize: 30),
-                      ),
+                    child: Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 26,
+                      color: accent.withValues(alpha: 0.5),
                     ),
                   ),
       ),

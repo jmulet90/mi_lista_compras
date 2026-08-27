@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/di.dart';
+import '../../data/bootstrap/app_initializer.dart';
 import '../../domain/repositories/collaborator_repository.dart';
 import '../../domain/repositories/premium_repository.dart';
 import '../app_settings.dart';
@@ -254,6 +255,9 @@ class _AppDrawerState extends State<AppDrawer> {
                   onTap: () async {
                     Navigator.pop(context);
                     await FirebaseAuth.instance.signOut();
+                    // Limpiar la sesión local guardada para que la pantalla
+                    // muestre el login (nunca debe quedar presa).
+                    await sl<AppInitializer>().setLastAuthUid(null);
                   },
                 ),
               ),

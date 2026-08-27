@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'dialog_kit.dart';
 
 /// Renderiza el visual de un producto con esta prioridad:
-/// foto del usuario > PNG del catálogo (emoji guarda ruta asset) > glifo.
+/// foto del usuario > PNG del catálogo (emoji guarda ruta asset) > ícono por defecto.
 class ProductVisuals {
   ProductVisuals._();
 
@@ -13,7 +13,6 @@ class ProductVisuals {
     String? imagePath,
     String? emoji,
     double emojiSize = 45,
-    String fallbackEmoji = '📦',
   }) {
     if (imagePath != null) {
       return Image.file(
@@ -24,20 +23,14 @@ class ProductVisuals {
       );
     }
     if (DialogKit.isAssetRef(emoji)) {
-      // Sin margen interno: el PNG llena el círculo al máximo.
       return Image.asset(emoji!, fit: BoxFit.contain);
     }
-    // El glifo escala solo hasta caber completo, con aire respecto al borde.
+    // Sin emoji ni foto: ícono por defecto.
     return Center(
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Text(
-            emoji ?? fallbackEmoji,
-            style: TextStyle(fontSize: emojiSize),
-          ),
-        ),
+      child: Icon(
+        Icons.shopping_bag_outlined,
+        size: emojiSize * 0.65,
+        color: Colors.grey.shade400,
       ),
     );
   }

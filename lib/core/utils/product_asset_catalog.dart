@@ -51,4 +51,8 @@ class ProductAssetCatalog {
       _byCategory[folderKeyFor(categoryKey)] ?? const [];
 
   bool hasPngs(String categoryKey) => pngsFor(categoryKey).isNotEmpty;
+
+  /// Total de PNG de producto en todo el catálogo.
+  int get pngCount =>
+      _byCategory.values.fold(0, (acc, list) => acc + list.length);
 }

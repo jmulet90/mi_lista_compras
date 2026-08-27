@@ -21,7 +21,6 @@ class CategoryVisuals {
     String? imagePath,
     String? emoji,
     double emojiSize = 45,
-    String fallbackEmoji = '📦',
   }) {
     if (imagePath != null) {
       return Image.file(
@@ -36,12 +35,10 @@ class CategoryVisuals {
       return Image.asset(assetPath, fit: BoxFit.cover);
     }
     return Center(
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          emoji ?? fallbackEmoji,
-          style: TextStyle(fontSize: emojiSize),
-        ),
+      child: Icon(
+        Icons.category_outlined,
+        size: emojiSize * 0.65,
+        color: Colors.grey.shade400,
       ),
     );
   }

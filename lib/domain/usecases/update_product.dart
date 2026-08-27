@@ -35,7 +35,7 @@ class UpdateProductUseCase {
 
     await _products.upsert(product, previousId: oldId);
 
-    if (oldId != product.id) {
+    if (oldId.trim().toLowerCase() != product.id.trim().toLowerCase()) {
       await _products.deleteById(oldId);
     }
   }

@@ -23,7 +23,6 @@ Widget buildMovePreview({String? imagePath, String? emoji}) {
       imagePath: imagePath,
       emoji: emoji,
       emojiSize: 28,
-      fallbackEmoji: '📦',
     ),
   );
 }
@@ -221,8 +220,7 @@ class _ProductMoveOverlayState extends State<_ProductMoveOverlay>
                                 ),
                               ],
                             ),
-                            child: widget.preview ??
-                                buildMovePreview(emoji: '📦'),
+                            child: widget.preview ?? buildMovePreview(),
                           ),
                         ),
                       ),

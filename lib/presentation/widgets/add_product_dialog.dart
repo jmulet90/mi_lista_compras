@@ -35,7 +35,6 @@ class _AddProductDialogState extends State<AddProductDialog> {
   double? _quantity;
   String? _unit;
 
-  static const List<String> _emojis = ['🥛', '🍞', '🍎', '🍐', '🍊', '🍋', '🍉', '🍇', '🍓', '🫐', '🍒', '🥭','🍍', '🥥', '🥝', '🥑', '🥩', '☕', '🥐', '🧀', '🍌', '🍅', '🧻', '🧼', '🧊'];
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -43,7 +42,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
     super.initState();
     _nameController = TextEditingController();
     _selectedCategory = widget.initialCategory ?? (widget.categories.isNotEmpty ? widget.categories.first : '');
-    _selectedEmoji = _emojis.first;
+    _selectedEmoji = null;
   }
 
   @override
@@ -81,10 +80,8 @@ class _AddProductDialogState extends State<AddProductDialog> {
     final pngs = ProductAssetCatalog.instance.pngsFor(_selectedCategory);
     if (pngs.isNotEmpty && !pngs.contains(_selectedEmoji)) {
       _selectedEmoji = pngs.first;
-    } else if (pngs.isEmpty &&
-        _selectedEmoji != null &&
-        DialogKit.isAssetRef(_selectedEmoji)) {
-      _selectedEmoji = _emojis.first;
+    } else if (pngs.isEmpty) {
+      _selectedEmoji = null;
     }
 
     return DialogKit.frame(
@@ -148,7 +145,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
               child: DialogKit.previewCircle(
                 accent: accent,
                 imagePath: _imagePath,
-                emoji: _selectedEmoji ?? '🏠',
+                emoji: _selectedEmoji,
               ),
             ),
             const SizedBox(height: 12),
@@ -161,19 +158,6 @@ class _AddProductDialogState extends State<AddProductDialog> {
                 onSelect: (asset) {
                   setState(() {
                     _selectedEmoji = asset;
-                    _imagePath = null;
-                  });
-                },
-              )
-            else
-              DialogKit.emojiStrip(
-                context: context,
-                accent: accent,
-                emojis: _emojis,
-                selected: _selectedEmoji,
-                onSelect: (emoji) {
-                  setState(() {
-                    _selectedEmoji = emoji;
                     _imagePath = null;
                   });
                 },

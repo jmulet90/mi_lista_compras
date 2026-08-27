@@ -76,16 +76,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     final accent = DialogKit.accentForBuy(widget.isBuyScreen);
     final nameController =
         TextEditingController(text: t.getProductName(product.nameKey));
-    String? selectedEmoji = product.emoji ?? '📦';
+    String? selectedEmoji = product.emoji;
     String? imagePath = product.imagePath;
     double? quantity = product.quantity;
     String? unit = product.unit;
-    const List<String> emojis = ['🥛', '🍞', '🍎', '🍐', '🍊', '🍋', '🍉', '🍇', '🍓', '🫐', '🍒', '🥭','🍍', '🥥', '🥝', '🥑', '🥩', '☕', '🥐', '🧀', '🍌', '🍅', '🧻', '🧼', '🧊'];
     final pngs = ProductAssetCatalog.instance.pngsFor(product.categoryKey);
     if (pngs.isNotEmpty && !pngs.contains(selectedEmoji)) {
       selectedEmoji = imagePath == null ? pngs.first : null;
-    } else if (pngs.isEmpty && DialogKit.isAssetRef(selectedEmoji)) {
-      selectedEmoji = emojis.first;
+    } else if (pngs.isEmpty) {
+      selectedEmoji = null;
     }
 
     showDialog(
@@ -119,7 +118,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     child: DialogKit.previewCircle(
                       accent: accent,
                       imagePath: imagePath,
-                      emoji: selectedEmoji ?? '📦',
+                      emoji: selectedEmoji,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -134,19 +133,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                       onSelect: (asset) {
                         setDialogState(() {
                           selectedEmoji = asset;
-                          imagePath = null;
-                        });
-                      },
-                    )
-                  else
-                    DialogKit.emojiStrip(
-                      context: context,
-                      accent: accent,
-                      emojis: emojis,
-                      selected: imagePath == null ? selectedEmoji : null,
-                      onSelect: (emoji) {
-                        setDialogState(() {
-                          selectedEmoji = emoji;
                           imagePath = null;
                         });
                       },
@@ -605,8 +591,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                                     imagePath: product.imagePath,
                                     emoji: product.emoji,
                                     emojiSize: 80,
-                                    fallbackEmoji:
-                                        widget.isBuyScreen ? '🛒' : '🏠',
                                   ),
                                 ),
                               ),
@@ -744,7 +728,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                                   imagePath: product.imagePath,
                                   emoji: product.emoji,
                                   emojiSize: 48,
-                                  fallbackEmoji: widget.isBuyScreen ? '🛒' : '🏠',
                                 ),
                               ),
                             ),

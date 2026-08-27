@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../core/di.dart';
 import '../../core/failures.dart';
+import '../../data/bootstrap/app_initializer.dart';
 import '../../domain/entities/auth_user.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -32,7 +34,11 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         password: password,
       );
-      return _toEntity(credential.user!);
+      final user = credential.user;
+      if (user != null) {
+        await sl<AppInitializer>().setLastAuthUid(user.uid);
+      }
+      return _toEntity(user);
     } on FirebaseAuthException catch (e) {
       throw AuthFailure(_friendlyMessage(e.code), e.code);
     } catch (_) {
@@ -53,7 +59,11 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         password: password,
       );
-      return _toEntity(credential.user!);
+      final user = credential.user;
+      if (user != null) {
+        await sl<AppInitializer>().setLastAuthUid(user.uid);
+      }
+      return _toEntity(user);
     } on FirebaseAuthException catch (e) {
       throw AuthFailure(_friendlyMessage(e.code), e.code);
     } catch (_) {
@@ -77,7 +87,11 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: googleAuth.accessToken,
       );
       final userCredential = await _auth.signInWithCredential(credential);
-      return _toEntity(userCredential.user);
+      final user = userCredential.user;
+      if (user != null) {
+        await sl<AppInitializer>().setLastAuthUid(user.uid);
+      }
+      return _toEntity(user);
     } on FirebaseAuthException catch (e) {
       throw AuthFailure(_friendlyMessage(e.code), e.code);
     } on AuthFailure {

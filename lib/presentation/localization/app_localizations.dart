@@ -856,6 +856,20 @@ class AppLocalizations {
     'Detergent': {'es': 'Detergente', 'en': 'Detergent', 'pt': 'Detergente', 'fr': 'Détergent', 'de': 'Waschmittel', 'it': 'Detersivo', 'zh': '洗涤剂', 'hi': 'डिटर्जेंट', 'ar': 'منظف', 'ru': 'Стиральный порошок'},
     'Shampoo': {'es': 'Champú', 'en': 'Shampoo', 'pt': 'Shampoo', 'fr': 'Shampooing', 'de': 'Shampoo', 'it': 'Shampoo', 'zh': '洗发水', 'hi': 'शैम्पू', 'ar': 'شامبو', 'ru': 'Шампунь'},
     'Toothpaste': {'es': 'Pasta de dientes', 'en': 'Toothpaste', 'pt': 'Creme dental', 'fr': 'Dentifrice', 'de': 'Zahnpasta', 'it': 'Dentifricio', 'zh': '牙膏', 'hi': 'टूथपेस्ट', 'ar': 'معجون أسنان', 'ru': 'Зубная паста'},
+    'Apples': {'es': 'Manzanas', 'en': 'Apples', 'pt': 'Maçãs', 'fr': 'Pommes', 'de': 'Äpfel', 'it': 'Mele', 'zh': '苹果', 'hi': 'सेब', 'ar': 'تفاح', 'ru': 'Яблоки'},
+    'Ball bread': {'es': 'Pan de bola', 'en': 'Ball bread', 'pt': 'Pão de bola', 'fr': 'Pain boule', 'de': 'Kugelbrot', 'it': 'Pane a sfera', 'zh': '圆面包', 'hi': 'गोल ब्रेड', 'ar': 'خبز كروي', 'ru': 'Шаровой хлеб'},
+    'Beet': {'es': 'Remolacha', 'en': 'Beet', 'pt': 'Beterraba', 'fr': 'Betterave', 'de': 'Rote Bete', 'it': 'Barbabietola', 'zh': '甜菜', 'hi': 'चुकंदर', 'ar': 'بنجر', 'ru': 'Свёкла'},
+    'Black beans': {'es': 'Frijoles negros', 'en': 'Black beans', 'pt': 'Feijão preto', 'fr': 'Haricots noirs', 'de': 'Schwarze Bohnen', 'it': 'Fagioli neri', 'zh': '黑豆', 'hi': 'काली बीन्स', 'ar': 'فاصوليا سوداء', 'ru': 'Чёрная фасоль'},
+    'Chickpea': {'es': 'Garbanzos', 'en': 'Chickpea', 'pt': 'Grão-de-bico', 'fr': 'Pois chiche', 'de': 'Kichererbse', 'it': 'Ceci', 'zh': '鹰嘴豆', 'hi': 'चना', 'ar': 'حمص', 'ru': 'Нут'},
+    'Cow': {'es': 'Res', 'en': 'Cow', 'pt': 'Boi', 'fr': 'Bœuf', 'de': 'Rind', 'it': 'Manzo', 'zh': '牛肉', 'hi': 'गोमांस', 'ar': 'لحم بقر', 'ru': 'Говядина'},
+    'Croissant': {'es': 'Cruasán', 'en': 'Croissant', 'pt': 'Croissant', 'fr': 'Croissant', 'de': 'Croissant', 'it': 'Cornetto', 'zh': '牛角包', 'hi': 'क्रोइसैन', 'ar': 'كرواسون', 'ru': 'Круассан'},
+    'Cucumber': {'es': 'Pepino', 'en': 'Cucumber', 'pt': 'Pepino', 'fr': 'Concombre', 'de': 'Gurke', 'it': 'Cetriolo', 'zh': '黄瓜', 'hi': 'खीरा', 'ar': 'خيار', 'ru': 'Огурец'},
+    'Lettuce': {'es': 'Lechuga', 'en': 'Lettuce', 'pt': 'Alface', 'fr': 'Laitue', 'de': 'Kopfsalat', 'it': 'Lattuga', 'zh': '生菜', 'hi': 'सलाद', 'ar': 'خس', 'ru': 'Салат'},
+    'Mini baguette': {'es': 'Mini bagueta', 'en': 'Mini baguette', 'pt': 'Mini baguete', 'fr': 'Mini baguette', 'de': 'Mini-Baguette', 'it': 'Mini baguette', 'zh': '小法棍', 'hi': 'मिनी बैगेट', 'ar': 'baguette صغيرة', 'ru': 'Мини-багет'},
+    'Pork': {'es': 'Cerdo', 'en': 'Pork', 'pt': 'Porco', 'fr': 'Porc', 'de': 'Schweinefleisch', 'it': 'Maiale', 'zh': '猪肉', 'hi': 'सूअर का मांस', 'ar': 'لحم خنزير', 'ru': 'Свинина'},
+    'Salmon': {'es': 'Salmón', 'en': 'Salmon', 'pt': 'Salmão', 'fr': 'Saumon', 'de': 'Lachs', 'it': 'Salmone', 'zh': '三文鱼', 'hi': 'सैल्मन', 'ar': 'سلمون', 'ru': 'Лосось'},
+    'Tomatoes': {'es': 'Tomates', 'en': 'Tomatoes', 'pt': 'Tomates', 'fr': 'Tomates', 'de': 'Tomaten', 'it': 'Pomodori', 'zh': '番茄', 'hi': 'टमाटर', 'ar': 'طماطم', 'ru': 'Помидоры'},
+    'White grapes': {'es': 'Uvas blancas', 'en': 'White grapes', 'pt': 'Uvas brancas', 'fr': 'Raisins blancs', 'de': 'Weiße Trauben', 'it': 'Uve bianche', 'zh': '白葡萄', 'hi': 'सफेद अंगूर', 'ar': 'عنب أبيض', 'ru': 'Белый виноград'},
   };
 
   String getName(String key) {

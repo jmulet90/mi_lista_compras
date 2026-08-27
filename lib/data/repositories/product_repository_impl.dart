@@ -63,7 +63,7 @@ class ProductRepositoryImpl implements ProductRepository {
           try {
             final remoteProducts = await _remote.fetchAll(access.ownerEmail);
             final remoteKeys = {
-              for (final p in remoteProducts) p.nameKey.trim()
+              for (final p in remoteProducts) p.nameKey.trim().toLowerCase()
             };
 
             // 1. Resolve tombstones: delete from Firestore any product
@@ -71,10 +71,11 @@ class ProductRepositoryImpl implements ProductRepository {
             //    Track which keys were tombstoned so the merge skips them.
             final tombstonedKeys = <String>{};
             for (final key in _deletedKeys.values.toList()) {
-              tombstonedKeys.add(key);
-              if (remoteKeys.contains(key)) {
+              final keyLower = key.trim().toLowerCase();
+              tombstonedKeys.add(keyLower);
+              if (remoteKeys.contains(keyLower)) {
                 await _remote.deleteDoc(
-                    ownerEmail: access.ownerEmail, id: key);
+                    ownerEmail: access.ownerEmail, id: keyLower);
               }
               await _deletedKeys.delete(key);
             }
@@ -83,10 +84,10 @@ class ProductRepositoryImpl implements ProductRepository {
             //    (added on another device). Do NOT import products that
             //    were intentionally deleted (in tombstonedKeys).
             final localKeys = {
-              for (final m in _local.getAll()) m.nameKey.trim()
+              for (final m in _local.getAll()) m.nameKey.trim().toLowerCase()
             };
             for (final remote in remoteProducts) {
-              final key = remote.nameKey.trim();
+              final key = remote.nameKey.trim().toLowerCase();
               if (!localKeys.contains(key) && !tombstonedKeys.contains(key)) {
                 await _local.put(remote, key: key);
               }
@@ -95,7 +96,7 @@ class ProductRepositoryImpl implements ProductRepository {
             // 3. Push local-only products to remote (created offline).
             final localProducts = _local.getAll();
             for (final model in localProducts) {
-              if (!remoteKeys.contains(model.nameKey.trim())) {
+              if (!remoteKeys.contains(model.nameKey.trim().toLowerCase())) {
                 await _remote.upload(
                     ownerEmail: access.ownerEmail, data: model.toMap());
               }
@@ -155,7 +156,7 @@ class ProductRepositoryImpl implements ProductRepository {
           if (data == null) continue;
           final model = ProductModel.fromMap(data);
           if (model.nameKey.trim().isEmpty) continue;
-          final key = model.nameKey.trim();
+          final key = model.nameKey.trim().toLowerCase();
 
           // Skip products the user intentionally deleted.
           if (_deletedKeys.containsKey(key)) {
@@ -258,7 +259,7 @@ class ProductRepositoryImpl implements ProductRepository {
         final saved = await _downloadImage(ownerEmail, imageId);
         if (saved != null) {
           model.imagePath = saved;
-          await _local.put(model, key: model.nameKey.trim());
+          await _local.put(model, key: model.nameKey.trim().toLowerCase());
         }
       } catch (_) {
         // Best-effort: los reintentos o el siguiente evento lo cubrirán.
@@ -285,7 +286,9 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<void> upsert(Product product, {String? previousId}) async {
-    final key = product.id.trim();
+    final key = product.id.trim().toLowerCase();
+
+    await _deletedKeys.delete(key);
     final existing = _local.getByKey(key);
     final model = ProductModel.fromEntity(product);
 
@@ -305,14 +308,15 @@ class ProductRepositoryImpl implements ProductRepository {
     }
 
     try {
-      await _local.put(model);
+      await _local.put(model, key: key);
     } catch (e) {
       throw CacheFailure('No se pudo guardar el producto: $e');
     }
 
     await _safeSyncUp(model, imageChanged: pathChanged, removedImageId: removedImageId);
 
-    if (previousId != null && previousId.trim() != key) {
+    if (previousId != null &&
+        previousId.trim().toLowerCase() != key.toLowerCase()) {
       await _safeDelete(previousId.trim());
     }
   }
@@ -325,7 +329,7 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<void> deleteById(String id) async {
-    final docId = id.trim();
+    final docId = id.trim().toLowerCase();
     final existing = _local.getByKey(docId);
     final imageId = existing?.imageId;
 
@@ -396,10 +400,11 @@ class ProductRepositoryImpl implements ProductRepository {
 
   Future<void> _safeDelete(String key) async {
     try {
+      final keyLower = key.trim().toLowerCase();
       final access = await _collaboratorRepository.resolveMyAccess();
       if (access == null || !access.canFullyEdit) return;
-      await _deletedKeys.put(key, key);
-      await _remote.deleteDoc(ownerEmail: access.ownerEmail, id: key);
+      await _deletedKeys.put(keyLower, keyLower);
+      await _remote.deleteDoc(ownerEmail: access.ownerEmail, id: keyLower);
     } catch (e) {
       _logger.error('Error al eliminar producto antiguo de la nube', e);
     }

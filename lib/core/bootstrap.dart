@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -36,6 +38,7 @@ import '../domain/usecases/sign_up.dart';
 import '../domain/usecases/toggle_product.dart';
 import '../domain/usecases/update_product.dart';
 import 'di.dart';
+import 'session_status.dart';
 
 /// Inicializa los datos locales y registra todas las dependencias.
 ///
@@ -69,6 +72,12 @@ Future<void> bootstrap() async {
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(FirebaseAuth.instance),
   );
+  // Garantiza que la sesión persistida sobreviva a los reinicios de la app
+  // (arranques en frío). En Android el valor por defecto ya es LOCAL, pero
+  // fijarlo explícitamente evita regresiones si cambia la configuración.
+  try {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+  } catch (_) {}
   sl.registerLazySingleton(() => SignInUseCase(sl<AuthRepository>()));
   sl.registerLazySingleton(() => SignUpUseCase(sl<AuthRepository>()));
   sl.registerLazySingleton(
@@ -146,8 +155,11 @@ Future<void> bootstrap() async {
     const AppLogger().error('Error inicializando PremiumRepository', e);
   }
 
+  CrashOverlay.log('Setting up session status notifier...');
+  final sessionStatus = SessionStatusNotifier();
+  sl.registerLazySingleton<SessionStatusNotifier>(() => sessionStatus);
   CrashOverlay.log('Setting up auth state watcher...');
-  _watchAuthState(initializer);
+  _watchAuthState(initializer, sessionStatus);
   CrashOverlay.log('bootstrap() completed');
 }
 
@@ -158,28 +170,104 @@ bool _syncRunning = false;
 /// Reacciona a inicios, cambios y cierres de sesión: limpia los datos
 /// locales del usuario anterior y carga los de la cuenta nueva, o los
 /// valores por defecto si es su primer arranque.
-void _watchAuthState(AppInitializer initializer) {
+void _watchAuthState(
+    AppInitializer initializer, SessionStatusNotifier sessionStatus) {
   CrashOverlay.log('Watching auth state changes...');
+
+  // Arranque en frío: si hay una sesión guardada se espera a que Firebase la
+  // restaure sin mostrar el login; si no hay sesión, directo al login.
+  sessionStatus.value = initializer.lastAuthUid == null
+      ? AppSessionPhase.unauthenticated
+      : AppSessionPhase.loading;
+
+  // Margen de seguridad: si Firebase no restaura la sesión en frío en unos
+  // segundos, se entra igualmente con la cuenta de la sesión local (cuyos
+  // datos siguen en Hive). Nunca un splash infinito ni un login falso.
+  Timer(const Duration(milliseconds: 2500), () {
+    final phase = sessionStatus.value;
+    if ((phase == AppSessionPhase.loading ||
+            phase == AppSessionPhase.authenticatedLoadingData) &&
+        initializer.lastAuthUid != null) {
+      sessionStatus.value = AppSessionPhase.ready;
+    }
+  });
+
   FirebaseAuth.instance.authStateChanges().listen((user) async {
     try {
+      print('[AW] auth: ${user?.uid ?? "null"}; cur=${FirebaseAuth.instance.currentUser?.uid ?? "null"}');
       CrashOverlay.log('Auth state changed: ${user?.uid ?? "null (logged out)"}');
+      final previousOwner = _loadedOwner;
+      final previousUid = initializer.lastAuthUid;
+
+      // Persistir la sesión local en cuanto hay un usuario: es lo que
+      // permite saltar el login en el arranque en frío y reabrir directo
+      // en la misma cuenta.
+      if (user != null) {
+        await initializer.setLastAuthUid(user.uid);
+        // La sesión ya se confirmó: pasar a cargar sus datos.
+        if (sessionStatus.value == AppSessionPhase.loading ||
+            sessionStatus.value == AppSessionPhase.unauthenticated) {
+          sessionStatus.value = AppSessionPhase.authenticatedLoadingData;
+        }
+      }
+
       final access = await sl<CollaboratorRepository>().resolveMyAccess();
       final owner = access?.ownerEmail.trim().toLowerCase();
 
-      // Misma cuenta ya cargada: solo garantizar que la escucha esté activa.
-      if (owner != null && owner == _loadedOwner) {
+      // Logout real: había una sesión cargada, el stream emite null y Firebase
+      // ya no tiene usuario en memoria. No es un arranque en frío (ahí
+      // `previousOwner` es null cuando llega el primer evento null) ni un null
+      // transitorio del refresco de sesión (donde currentUser sigue vivo), así
+      // que solo aquí se limpia la sesión local y los datos del anterior.
+      if (user == null &&
+          previousOwner != null &&
+          FirebaseAuth.instance.currentUser == null) {
+        await initializer.setLastAuthUid(null);
+        await initializer.clearUserData();
+        _loadedOwner = null;
+        _syncRunning = false;
+        sessionStatus.value = AppSessionPhase.unauthenticated;
+        return;
+      }
+
+      // Arranque en frío que restaura una cuenta DISTINTA a la que dejó los
+      // datos locales (p. ej. se cambió de cuenta en otro dispositivo): limpiar
+      // antes de sincronizar para que no se mezclen los datos de dos cuentas.
+      if (user != null && previousUid != null && user.uid != previousUid) {
+        await initializer.clearUserData();
+        await initializer.seedIfEmpty();
+      }
+
+      // Misma cuenta ya cargada en este proceso, o arranque frío con la misma
+      // cuenta: solo garantizar que la escucha esté activa.
+      if (user != null && owner != null && owner == previousOwner) {
         if (!_syncRunning) await _startSync();
         return;
       }
 
-      // Cambio de cuenta real (no arranque frío con la misma cuenta).
-      if (_loadedOwner != null) {
+      // Cambio de cuenta real dentro del mismo proceso (no arranque frío,
+      // donde previousOwner es null): limpiar los datos locales del usuario
+      // anterior y sembrar los defaults para la cuenta nueva.
+      if (user != null &&
+          previousOwner != null &&
+          owner != null &&
+          owner != previousOwner) {
         await initializer.clearUserData();
+        await initializer.seedIfEmpty();
       }
+
       _loadedOwner = owner;
       _syncRunning = false;
 
-      if (owner == null) return;
+      if (user == null || owner == null) {
+        // Firebase no confirmó sesión (p. ej. restauración lenta) pero hay una
+        // sesión local guardada: entrar con los datos locales de esa cuenta.
+        if (sessionStatus.value == AppSessionPhase.loading &&
+            initializer.lastAuthUid != null) {
+          sessionStatus.value = AppSessionPhase.ready;
+        }
+        return;
+      }
 
       // Foto completa de la nube para esta cuenta...
       await _startSync(fullRefresh: true);
@@ -192,6 +280,14 @@ void _watchAuthState(AppInitializer initializer) {
 
 /// Arranca la sincronización bidireccional (reiniciable por cuenta).
 Future<void> _startSync({bool fullRefresh = false}) async {
+  // Primera carga de la cuenta: la app muestra el splash mientras llegan los
+  // datos. Las re-sincronizaciones de una cuenta ya lista no cambian la fase.
+  final sessionStatus = sl<SessionStatusNotifier>();
+  if (sessionStatus.value == AppSessionPhase.loading ||
+      sessionStatus.value == AppSessionPhase.unauthenticated) {
+    sessionStatus.value = AppSessionPhase.authenticatedLoadingData;
+  }
+
   sl<CollaboratorRepository>().invalidateAccessCache();
   final access = await sl<CollaboratorRepository>().resolveMyAccess();
   CrashOverlay.log('[_startSync] access=${access != null ? "owner=${access.ownerEmail} isOwner=${access.isOwner}" : "NULL"}');
@@ -202,5 +298,6 @@ Future<void> _startSync({bool fullRefresh = false}) async {
     sl<CategoryRepository>().startRemoteSync(fullRefresh: fullRefresh),
   ]);
   _syncRunning = true;
+  sessionStatus.value = AppSessionPhase.ready;
   CrashOverlay.log('[_startSync] DONE');
 }

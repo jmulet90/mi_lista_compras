@@ -3,13 +3,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/di.dart';
+import '../../core/session_status.dart';
 import '../../data/bootstrap/app_initializer.dart';
-import '../../domain/entities/auth_user.dart';
-import '../../domain/repositories/auth_repository.dart';
 import '../app_settings.dart';
 import '../localization/app_localizations.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_navigator_screen.dart';
+import '../screens/splash_screen.dart';
 
 class MiListaComprasApp extends StatefulWidget {
   const MiListaComprasApp({super.key});
@@ -21,15 +21,18 @@ class MiListaComprasApp extends StatefulWidget {
 class _MiListaComprasAppState extends State<MiListaComprasApp> {
   late final ValueNotifier<AppSettingsData> _settingsNotifier;
 
-  final AuthRepository _authRepository = sl<AuthRepository>();
-  late final Stream<AuthUser?> _authStateStream;
-
   @override
   void initState() {
     super.initState();
     _settingsNotifier = ValueNotifier(_loadSettings());
     _settingsNotifier.addListener(_persistSettings);
-    _authStateStream = _authRepository.authStateChanges();
+  }
+
+  @override
+  void dispose() {
+    _settingsNotifier.removeListener(_persistSettings);
+    _settingsNotifier.dispose();
+    super.dispose();
   }
 
   AppSettingsData _loadSettings() {
@@ -112,23 +115,18 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
             theme: _buildTheme(Brightness.light),
             darkTheme: _buildTheme(Brightness.dark),
             themeMode: settings.themeMode,
-            home: StreamBuilder(
-              stream: _authStateStream,
-              builder: (context, snapshot) {
-                final authUser =
-                    snapshot.data ?? _authRepository.currentUser;
-
-                if (authUser != null) {
-                  return const MainNavigatorScreen();
+            home: ValueListenableBuilder<AppSessionPhase>(
+              valueListenable: sl<SessionStatusNotifier>(),
+              builder: (context, phase, child) {
+                switch (phase) {
+                  case AppSessionPhase.loading:
+                  case AppSessionPhase.authenticatedLoadingData:
+                    return const SplashScreen();
+                  case AppSessionPhase.ready:
+                    return const MainNavigatorScreen();
+                  case AppSessionPhase.unauthenticated:
+                    return const LoginScreen();
                 }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                return const LoginScreen();
               },
             ),
           );

@@ -1,8 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../../presentation/localization/app_localizations.dart';
 import '../../core/crash_overlay.dart';
 import '../../core/logger.dart';
+import '../../core/utils/product_asset_catalog.dart';
 import '../../firebase_options.dart';
 import '../datasources/category_local_data_source.dart';
 import '../datasources/product_local_data_source.dart';
@@ -126,6 +128,7 @@ class AppInitializer {
     await _migrateLegacyCategories();
     CrashOverlay.log('Seeding defaults...');
     await _seedDefaults();
+    CrashOverlay.log('After seed: ${products.getAll().length} products, ${categories.getAll().length} categories');
     CrashOverlay.log('AppInitializer.initialize() completed');
   }
 
@@ -134,6 +137,21 @@ class AppInitializer {
   Future<void> clearUserData() async {
     await Hive.box<CategoryModel>(CategoryLocalDataSource.boxName).clear();
     await Hive.box<ProductModel>(ProductLocalDataSource.boxName).clear();
+  }
+
+  static const String lastAuthUidKey = 'last_auth_uid';
+
+  /// UID de la última sesión iniciada sin haber cerrado sesión. Se usa para
+  /// no mostrar el login en el arranque en frío mientras Firebase restaura
+  /// la sesión de forma asíncrona (que demora algunos segundos).
+  String? get lastAuthUid => settings.get(lastAuthUidKey) as String?;
+
+  Future<void> setLastAuthUid(String? uid) async {
+    if (uid == null) {
+      await settings.delete(lastAuthUidKey);
+    } else {
+      await settings.put(lastAuthUidKey, uid);
+    }
   }
 
   /// Siembra categorías y productos por defecto si las cajas están vacías
@@ -179,18 +197,21 @@ class AppInitializer {
 
   /// MIGRACIÓN: normaliza la clave de cada producto a su nameKey y fusiona
   /// duplicados físicos heredados (claves numéricas de versiones anteriores).
-  void _normalizeProductKeys() {
+    void _normalizeProductKeys() {
     final box = Hive.box<ProductModel>(ProductLocalDataSource.boxName);
     final merged = <String, ProductModel>{};
     for (final model in box.values) {
-      final cleanKey = model.nameKey.trim();
+      final cleanKey = model.nameKey.trim().toLowerCase();
       merged[cleanKey] = ProductModel(
-        nameKey: cleanKey,
+        nameKey: model.nameKey.trim(),
         categoryKey: model.categoryKey,
         isToBuy: model.isToBuy,
         emoji: model.emoji,
         imagePath: model.imagePath,
         isBuyScreen: model.isBuyScreen,
+        imageId: model.imageId,
+        quantity: model.quantity,
+        unit: model.unit,
       );
     }
     box.clear();
@@ -285,14 +306,17 @@ class AppInitializer {
       if (categoryKey.trim().toLowerCase() == legacyNorm) {
         categoryKey = pickTarget(model);
       }
-      final cleanKey = model.nameKey.trim();
+      final cleanKey = model.nameKey.trim().toLowerCase();
       merged[cleanKey] = ProductModel(
-        nameKey: cleanKey,
+        nameKey: model.nameKey.trim(),
         categoryKey: categoryKey,
         isToBuy: model.isToBuy,
         emoji: model.emoji,
         imagePath: model.imagePath,
         isBuyScreen: model.isBuyScreen,
+        imageId: model.imageId,
+        quantity: model.quantity,
+        unit: model.unit,
       );
     }
     await box.clear();
@@ -307,58 +331,120 @@ class AppInitializer {
       ]);
     }
 
-    if (products.isEmpty) {
-      // Seed from asset PNGs. Only categories that have at least one
-      // product PNG in assets/images/emojis/products/<folder>/ get seeded.
-      // Categories without any PNGs (cleaning, drinks, personal_care)
-      // are left empty — the user can add products manually.
-      const Map<String, List<({String nameKey, String png})>> _assetProducts = {
-        'Breakfast': [
-          (nameKey: 'bread', png: 'bread'),
-          (nameKey: 'ball bread', png: 'ball bread'),
-          (nameKey: 'coffee', png: 'coffee'),
-          (nameKey: 'croissant', png: 'croassaint'),
-          (nameKey: 'milk', png: 'milk'),
-          (nameKey: 'mini baguette', png: 'mini baguette'),
-        ],
-        'Fruits': [
-          (nameKey: 'apples', png: 'apples'),
-          (nameKey: 'orange', png: 'orange'),
-          (nameKey: 'white grapes', png: 'white grapes'),
-        ],
-        'Kitchen': [
-          (nameKey: 'black beans', png: 'black beans'),
-          (nameKey: 'chickpea', png: 'chickpea'),
-        ],
-        'Meats': [
-          (nameKey: 'chicken', png: 'chicken'),
-          (nameKey: 'cow', png: 'cow'),
-          (nameKey: 'fish', png: 'fish'),
-          (nameKey: 'pork', png: 'pork'),
-          (nameKey: 'salmon', png: 'Salmon'),
-        ],
-        'Vegetables': [
-          (nameKey: 'avocado', png: 'avocado'),
-          (nameKey: 'beet', png: 'beet'),
-          (nameKey: 'carrot', png: 'carrot'),
-          (nameKey: 'cucumber', png: 'cucumber'),
-          (nameKey: 'lettuce', png: 'lettuce'),
-          (nameKey: 'tomatoes', png: 'tomatoes'),
-        ],
-      };
+    // Catálogo de productos semilla derivado dinámicamente de los PNG en
+    // assets. Es ADITIVO e IDEMPOTENTE: cada arranque se asegura de que
+    // exista un producto por cada PNG (así los PNG nuevos aparecen solos),
+    // pero NUNCA borra los productos que el usuario creó manualmente.
+    await _seedProductsFromAssets();
+  }
 
-      for (final entry in _assetProducts.entries) {
-        final category = entry.key;
-        for (final p in entry.value) {
-          await products.put(ProductModel(
-            nameKey: p.nameKey,
+  /// Asegura que exista un producto semilla por cada PNG del catálogo.
+  ///
+  /// El [nameKey] se deriva del nombre del archivo en formato Título, p. ej.
+  /// `white grapes.png` -> `White Grapes`. Los productos ya presentes (por su
+  /// clave lowercased) no se tocan; si el usuario editó uno, se conserva su
+  /// estado, pero la imagen vuelve a apuntar al PNG de assets.
+  Future<void> _seedProductsFromAssets() async {
+    final catalog = ProductAssetCatalog.instance;
+    await catalog.ensureLoaded();
+    final existingProducts = products.getAll();
+    final existingNames = {
+      for (final p in existingProducts) p.nameKey.trim().toLowerCase(),
+    };
+
+    // Si el catálogo de PNG no se pudo cargar (p. ej. manifiesto de assets no
+    // disponible), se siembra un respaldo mínimo con las rutas reales de los
+    // assets para que la app nunca quede solo con categorías y sin productos.
+    final Map<String, List<String>> entries = catalog.pngCount == 0
+        ? _fallbackSeedPngs
+        : {
+            for (final category in _canonicalCategories)
+              category: catalog.pngsFor(category),
+          };
+
+    for (final entry in entries.entries) {
+      final category = entry.key;
+      for (final assetPath in entry.value) {
+        final fileName = assetPath.split('/').last;
+        final nameKey = _canonicalSeedName(fileName);
+        final cleanKey = nameKey.toLowerCase();
+        if (existingNames.contains(cleanKey)) continue;
+        await products.put(
+          ProductModel(
+            nameKey: nameKey,
             categoryKey: category,
             isToBuy: false,
-            emoji: 'assets/images/emojis/products/$category/${p.png}.png',
+            emoji: assetPath,
             isBuyScreen: false,
-          ));
-        }
+          ),
+          key: cleanKey,
+        );
       }
     }
+  }
+
+  /// Productos mínimos de respaldo usados cuando el catálogo de PNG no se
+  /// pudo cargar. Son rutas reales que existen en `assets/images/emojis/products/`.
+  static const Map<String, List<String>> _fallbackSeedPngs = {
+    'Breakfast': [
+      'assets/images/emojis/products/breakfast/bread.png',
+      'assets/images/emojis/products/breakfast/ball bread.png',
+      'assets/images/emojis/products/breakfast/coffee.png',
+      'assets/images/emojis/products/breakfast/croassaint.png',
+      'assets/images/emojis/products/breakfast/milk.png',
+      'assets/images/emojis/products/breakfast/mini baguette.png',
+    ],
+    'Fruits': [
+      'assets/images/emojis/products/fruits/apples.png',
+      'assets/images/emojis/products/fruits/orange.png',
+      'assets/images/emojis/products/fruits/white grapes.png',
+    ],
+    'Kitchen': [
+      'assets/images/emojis/products/kitchen/black beans.png',
+      'assets/images/emojis/products/kitchen/chickpea.png',
+    ],
+    'Meats': [
+      'assets/images/emojis/products/meats/chicken.png',
+      'assets/images/emojis/products/meats/cow.png',
+      'assets/images/emojis/products/meats/fish.png',
+      'assets/images/emojis/products/meats/pork.png',
+      'assets/images/emojis/products/meats/Salmon.png',
+    ],
+    'Vegetables': [
+      'assets/images/emojis/products/vegetables/avocado.png',
+      'assets/images/emojis/products/vegetables/beet.png',
+      'assets/images/emojis/products/vegetables/carrot.png',
+      'assets/images/emojis/products/vegetables/cucumber.png',
+      'assets/images/emojis/products/vegetables/lettuce.png',
+      'assets/images/emojis/products/vegetables/tomatoes.png',
+    ],
+  };
+
+  /// `white grapes.png` -> `White Grapes` (título crudo).
+  String _titleCaseFromFile(String fileName) {
+    final base = fileName.replaceAll(RegExp(r'\.png$'), '');
+    final parts = base.split(RegExp(r'[\s_]+'));
+    return parts.map((w) {
+      if (w.isEmpty) return w;
+      return w[0].toUpperCase() + w.substring(1);
+    }).join(' ');
+  }
+
+  /// Corrige nombres de archivo históricamente mal escritos que tienen
+  /// equivalencia canónica en el diccionario de nombres.
+  static const Map<String, String> _seedNameAliases = {
+    'Croassaint': 'Croissant',
+  };
+
+  /// Deriva el [nameKey] canónico de un producto semilla a partir del nombre
+  /// del archivo PNG. Si el nombre (normalizado) existe en el diccionario de
+  /// nombres (AppLocalizations._names), se usa esa clave canónica exacta para
+  /// que el display y las ediciones nunca generen un rename por mayúsculas.
+  /// Si no existe, se devuelve el título crudo del archivo.
+  String _canonicalSeedName(String fileName) {
+    final raw = _titleCaseFromFile(fileName);
+    final alias = _seedNameAliases[raw];
+    final resolved = AppLocalizations.findNameKey(alias ?? raw);
+    return resolved ?? (alias ?? raw);
   }
 }
