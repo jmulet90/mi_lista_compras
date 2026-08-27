@@ -128,7 +128,8 @@ class AppInitializer {
     await _migrateLegacyCategories();
     CrashOverlay.log('Seeding defaults...');
     await _seedDefaults();
-    CrashOverlay.log('After seed: ${products.getAll().length} products, ${categories.getAll().length} categories');
+    CrashOverlay.log(
+        'After seed: ${products.getAll().length} products, ${categories.getAll().length} categories');
     CrashOverlay.log('AppInitializer.initialize() completed');
   }
 

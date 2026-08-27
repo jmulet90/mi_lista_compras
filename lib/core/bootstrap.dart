@@ -167,6 +167,12 @@ Future<void> bootstrap() async {
 String? _loadedOwner;
 bool _syncRunning = false;
 
+/// Margen antes de tratar un `null` de auth como logout real. Firebase puede
+/// emitir un `null` transitorio (renovación de token, blip de red) y volver a
+/// emitir un usuario en segundos: si se tomara como logout real se borraría la
+/// lista local sin motivo.
+Timer? _logoutGrace;
+
 /// Reacciona a inicios, cambios y cierres de sesión: limpia los datos
 /// locales del usuario anterior y carga los de la cuenta nueva, o los
 /// valores por defecto si es su primer arranque.
@@ -203,6 +209,8 @@ void _watchAuthState(
       // permite saltar el login en el arranque en frío y reabrir directo
       // en la misma cuenta.
       if (user != null) {
+        _logoutGrace?.cancel();
+        _logoutGrace = null;
         await initializer.setLastAuthUid(user.uid);
         // La sesión ya se confirmó: pasar a cargar sus datos.
         if (sessionStatus.value == AppSessionPhase.loading ||
@@ -222,11 +230,15 @@ void _watchAuthState(
       if (user == null &&
           previousOwner != null &&
           FirebaseAuth.instance.currentUser == null) {
-        await initializer.setLastAuthUid(null);
-        await initializer.clearUserData();
-        _loadedOwner = null;
-        _syncRunning = false;
-        sessionStatus.value = AppSessionPhase.unauthenticated;
+        // Dar margen de recuperación: si Firebase vuelve a emitir un usuario
+        // (o lo restaura en memoria) antes de que pase el margen, se cancela
+        // y no se pierde la lista. Solo transcurrido el margen sin sesión se
+        // trata como logout real y se limpian los datos.
+        _logoutGrace ??= Timer(const Duration(milliseconds: 3000), () async {
+          if (FirebaseAuth.instance.currentUser != null) return;
+          await _performRealLogout(initializer, sessionStatus);
+          _logoutGrace = null;
+        });
         return;
       }
 
@@ -276,6 +288,17 @@ void _watchAuthState(
       const AppLogger().error('Error al cambiar de cuenta', e);
     }
   });
+}
+
+/// Logout real (fuera del margen de recuperación): borrar la sesión local y
+/// los datos de la cuenta cargada, y volver a la pantalla de login.
+Future<void> _performRealLogout(AppInitializer initializer,
+    SessionStatusNotifier sessionStatus) async {
+  await initializer.setLastAuthUid(null);
+  await initializer.clearUserData();
+  _loadedOwner = null;
+  _syncRunning = false;
+  sessionStatus.value = AppSessionPhase.unauthenticated;
 }
 
 /// Arranca la sincronización bidireccional (reiniciable por cuenta).
