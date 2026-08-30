@@ -83,6 +83,7 @@ class DialogKit {
     required Color accent,
     String? imagePath,
     String? emoji,
+    IconData emptyIcon = Icons.shopping_bag_outlined,
   }) {
     return Container(
       width: 68,
@@ -113,7 +114,7 @@ class DialogKit {
                   )
                 : Center(
                     child: Icon(
-                      Icons.shopping_bag_outlined,
+                      emptyIcon,
                       size: 26,
                       color: accent.withValues(alpha: 0.5),
                     ),

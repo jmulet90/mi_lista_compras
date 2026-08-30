@@ -385,6 +385,18 @@ class AppLocalizations {
       'zh': '它将从“{name}”的产品中移除。', 'hi': 'इसे “{name}” के उत्पादों से हटा दिया जाएगा।',
       'ar': 'سيتم إزالتها من منتجات «{name}».', 'ru': 'Она будет убрана из товаров «{name}».',
     },
+    'subcategoryCreated': {
+      'es': 'Subcategoría “{name}” creada. Aparecerá cuando tenga productos.',
+      'en': 'Subcategory “{name}” created. It will appear once it has products.',
+      'pt': 'Subcategoria “{name}” criada. Aparecerá quando tiver produtos.',
+      'fr': 'Sous-catégorie « {name} » créée. Elle apparaîtra dès qu’elle aura des produits.',
+      'de': 'Unterkategorie „{name}“ erstellt. Sie erscheint, sobald sie Produkte hat.',
+      'it': 'Sottocategoria “{name}” creata. Apparirà quando avrà prodotti.',
+      'zh': '子类别“{name}”已创建。当它有产品时才会显示。',
+      'hi': 'उपश्रेणी “{name}” बनाई गई। जब इसमें उत्पाद होंगे तभी दिखेगी।',
+      'ar': 'تم إنشاء الفئة الفرعية «{name}». ستظهر عندما تحتوي على منتجات.',
+      'ru': 'Подкатегория «{name}» создана. Она появится, когда в ней будут товары.',
+    },
     'moveProduct': {
       'es': 'Mover producto', 'en': 'Move product', 'pt': 'Mover produto',
       'fr': 'Déplacer le produit', 'de': 'Produkt verschieben', 'it': 'Sposta prodotto',
@@ -1253,6 +1265,9 @@ class AppLocalizations {
   String get deleteSubcategory => _s('deleteSubcategory');
   String deleteSubcategoryConfirm(String name) =>
       _s('deleteSubcategoryConfirm').replaceFirst('{name}', name);
+
+  String subcategoryCreated(String name) =>
+      _s('subcategoryCreated').replaceFirst('{name}', name);
   String get moveProduct => _s('moveProduct');
   String movedProductTo(String sub) =>
       _s('movedProductTo').replaceFirst('{sub}', sub);

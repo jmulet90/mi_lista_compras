@@ -270,10 +270,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
     }
 
     final plus = PremiumLimits.isPremiumPlusEffectiveSync;
-    final subs = SubcategoryActions.visibleSubs(
-      widget.catProducts,
-      widget.subcategories,
-    );
+    final subs = SubcategoryActions.visibleSubs(widget.catProducts);
     if (!plus || subs.isEmpty) {
       final children = <Widget>[];
       var index = 0;
@@ -313,9 +310,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
     final item = sub == null
         ? null
         : SubcategoryActions.itemNamed(widget.subcategories, sub);
-    final defaultsToFolder =
-        item == null ||
-        (item.imagePath == null && (item.emoji == null || item.emoji!.isEmpty));
+    final defaultsToFolder = item == null || item.imagePath == null;
     final hasItems = count > 0;
 
     return Padding(
@@ -393,7 +388,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
                             )
                           : ProductVisuals.circleChild(
                               imagePath: item.imagePath,
-                              emoji: item.emoji,
+                              emoji: null,
                               emojiSize: 28,
                             ),
                     ),

@@ -9,8 +9,8 @@ import '../services/subcategory_actions.dart';
 import 'dialog_kit.dart';
 import 'show_failure.dart';
 
-/// Diálogo de nueva subcategoría (Premium Plus) con el mismo diseño que el de
-/// crear categoría: nombre, círculo de vista previa, emojis y cámara/galería.
+/// Diálogo de nueva subcategoría (Premium Plus): nombre, círculo de vista
+/// previa y cámara/galería (foto opcional).
 /// Persiste la subcategoría y devuelve su nombre al cerrar con éxito.
 class SubcategoryDialog extends StatefulWidget {
   final String categoryKey;
@@ -28,20 +28,14 @@ class SubcategoryDialog extends StatefulWidget {
 
 class _SubcategoryDialogState extends State<SubcategoryDialog> {
   late TextEditingController _nameController;
-  String? _selectedEmoji;
   String? _imagePath;
 
-  static const List<String> _emojis = [
-    '📁', '🗂️', '📦', '🛒', '🧺', '🏷️', '⭐', '🥫', '🧃', '🍞',
-    '🥛', '🧴', '🧼', '📝', '🍎', '🥦', '🧀', '🥩', '☕', '🐾',
-  ];
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _selectedEmoji = _emojis.first;
   }
 
   @override
@@ -61,7 +55,6 @@ class _SubcategoryDialogState extends State<SubcategoryDialog> {
     if (savedPath != null) {
       setState(() {
         _imagePath = savedPath;
-        _selectedEmoji = null;
       });
     }
   }
@@ -104,21 +97,8 @@ class _SubcategoryDialogState extends State<SubcategoryDialog> {
               child: DialogKit.previewCircle(
                 accent: accent,
                 imagePath: _imagePath,
-                emoji: _selectedEmoji ?? '📁',
+                emptyIcon: Icons.folder_open_rounded,
               ),
-            ),
-            const SizedBox(height: 12),
-            DialogKit.emojiStrip(
-              context: context,
-              accent: accent,
-              emojis: _emojis,
-              selected: _selectedEmoji,
-              onSelect: (emoji) {
-                setState(() {
-                  _selectedEmoji = emoji;
-                  _imagePath = null;
-                });
-              },
             ),
             const SizedBox(height: 12),
             DialogKit.mediaRow(
@@ -146,8 +126,14 @@ class _SubcategoryDialogState extends State<SubcategoryDialog> {
                 widget.categoryKey,
                 SubcategoryItem(
                   name: name,
-                  emoji: _selectedEmoji,
                   imagePath: _imagePath,
+                ),
+              );
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(t.subcategoryCreated(name)),
+                  duration: const Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
                 ),
               );
               if (context.mounted) {

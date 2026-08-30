@@ -794,10 +794,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
                 final subNamesAll =
                     subMode || !PremiumLimits.isPremiumPlusEffectiveSync
                     ? const <String>[]
-                    : SubcategoryActions.visibleSubs(
-                        visibleProducts,
-                        _subsForCategory,
-                      );
+                    : SubcategoryActions.visibleSubs(visibleProducts);
                 final subNames = subNamesAll;
 
                 final showEmpty = subMode
@@ -1322,12 +1319,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     if (mounted) setState(() {});
   }
 
-  /// Visual de una subcategoría: foto > emoji > carpeta por defecto.
+  /// Visual de una subcategoría: foto del usuario > carpeta por defecto.
   Widget _subVisual(SubcategoryItem? item, {double emojiSize = 22}) {
     final accent = DialogKit.accentForBuy(widget.isBuyScreen);
-    final defaultsToFolder =
-        item == null ||
-        (item.imagePath == null && (item.emoji == null || item.emoji!.isEmpty));
+    final defaultsToFolder = item == null || item.imagePath == null;
     if (defaultsToFolder) {
       return Center(
         child: Icon(
@@ -1339,7 +1334,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     }
     return ProductVisuals.circleChild(
       imagePath: item.imagePath,
-      emoji: item.emoji,
+      emoji: null,
       emojiSize: emojiSize,
     );
   }
@@ -1357,10 +1352,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     final accent = DialogKit.accentForBuy(widget.isBuyScreen);
 
     final plus = PremiumLimits.isPremiumPlusEffectiveSync;
-    final subs = SubcategoryActions.visibleSubs(
-      products,
-      _subsForCategory,
-    );
+    final subs = SubcategoryActions.visibleSubs(products);
     if (!plus || subs.isEmpty) {
       return [for (final p in products) _buildListProduct(context, p)];
     }
@@ -1397,9 +1389,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     final item = sub == null
         ? null
         : SubcategoryActions.itemNamed(_subsForCategory, sub);
-    final defaultsToFolder =
-        item == null ||
-        (item.imagePath == null && (item.emoji == null || item.emoji!.isEmpty));
+    final defaultsToFolder = item == null || item.imagePath == null;
     final hasItems = count > 0;
 
     return Padding(
@@ -1481,7 +1471,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
                             )
                           : ProductVisuals.circleChild(
                               imagePath: item.imagePath,
-                              emoji: item.emoji,
+                              emoji: null,
                               emojiSize: 30,
                             ),
                     ),

@@ -48,15 +48,11 @@ class SubcategoryActions {
     return list;
   }
 
-  /// Nombres de subcategorías a mostrar para una categoría: las persistidas
-  /// (aunque aún no tengan productos) más las que aparecen en los productos.
-  static List<String> visibleSubs(
-    List<Product> products,
-    List<SubcategoryItem> persisted,
-  ) {
-    final knownNames = {for (final s in persisted) s.name};
-    return distinct(products, known: knownNames.toList());
-  }
+  /// Nombres de subcategorías a mostrar para una categoría en [products]:
+  /// solo las que aparecen en esos productos. Una subcategoría vacía no se
+  /// muestra hasta que tarda al menos un producto en esa pantalla (compra o
+  /// despensa), igual que las heredadas.
+  static List<String> visibleSubs(List<Product> products) => distinct(products);
 
   /// El [SubcategoryItem] persistido cuyo nombre coincide con [name], o null.
   static SubcategoryItem? itemNamed(List<SubcategoryItem> items, String name) {

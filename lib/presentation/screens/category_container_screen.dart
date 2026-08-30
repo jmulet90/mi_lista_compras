@@ -82,10 +82,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
   /// devuelve 0, para no insinuar una función bloqueada dentro de la tarjeta.
   int _subcategoryCountOf(CategoryItem catItem, List<Product> catProducts) {
     if (!PremiumLimits.isPremiumPlusEffectiveSync) return 0;
-    return SubcategoryActions.visibleSubs(
-      catProducts,
-      _subcategoriesOf(catItem),
-    ).length;
+    return SubcategoryActions.visibleSubs(catProducts).length;
   }
 
   @override
