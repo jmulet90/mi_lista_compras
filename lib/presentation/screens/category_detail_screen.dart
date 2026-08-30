@@ -200,20 +200,22 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final cat in options)
-              ListTile(
-                leading: Icon(
-                  Icons.category_outlined,
-                  color: const Color(0xFF184878),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final cat in options)
+                ListTile(
+                  leading: Icon(
+                    Icons.category_outlined,
+                    color: const Color(0xFF184878),
+                  ),
+                  title: Text(t.getCategoryName(cat.key)),
+                  onTap: () => Navigator.of(sheetContext).pop(cat.key),
                 ),
-                title: Text(t.getCategoryName(cat.key)),
-                onTap: () => Navigator.of(sheetContext).pop(cat.key),
-              ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );

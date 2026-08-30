@@ -114,11 +114,10 @@ class _AddProductDialogState extends State<AddProductDialog> {
     if (ownPngs.isNotEmpty) {
       pngs = ownPngs;
     } else {
-      // Categoría nueva/personalizada: no volcar todos los PNG de golpe.
-      // Por defecto restringir a la primera categoría del catálogo; la
-      // barra de filtros permite ir cambiando de categoría.
-      final effectiveFilter = _pngFilterCategory ??
-          (filterCats.isNotEmpty ? filterCats.first : null);
+      // Categoría nueva/personalizada: mostrar todo el catálogo por defecto
+      // para que el usuario vea todos los productos disponibles; la barra
+      // de filtros permite acotar por categoría.
+      final effectiveFilter = _pngFilterCategory;
       pngs = effectiveFilter == null
           ? catalog.allPngs()
           : catalog.pngsFor(effectiveFilter);
@@ -324,15 +323,17 @@ class _CategoryFilterBar extends StatelessWidget {
     final dark = DialogKit.isDark(context);
     return SizedBox(
       height: 38,
-      child: ListView(
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        children: [
-          _pill(null, allLabel, dark),
-          for (final key in categories) ...[
-            const SizedBox(width: 8),
-            _pill(key, t.getCategoryName(key), dark),
+        child: Row(
+          children: [
+            _pill(null, allLabel, dark),
+            for (final key in categories) ...[
+              const SizedBox(width: 8),
+              _pill(key, t.getCategoryName(key), dark),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

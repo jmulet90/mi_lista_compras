@@ -237,48 +237,51 @@ class SubcategoryActions {
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  '${t.moveProduct}: ${t.getProductName(product.nameKey)}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '${t.moveProduct}: ${t.getProductName(product.nameKey)}',
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
-            ),
-            for (final sub in targetList)
-              ListTile(
-                leading: Icon(
-                  sub.isEmpty ? Icons.inbox_outlined : Icons.folder_open_outlined,
-                  color:
-                      sub.isEmpty ? Colors.grey : const Color(0xFF184878),
+              for (final sub in targetList)
+                ListTile(
+                  leading: Icon(
+                    sub.isEmpty ? Icons.inbox_outlined : Icons.folder_open_outlined,
+                    color:
+                        sub.isEmpty ? Colors.grey : const Color(0xFF184878),
+                  ),
+                  title: Text(sub.isEmpty ? t.noSubcategory : sub),
+                  trailing: sub == normalizedCurrent
+                      ? const Icon(Icons.check, size: 18, color: Colors.green)
+                      : null,
+                  onTap: () {
+                    final target = sub;
+                    debugPrint('[MOVE] tap tapped=$target');
+                    Navigator.of(sheetContext).pop();
+                    _performMove(
+                      context,
+                      product: product,
+                      t: t,
+                      current: current,
+                      chosen: target,
+                      onMoved: onMoved,
+                    );
+                  },
                 ),
-                title: Text(sub.isEmpty ? t.noSubcategory : sub),
-                trailing: sub == normalizedCurrent
-                    ? const Icon(Icons.check, size: 18, color: Colors.green)
-                    : null,
-                onTap: () {
-                  final target = sub;
-                  debugPrint('[MOVE] tap tapped=$target');
-                  Navigator.of(sheetContext).pop();
-                  _performMove(
-                    context,
-                    product: product,
-                    t: t,
-                    current: current,
-                    chosen: target,
-                    onMoved: onMoved,
-                  );
-                },
-              ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
@@ -341,21 +344,23 @@ class SubcategoryActions {
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(Icons.drive_file_rename_outline, color: accent),
-              title: Text(t.renameSubcategory),
-              onTap: () => Navigator.of(sheetContext).pop('rename'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Color(0xFFE11D48)),
-              title: Text(t.deleteSubcategory),
-              onTap: () => Navigator.of(sheetContext).pop('delete'),
-            ),
-            const SizedBox(height: 8),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.drive_file_rename_outline, color: accent),
+                title: Text(t.renameSubcategory),
+                onTap: () => Navigator.of(sheetContext).pop('rename'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Color(0xFFE11D48)),
+                title: Text(t.deleteSubcategory),
+                onTap: () => Navigator.of(sheetContext).pop('delete'),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
