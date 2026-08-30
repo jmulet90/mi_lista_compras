@@ -17,6 +17,11 @@ class BillingDataSource {
     return response.productDetails;
   }
 
+  Future<List<ProductDetails>> queryProducts(Set<String> productIds) async {
+    final response = await _api.queryProductDetails(productIds);
+    return response.productDetails;
+  }
+
   Future<void> buy(ProductDetails product) =>
       _api.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: product));
 

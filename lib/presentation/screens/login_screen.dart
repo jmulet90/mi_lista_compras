@@ -348,14 +348,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.contain,
-              ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.cover,
             ),
           ),
         ),

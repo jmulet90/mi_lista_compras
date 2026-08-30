@@ -8,18 +8,21 @@ import '../../core/utils/product_asset_catalog.dart';
 import '../../domain/usecases/add_product.dart';
 import '../localization/app_localizations.dart';
 import 'dialog_kit.dart';
+import 'category_visuals.dart';
 import 'premium_limits.dart';
 import 'show_failure.dart';
 
 class AddProductDialog extends StatefulWidget {
   final List<String> categories;
   final String? initialCategory;
+  final String? initialSubcategory;
   final bool isBuyScreen;
 
   const AddProductDialog({
     super.key,
     required this.categories,
     this.initialCategory,
+    this.initialSubcategory,
     required this.isBuyScreen,
   });
 
@@ -32,8 +35,9 @@ class _AddProductDialogState extends State<AddProductDialog> {
   late String _selectedCategory;
   String? _selectedEmoji;
   String? _imagePath;
-  double? _quantity;
-  String? _unit;
+  String? _subcategory;
+  bool _userPicked = false;
+  String? _pngFilterCategory;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -41,8 +45,14 @@ class _AddProductDialogState extends State<AddProductDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _selectedCategory = widget.initialCategory ?? (widget.categories.isNotEmpty ? widget.categories.first : '');
+    /// Siempre usar la primera categoría de la lista pasada.
+    /// Si widget.initialCategory viene definido y está en categories, úsalo,
+    /// sino toma la primera de la lista para evitar que quede vacío.
+    _selectedCategory = widget.categories.isNotEmpty
+        ? (widget.initialCategory ?? widget.categories.first)
+        : widget.initialCategory ?? '';
     _selectedEmoji = null;
+    _subcategory = widget.initialSubcategory;
   }
 
   @override
@@ -63,8 +73,29 @@ class _AddProductDialogState extends State<AddProductDialog> {
       setState(() {
         _imagePath = savedPath;
         _selectedEmoji = null;
+        _userPicked = true;
       });
     }
+  }
+
+  /// Busca entre los PNG de la categoría el que corresponda al texto
+  /// tecleado (resolviendo sinónimos/plurales vía `findNameKey`).
+  String? _autoPngFor(String? text, List<String> pngs) {
+    if (text == null || text.trim().isEmpty || pngs.isEmpty) return null;
+    final key = AppLocalizations.findNameKey(text.trim()) ?? text.trim();
+    final target = key.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    if (target.isEmpty) return null;
+    for (final png in pngs) {
+      final base = png.substring(png.lastIndexOf('/') + 1);
+      final stemText =
+          base.endsWith('.png') ? base.substring(0, base.length - 4) : base;
+      final stem = stemText.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+      if (stem == target) return png;
+      if (target.length >= 3 && (stem.startsWith(target) || target.startsWith(stem))) {
+        return png;
+      }
+    }
+    return null;
   }
 
   @override
@@ -72,13 +103,31 @@ class _AddProductDialogState extends State<AddProductDialog> {
     final t = AppLocalizations.of(context);
     final accent = DialogKit.accentForBuy(widget.isBuyScreen);
 
-    bool categoryExists = widget.categories.contains(_selectedCategory);
-    if (!categoryExists && widget.categories.isNotEmpty) {
-      _selectedCategory = widget.categories.first;
+    final catalog = ProductAssetCatalog.instance;
+    final ownPngs = catalog.pngsFor(_selectedCategory);
+    final filterCats = ownPngs.isNotEmpty
+        ? const <String>[]
+        : CategoryVisuals.categoryKeys
+            .where((k) => catalog.pngsFor(k).isNotEmpty)
+            .toList();
+    List<String> pngs;
+    if (ownPngs.isNotEmpty) {
+      pngs = ownPngs;
+    } else {
+      // Categoría nueva/personalizada: no volcar todos los PNG de golpe.
+      // Por defecto restringir a la primera categoría del catálogo; la
+      // barra de filtros permite ir cambiando de categoría.
+      final effectiveFilter = _pngFilterCategory ??
+          (filterCats.isNotEmpty ? filterCats.first : null);
+      pngs = effectiveFilter == null
+          ? catalog.allPngs()
+          : catalog.pngsFor(effectiveFilter);
     }
-
-    final pngs = ProductAssetCatalog.instance.pngsFor(_selectedCategory);
-    if (pngs.isNotEmpty && !pngs.contains(_selectedEmoji)) {
+    if (!_userPicked) {
+      _selectedEmoji =
+          _autoPngFor(_nameController.text, pngs) ??
+              (pngs.isNotEmpty ? pngs.first : null);
+    } else if (pngs.isNotEmpty && !pngs.contains(_selectedEmoji)) {
       _selectedEmoji = pngs.first;
     } else if (pngs.isEmpty) {
       _selectedEmoji = null;
@@ -86,7 +135,11 @@ class _AddProductDialogState extends State<AddProductDialog> {
 
     return DialogKit.frame(
       context,
-      title: Text(t.add),
+      title: Text(
+        _subcategory != null && _subcategory!.isNotEmpty
+            ? _subcategory!
+            : t.add,
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -101,10 +154,33 @@ class _AddProductDialogState extends State<AddProductDialog> {
                 label: t.nameLabel,
                 hint: t.exampleProductHint,
               ),
+              onChanged: (_) {
+                if (_userPicked) return;
+                setState(() {});
+              },
             ),
             const SizedBox(height: 16),
             if (widget.categories.isNotEmpty)
-              DropdownButtonFormField<String>(
+              _subcategory != null && _subcategory!.isNotEmpty
+                  ? InputDecorator(
+                      decoration: DialogKit.input(
+                          context, accent, label: t.subcategory),
+                      isEmpty: false,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          _subcategory!,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: DialogKit.isDark(context)
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
+                          ),
+                        ),
+                      ),
+                    )
+                  : DropdownButtonFormField<String>(
                 initialValue: _selectedCategory.isNotEmpty ? _selectedCategory : null,
                 decoration: DialogKit.input(context, accent, label: t.categoryLabel),
                 items: widget.categories.map((catKey) {
@@ -117,19 +193,31 @@ class _AddProductDialogState extends State<AddProductDialog> {
                   if (val != null) {
                     setState(() {
                       _selectedCategory = val;
+                      _userPicked = false;
+                      _pngFilterCategory = null;
+                      if (widget.initialCategory != null &&
+                          val != widget.initialCategory) {
+                        _subcategory = null;
+                      }
                     });
                   }
                 },
               ),
-            const SizedBox(height: 16),
-            DialogKit.quantityUnitRow(
-              context: context,
-              accent: accent,
-              quantity: _quantity,
-              unit: _unit,
-              onQuantityChanged: (val) => setState(() => _quantity = val),
-              onUnitChanged: (val) => setState(() => _unit = val),
-            ),
+            if (filterCats.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _CategoryFilterBar(
+                categories: filterCats,
+                selected: _pngFilterCategory,
+                allLabel: t.all,
+                accent: accent,
+                onSelect: (key) {
+                  setState(() {
+                    _pngFilterCategory = key;
+                    _userPicked = false;
+                  });
+                },
+              ),
+            ],
             const SizedBox(height: 16),
             Text(
               t.visualCustomization,
@@ -159,6 +247,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
                   setState(() {
                     _selectedEmoji = asset;
                     _imagePath = null;
+                    _userPicked = true;
                   });
                 },
               ),
@@ -197,8 +286,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
                   isBuyScreen: widget.isBuyScreen,
                   emoji: _selectedEmoji,
                   imagePath: _imagePath,
-                  quantity: _quantity,
-                  unit: _unit,
+                  subcategory: _subcategory,
                 );
 
                 if (context.mounted) {
@@ -211,6 +299,78 @@ class _AddProductDialogState extends State<AddProductDialog> {
           },
         ),
       ],
+    );
+  }
+}
+
+class _CategoryFilterBar extends StatelessWidget {
+  const _CategoryFilterBar({
+    required this.categories,
+    required this.selected,
+    required this.allLabel,
+    required this.accent,
+    required this.onSelect,
+  });
+
+  final List<String> categories;
+  final String? selected;
+  final String allLabel;
+  final Color accent;
+  final ValueChanged<String?> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final dark = DialogKit.isDark(context);
+    return SizedBox(
+      height: 38,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _pill(null, allLabel, dark),
+          for (final key in categories) ...[
+            const SizedBox(width: 8),
+            _pill(key, t.getCategoryName(key), dark),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _pill(String? key, String label, bool dark) {
+    final isSelected = selected == key;
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: () => onSelect(key),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? accent.withValues(alpha: 0.15)
+              : (dark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isSelected
+                ? accent.withValues(alpha: 0.5)
+                : (dark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.grey.shade300),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? (dark ? Colors.grey.shade100 : accent)
+                : (dark ? Colors.grey.shade300 : Colors.blueGrey.shade700),
+          ),
+        ),
+      ),
     );
   }
 }

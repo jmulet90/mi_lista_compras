@@ -7,9 +7,13 @@ import '../../core/logger.dart';
 import '../../core/utils/product_asset_catalog.dart';
 import '../../firebase_options.dart';
 import '../datasources/category_local_data_source.dart';
+import '../datasources/notification_center_local_data_source.dart';
 import '../datasources/product_local_data_source.dart';
+import '../datasources/purchase_history_local_data_source.dart';
+import '../models/app_notification_model.dart';
 import '../models/category_model.dart';
 import '../models/product_model.dart';
+import '../models/purchase_event_model.dart';
 
 /// Inicializa Firebase y Hive, ejecuta la migración de claves y siembra
 /// los datos por defecto. Equivale al arranque original de `main()`.
@@ -19,6 +23,7 @@ class AppInitializer {
   static const String settingsBoxName = 'settingsBox';
   static const String deletedProductsBoxName = 'deletedProductKeys';
   static const String deletedCategoriesBoxName = 'deletedCategoryKeys';
+  static const String subcategoriesBoxName = 'subcategoriesBox';
 
   final AppLogger logger;
 
@@ -27,6 +32,9 @@ class AppInitializer {
   late final Box<dynamic> settings;
   late final Box<String> deletedProductKeys;
   late final Box<String> deletedCategoryKeys;
+  late final Box<String> subcategories;
+  late final PurchaseHistoryLocalDataSource purchaseHistory;
+  late final NotificationCenterLocalDataSource notificationCenter;
 
   /// Claves canónicas actuales de la app (deben coincidir con las semillas).
   static const List<String> _canonicalCategories = [
@@ -121,6 +129,13 @@ class AppInitializer {
     settings = Hive.box(settingsBoxName);
     deletedProductKeys = Hive.box(deletedProductsBoxName);
     deletedCategoryKeys = Hive.box(deletedCategoriesBoxName);
+    subcategories = Hive.box(subcategoriesBoxName);
+    purchaseHistory = PurchaseHistoryLocalDataSource(
+      Hive.box<PurchaseEventModel>(PurchaseHistoryLocalDataSource.boxName),
+    );
+    notificationCenter = NotificationCenterLocalDataSource(
+      Hive.box<AppNotificationModel>(NotificationCenterLocalDataSource.boxName),
+    );
 
     CrashOverlay.log('Running product key normalization...');
     _normalizeProductKeys();
@@ -138,6 +153,11 @@ class AppInitializer {
   Future<void> clearUserData() async {
     await Hive.box<CategoryModel>(CategoryLocalDataSource.boxName).clear();
     await Hive.box<ProductModel>(ProductLocalDataSource.boxName).clear();
+    await Hive.box<String>(subcategoriesBoxName).clear();
+    // El historial de compras y las notificaciones son comportamiento por
+    // usuario: no tendría sentido mezclarlos entre cuentas distintas.
+    await Hive.box<PurchaseEventModel>(PurchaseHistoryLocalDataSource.boxName).clear();
+    await Hive.box<AppNotificationModel>(NotificationCenterLocalDataSource.boxName).clear();
   }
 
   static const String lastAuthUidKey = 'last_auth_uid';
@@ -186,6 +206,8 @@ class AppInitializer {
     CrashOverlay.log('Registering Hive adapters...');
     Hive.registerAdapter(ProductModelAdapter());
     Hive.registerAdapter(CategoryModelAdapter());
+    Hive.registerAdapter(PurchaseEventModelAdapter());
+    Hive.registerAdapter(AppNotificationModelAdapter());
 
     CrashOverlay.log('Opening Hive boxes...');
     await Hive.openBox<CategoryModel>(CategoryLocalDataSource.boxName);
@@ -193,6 +215,9 @@ class AppInitializer {
     await Hive.openBox<dynamic>(settingsBoxName);
     await Hive.openBox<String>(deletedProductsBoxName);
     await Hive.openBox<String>(deletedCategoriesBoxName);
+    await Hive.openBox<String>(subcategoriesBoxName);
+    await Hive.openBox<PurchaseEventModel>(PurchaseHistoryLocalDataSource.boxName);
+    await Hive.openBox<AppNotificationModel>(NotificationCenterLocalDataSource.boxName);
     CrashOverlay.log('All Hive boxes opened successfully');
   }
 
@@ -213,6 +238,7 @@ class AppInitializer {
         imageId: model.imageId,
         quantity: model.quantity,
         unit: model.unit,
+        subcategory: model.subcategory,
       );
     }
     box.clear();
@@ -318,6 +344,7 @@ class AppInitializer {
         imageId: model.imageId,
         quantity: model.quantity,
         unit: model.unit,
+        subcategory: model.subcategory,
       );
     }
     await box.clear();
@@ -435,6 +462,9 @@ class AppInitializer {
   /// equivalencia canónica en el diccionario de nombres.
   static const Map<String, String> _seedNameAliases = {
     'Croassaint': 'Croissant',
+    // 'girassol oil.png' es un fallo ortográfico del archivo; el diccionario usa
+    // la clave canónica en inglés.
+    'Girassol Oil': 'Sunflower oil',
   };
 
   /// Deriva el [nameKey] canónico de un producto semilla a partir del nombre

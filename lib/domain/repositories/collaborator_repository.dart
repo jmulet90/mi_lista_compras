@@ -14,6 +14,9 @@ abstract class CollaboratorRepository {
 
   Stream<List<Collaborator>> watchCollaborators(String ownerEmail);
 
+  /// Cuenta (lectura única) los colaboradores activos de un owner.
+  Future<int> countCollaborators(String ownerEmail);
+
   Future<void> updateRole({
     required String docId,
     required String ownerEmail,

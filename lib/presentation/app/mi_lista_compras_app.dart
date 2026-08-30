@@ -9,7 +9,9 @@ import '../app_settings.dart';
 import '../localization/app_localizations.dart';
 import '../screens/login_screen.dart';
 import '../screens/main_navigator_screen.dart';
+import '../screens/shopping_suggestion_screen.dart';
 import '../screens/splash_screen.dart';
+import '../services/local_notification_service.dart';
 
 class MiListaComprasApp extends StatefulWidget {
   const MiListaComprasApp({super.key});
@@ -20,12 +22,14 @@ class MiListaComprasApp extends StatefulWidget {
 
 class _MiListaComprasAppState extends State<MiListaComprasApp> {
   late final ValueNotifier<AppSettingsData> _settingsNotifier;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
     _settingsNotifier = ValueNotifier(_loadSettings());
     _settingsNotifier.addListener(_persistSettings);
+    _watchNotificationTaps();
   }
 
   @override
@@ -33,6 +37,45 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
     _settingsNotifier.removeListener(_persistSettings);
     _settingsNotifier.dispose();
     super.dispose();
+  }
+
+  /// Escucha los toques en notificaciones (con la app abierta o recién
+  /// abierta desde una notificación) y navega al detalle de la sugerencia.
+  void _watchNotificationTaps() {
+    try {
+      final service = sl<LocalNotificationService>();
+      service.tappedPayload.addListener(() {
+        final payload = service.tappedPayload.value;
+        if (payload != null) _openSuggestion(payload);
+      });
+      // Cubre el caso de arranque en frío: el valor ya pudo haberse fijado
+      // durante bootstrap(), antes de que este listener existiera.
+      if (service.tappedPayload.value != null) {
+        _openSuggestion(service.tappedPayload.value!);
+      }
+    } catch (_) {
+      // El servicio de notificaciones es una mejora opcional.
+    }
+  }
+
+  /// Espera (con reintentos breves) a que la sesión esté lista antes de
+  /// navegar, para no empujar una ruta encima del splash o del login.
+  Future<void> _openSuggestion(String notificationId, [int attempt = 0]) async {
+    final navigator = _navigatorKey.currentState;
+    final ready = sl<SessionStatusNotifier>().value == AppSessionPhase.ready;
+    if (navigator == null || !ready) {
+      if (attempt >= 15) return; // ~4.5s de margen, luego se descarta.
+      await Future.delayed(const Duration(milliseconds: 300));
+      return _openSuggestion(notificationId, attempt + 1);
+    }
+    try {
+      sl<LocalNotificationService>().tappedPayload.value = null;
+    } catch (_) {}
+    navigator.push(
+      MaterialPageRoute(
+        builder: (_) => ShoppingSuggestionScreen(notificationId: notificationId),
+      ),
+    );
   }
 
   AppSettingsData _loadSettings() {
@@ -66,7 +109,7 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
     } catch (_) {}
   }
 
-  static const Color _seedColor = Color(0xFF059669);
+  static const Color _seedColor = Color(0xFFC27A22);
 
   ThemeData _buildTheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
@@ -101,6 +144,7 @@ class _MiListaComprasAppState extends State<MiListaComprasApp> {
         valueListenable: _settingsNotifier,
         builder: (context, settings, child) {
           return MaterialApp(
+            navigatorKey: _navigatorKey,
             debugShowCheckedModeBanner: false,
             title: 'Buy&Stock',
             onGenerateTitle: (context) =>

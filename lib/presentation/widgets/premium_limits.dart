@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../core/di.dart';
+import '../../domain/entities/premium_status.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../domain/repositories/collaborator_repository.dart';
 import '../../domain/repositories/premium_repository.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../localization/app_localizations.dart';
 import 'paywall_dialog.dart';
+import 'paywall_plus_dialog.dart';
 
 /// Límites de la versión gratuita y comprobaciones reutilizables.
 ///
@@ -18,7 +20,15 @@ class PremiumLimits {
   static const int maxFreeCategories = 8;
   static const int maxFreeProductsPerCategory = 15;
 
-  static bool get isPremium => sl<PremiumRepository>().current().isPremium;
+  static AppTier get tier => sl<PremiumRepository>().current().tier;
+
+  static bool get isPremium => tier.isPremium;
+
+  /// Plus directo (los colaboradores se ampliarán cuando el owner
+  /// propague el plan Plus).
+  static bool get isPremiumPlusEffectiveSync => isPremiumPlus;
+
+  static bool get isPremiumPlus => tier.isPremiumPlus;
 
   /// Premium directo o colaborador de un owner premium (síncrono).
   /// Usa el caché de acceso ya resuelto.
@@ -96,6 +106,46 @@ class PremiumLimits {
     );
   }
 
+  /// Máximo de colaboradores según el plan del owner.
+  static int get maxCollaborators => switch (tier) {
+        AppTier.free => 0,
+        AppTier.premium => 1,
+        AppTier.premiumPlus => 4,
+      };
+
+  /// Verifica si el owner puede añadir un colaborador más.
+  /// - Libre → paywall Premium.
+  /// - Premium al tope (1) → paywall Premium Plus.
+  static Future<bool> canAddCollaborator(BuildContext context) async {
+    final access = await sl<CollaboratorRepository>().resolveMyAccess();
+    if (access == null) return _gate(context, null);
+    if (!access.isOwner) return _gate(context, null);
+    if (tier.isPremiumPlus) return true;
+    if (tier.isPremium) {
+      try {
+        final count =
+            await sl<CollaboratorRepository>().countCollaborators(
+                  access.ownerEmail,
+                );
+        if (count < 1) return true;
+      } catch (_) {
+        return false;
+      }
+      if (context.mounted) {
+        await showPremiumPlusPaywall(
+          context,
+          reason:
+              AppLocalizations.of(context).collaboratorsPremiumPlusLimit,
+        );
+      }
+      return false;
+    }
+    return _gate(
+      context,
+      AppLocalizations.of(context).premiumLimitCollaborators,
+    );
+  }
+
   /// Funciones de apariencia exclusivas de premium (modo oscuro, galería).
   static Future<bool> canUseAppearanceFeature(BuildContext context) async {
     if (await isPremiumEffective()) return true;
@@ -139,6 +189,19 @@ class PremiumLimits {
       if (access == null || access.canMoveItems) return true;
     } catch (_) {}
     _showDeniedMessage(context);
+    return false;
+  }
+
+  /// Funciones exclusivas de Premium Plus; si el usuario no tiene el plan
+  /// abre el paywall de Premium Plus y devuelve false.
+  static Future<bool> canUsePremiumPlus(
+    BuildContext context, {
+    String? reason,
+  }) async {
+    if (isPremiumPlusEffectiveSync) return true;
+    if (context.mounted) {
+      await showPremiumPlusPaywall(context, reason: reason);
+    }
     return false;
   }
 

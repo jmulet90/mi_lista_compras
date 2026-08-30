@@ -158,7 +158,7 @@ class _PaywallDialogState extends State<_PaywallDialog> {
         Icon(
           premium ? Icons.check_circle : icon,
           size: 20,
-          color: premium ? Colors.green.shade600 : Colors.amber.shade700,
+          color: premium ? const Color(0xFFC27A22) : Colors.amber.shade700,
         ),
         const SizedBox(width: 10),
         Expanded(child: Text(text)),

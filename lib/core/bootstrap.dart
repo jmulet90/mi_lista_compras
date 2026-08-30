@@ -12,13 +12,19 @@ import '../data/datasources/product_remote_data_source.dart';
 import '../data/repositories/auth_repository_impl.dart';
 import '../data/repositories/category_repository_impl.dart';
 import '../data/repositories/collaborator_repository_impl.dart';
+import '../data/repositories/notification_center_repository_impl.dart';
 import '../data/repositories/premium_repository_impl.dart';
 import '../data/repositories/product_repository_impl.dart';
+import '../data/repositories/purchase_history_repository_impl.dart';
+import '../data/repositories/subcategory_repository_impl.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../domain/repositories/category_repository.dart';
 import '../domain/repositories/collaborator_repository.dart';
+import '../domain/repositories/notification_center_repository.dart';
 import '../domain/repositories/premium_repository.dart';
 import '../domain/repositories/product_repository.dart';
+import '../domain/repositories/purchase_history_repository.dart';
+import '../domain/repositories/subcategory_repository.dart';
 import '../domain/services/access_guard.dart';
 import 'utils/product_asset_catalog.dart';
 import '../core/crash_overlay.dart';
@@ -29,6 +35,7 @@ import '../domain/usecases/check_premium.dart';
 import '../domain/usecases/delete_category.dart';
 import '../domain/usecases/delete_product.dart';
 import '../domain/usecases/purchase_premium.dart';
+import '../domain/usecases/purchase_plus.dart';
 import '../domain/usecases/rename_category.dart';
 import '../domain/usecases/reset_password.dart';
 import '../domain/usecases/restore_premium.dart';
@@ -37,6 +44,8 @@ import '../domain/usecases/sign_in_with_google.dart';
 import '../domain/usecases/sign_up.dart';
 import '../domain/usecases/toggle_product.dart';
 import '../domain/usecases/update_product.dart';
+import '../presentation/services/local_notification_service.dart';
+import '../presentation/services/shopping_reminder_coordinator.dart';
 import 'di.dart';
 import 'session_status.dart';
 
@@ -101,6 +110,16 @@ Future<void> bootstrap() async {
         deletedKeys: initializer.deletedCategoryKeys,
       ));
 
+  sl.registerLazySingleton<PurchaseHistoryRepository>(
+    () => PurchaseHistoryRepositoryImpl(initializer.purchaseHistory),
+  );
+  sl.registerLazySingleton<NotificationCenterRepository>(
+    () => NotificationCenterRepositoryImpl(initializer.notificationCenter),
+  );
+  sl.registerLazySingleton<SubcategoryRepository>(
+    () => SubcategoryRepositoryImpl(initializer.subcategories),
+  );
+
   sl.registerLazySingleton(() => AccessGuard(collaboratorRepository));
   final guard = sl<AccessGuard>();
 
@@ -109,7 +128,11 @@ Future<void> bootstrap() async {
   sl.registerLazySingleton(
       () => UpdateProductUseCase(sl<ProductRepository>(), guard));
   sl.registerLazySingleton(
-      () => ToggleProductUseCase(sl<ProductRepository>(), guard));
+      () => ToggleProductUseCase(
+            sl<ProductRepository>(),
+            guard,
+            sl<PurchaseHistoryRepository>(),
+          ));
   sl.registerLazySingleton(
       () => DeleteProductUseCase(sl<ProductRepository>(), guard));
   sl.registerLazySingleton(
@@ -143,6 +166,8 @@ Future<void> bootstrap() async {
   sl.registerLazySingleton(
       () => PurchasePremiumUseCase(sl<PremiumRepository>()));
   sl.registerLazySingleton(
+      () => PurchasePremiumPlusUseCase(sl<PremiumRepository>()));
+  sl.registerLazySingleton(
       () => RestorePurchasesUseCase(sl<PremiumRepository>()));
   sl.registerLazySingleton(
       () => ResetPasswordUseCase(sl<AuthRepository>()));
@@ -160,6 +185,27 @@ Future<void> bootstrap() async {
   sl.registerLazySingleton<SessionStatusNotifier>(() => sessionStatus);
   CrashOverlay.log('Setting up auth state watcher...');
   _watchAuthState(initializer, sessionStatus);
+  CrashOverlay.log('Setting up local notifications...');
+  final localNotifications = LocalNotificationService();
+  sl.registerLazySingleton<LocalNotificationService>(() => localNotifications);
+  try {
+    await localNotifications.init();
+  } catch (e, st) {
+    // Las notificaciones del sistema son mejoras opcionales: si el plugin
+    // falla (p. ej. escritorio o permisos denegados) la app sigue funcionando.
+    CrashOverlay.logError('Error inicializando notificaciones locales', e, st);
+    const AppLogger().error('Error inicializando notificaciones locales', e);
+  }
+
+  final reminderCoordinator = ShoppingReminderCoordinator(
+    history: sl<PurchaseHistoryRepository>(),
+    center: sl<NotificationCenterRepository>(),
+    notifications: localNotifications,
+  );
+  sl.registerLazySingleton<ShoppingReminderCoordinator>(
+    () => reminderCoordinator,
+  );
+  reminderCoordinator.start();
   CrashOverlay.log('bootstrap() completed');
 }
 
@@ -188,13 +234,22 @@ void _watchAuthState(
 
   // Margen de seguridad: si Firebase no restaura la sesión en frío en unos
   // segundos, se entra igualmente con la cuenta de la sesión local (cuyos
-  // datos siguen en Hive). Nunca un splash infinito ni un login falso.
+  // datos siguen en Hive). Nunca un splash infinito.
+  //
+  // IMPORTANTE: solo se abre directo a la lista si hay un usuario de Firebase
+  // realmente autenticado (restaurado desde el almacenamiento local, incluso
+  // sin red). Si no hay sesión viva, se va al login; nunca se muestra la lista
+  // "sin sesión" (que dejaría ver datos de otro usuario o una lista vacía).
   Timer(const Duration(milliseconds: 2500), () {
     final phase = sessionStatus.value;
+    final liveUser = FirebaseAuth.instance.currentUser != null;
     if ((phase == AppSessionPhase.loading ||
             phase == AppSessionPhase.authenticatedLoadingData) &&
-        initializer.lastAuthUid != null) {
+        liveUser) {
       sessionStatus.value = AppSessionPhase.ready;
+    } else if (phase == AppSessionPhase.loading && !liveUser) {
+      // Sin sesión viva: no hay usuario autenticado que presente sus datos.
+      sessionStatus.value = AppSessionPhase.unauthenticated;
     }
   });
 
@@ -272,11 +327,15 @@ void _watchAuthState(
       _syncRunning = false;
 
       if (user == null || owner == null) {
-        // Firebase no confirmó sesión (p. ej. restauración lenta) pero hay una
-        // sesión local guardada: entrar con los datos locales de esa cuenta.
-        if (sessionStatus.value == AppSessionPhase.loading &&
-            initializer.lastAuthUid != null) {
+        // Firebase no confirmó sesión y, sin un usuario autenticado vivo, NO
+        // se abre la lista: la app no está pensada para usarse sin sesión.
+        // Un usuario de verdad se restaura desde el almacenamiento local de
+        // Firebase incluso sin red; si no hay sesión viva, se va al login.
+        final liveUser = FirebaseAuth.instance.currentUser != null;
+        if (sessionStatus.value == AppSessionPhase.loading && liveUser) {
           sessionStatus.value = AppSessionPhase.ready;
+        } else if (sessionStatus.value == AppSessionPhase.loading) {
+          sessionStatus.value = AppSessionPhase.unauthenticated;
         }
         return;
       }

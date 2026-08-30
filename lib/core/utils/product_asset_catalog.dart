@@ -50,6 +50,14 @@ class ProductAssetCatalog {
   List<String> pngsFor(String categoryKey) =>
       _byCategory[folderKeyFor(categoryKey)] ?? const [];
 
+  /// Todos los PNG del catálogo, ordenados (todas las categorías mezcladas).
+  List<String> allPngs() {
+    final all = <String>[
+      for (final list in _byCategory.values) ...list,
+    ]..sort();
+    return all;
+  }
+
   bool hasPngs(String categoryKey) => pngsFor(categoryKey).isNotEmpty;
 
   /// Total de PNG de producto en todo el catálogo.

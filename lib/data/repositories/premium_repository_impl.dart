@@ -13,11 +13,12 @@ import '../datasources/premium_remote_data_source.dart';
 /// Implementación de [PremiumRepository] sobre Google Play Billing.
 ///
 /// - Escucha el stream de compras del sistema y completa las pendientes.
-/// - Cachea el resultado en settingsBox para funcionar offline.
+/// - Guarda el plan por cuenta en settingsBox para funcionar offline.
 /// - En builds debug permite un override local para probar los límites
-///   sin tener el producto publicado en Play Console.
+///   sin tener los productos publicados en Play Console (cicla libre →
+///   Premium → Premium Plus → libre).
 /// - Además, acepta concesiones manuales por email desde Firestore
-///   (`premium_users/{email}`), gestionadas desde la consola de Firebase.
+///   (`premium_users/{email}`, campo `tier`), gestionadas desde la consola.
 class PremiumRepositoryImpl implements PremiumRepository {
   PremiumRepositoryImpl(this._billing, this._settingsBox, this._remote,
       {this.onPremiumChanged});
@@ -25,7 +26,11 @@ class PremiumRepositoryImpl implements PremiumRepository {
   static const String _legacyPurchasedKey = 'premium_unlocked';
   static const String _legacyDebugKey = 'debug_premium_override';
   static const String _purchasedPrefix = 'premium_unlocked_';
+  static const String _plusPurchasedPrefix = 'premium_plus_unlocked_';
   static const String _debugPrefix = 'debug_premium_override_';
+  static const String _plusDebugPrefix = 'debug_plus_override_';
+  static const String _legacyRemoteKeyPrefix = 'remote_premium_';
+  static const String _tierKeyPrefix = 'remote_tier_';
 
   final BillingDataSource _billing;
   final Box<dynamic> _settingsBox;
@@ -34,15 +39,15 @@ class PremiumRepositoryImpl implements PremiumRepository {
 
   final _controller = StreamController<PremiumStatus>.broadcast();
 
-  PremiumStatus _status = const PremiumStatus(isPremium: false);
+  PremiumStatus _status = const PremiumStatus();
   List<ProductDetails> _products = const [];
-  Completer<bool>? _purchaseCompleter;
+  Completer<AppTier>? _purchaseCompleter;
   StreamSubscription<User?>? _authSub;
   bool _started = false;
-  bool _remotePremium = false;
+  AppTier _remoteTier = AppTier.free;
 
   /// Email (minúsculas) de la cuenta cuyos flags se leen/escriben.
-  /// Así el premium nunca se filtra entre cuentas del mismo dispositivo.
+  /// Así el plan nunca se filtra entre cuentas del mismo dispositivo.
   String? _accountKey;
 
   bool _readFlag(String prefix) {
@@ -51,30 +56,65 @@ class PremiumRepositoryImpl implements PremiumRepository {
     return _settingsBox.get('$prefix$key') as bool? ?? false;
   }
 
-  bool get _cachedFlag => _readFlag(_purchasedPrefix);
+  AppTier get _cachedTier {
+    if (_readFlag(_plusPurchasedPrefix)) return AppTier.premiumPlus;
+    if (_readFlag(_purchasedPrefix)) return AppTier.premium;
+    return AppTier.free;
+  }
 
-  bool get _debugOverride => kDebugMode && _readFlag(_debugPrefix);
+  AppTier get _debugTier {
+    if (!kDebugMode) return AppTier.free;
+    if (_readFlag(_plusDebugPrefix)) return AppTier.premiumPlus;
+    if (_readFlag(_debugPrefix)) return AppTier.premium;
+    return AppTier.free;
+  }
 
-  String _grantKey(String email) =>
-      'remote_premium_${email.trim().toLowerCase()}';
+  AppTier get _tierNow {
+    var tier = _cachedTier;
+    if (_debugTier.value > tier.value) tier = _debugTier;
+    if (_remoteTier.value > tier.value) tier = _remoteTier;
+    return tier;
+  }
 
-  bool get _isPremiumNow => _cachedFlag || _debugOverride || _remotePremium;
+  String _tierKey(String email) =>
+      '$_tierKeyPrefix${email.trim().toLowerCase()}';
 
-  Future<void> _setPurchasedFlag(bool value) async {
+  AppTier _readTierKey(String email) {
+    final stored = _settingsBox.get(_tierKey(email))?.toString().toLowerCase();
+    if (stored == 'plus' || stored == 'premiumplus') {
+      return AppTier.premiumPlus;
+    }
+    if (stored == 'premium') return AppTier.premium;
+    return AppTier.free;
+  }
+
+  AppTier _tierForProductId(String productId) =>
+      productId == PremiumRepository.premiumPlusId
+          ? AppTier.premiumPlus
+          : AppTier.premium;
+
+  Future<void> _setPurchasedFlag(AppTier tier) async {
     final key = _accountKey;
     if (key == null) return;
-    await _settingsBox.put('$_purchasedPrefix$key', value);
+    if (tier.isPremiumPlus) {
+      await _settingsBox.put('$_plusPurchasedPrefix$key', true);
+    } else {
+      await _settingsBox.put('$_purchasedPrefix$key', true);
+    }
   }
 
   void _emit(PremiumStatus status) {
+    final tier = _tierNow;
+    final effective = status.copyWith(tier: tier);
     debugPrint(
-      '[INFO] PremiumRepo emit: isPremium=${status.isPremium} '
-      'cached=$_cachedFlag debug=$_debugOverride remote=$_remotePremium',
+      '[INFO] PremiumRepo emit: tier=${effective.tier.name} '
+      'cached=${_cachedTier.name} debug=${_debugTier.name} '
+      'remote=${_remoteTier.name}',
     );
-    final changed = _status.isPremium != status.isPremium;
-    _status = status;
-    _controller.add(status);
-    if (changed) onPremiumChanged?.call(status.isPremium);
+    final changed = _status.tier != effective.tier;
+    _status = effective;
+    _controller.add(effective);
+    if (changed) onPremiumChanged?.call(effective.isPremium);
   }
 
   @override
@@ -82,7 +122,7 @@ class PremiumRepositoryImpl implements PremiumRepository {
     if (_started) return;
     _started = true;
 
-    _emit(PremiumStatus(isPremium: _isPremiumNow));
+    _emit(_status);
 
     _billing.purchaseStream.listen(_onPurchaseUpdates);
 
@@ -99,52 +139,90 @@ class PremiumRepositoryImpl implements PremiumRepository {
 
     // Migración única: flags globales de versiones anteriores pasan a la
     // cuenta actual y se retiran para no filtrarse entre usuarios.
-    if (_accountKey != null) {
+    final key = _accountKey;
+    if (key != null) {
       if (_settingsBox.get(_legacyPurchasedKey) as bool? ?? false) {
-        await _settingsBox.put('$_purchasedPrefix$_accountKey', true);
+        await _settingsBox.put('$_purchasedPrefix$key', true);
       }
       await _settingsBox.delete(_legacyPurchasedKey);
       if (_settingsBox.containsKey(_legacyDebugKey)) {
         final legacy = _settingsBox.get(_legacyDebugKey) as bool? ?? false;
-        await _settingsBox.put('$_debugPrefix$_accountKey', legacy);
+        await _settingsBox.put('$_debugPrefix$key', legacy);
         await _settingsBox.delete(_legacyDebugKey);
       }
+      // Migración: concesión remota booleana (premium) → campo tier.
+      final oldGrant = _settingsBox.get('$_legacyRemoteKeyPrefix$key');
+      if (oldGrant == true || oldGrant?.toString().toLowerCase() == 'true') {
+        await _settingsBox.put(_tierKey(key), 'premium');
+      }
+      await _settingsBox.delete('$_legacyRemoteKeyPrefix$key');
     }
 
-    _remotePremium = _accountKey == null
-        ? false
-        : (_settingsBox.get(_grantKey(user!.email!)) as bool? ?? false);
-    _emit(PremiumStatus(isPremium: _isPremiumNow));
+    _remoteTier =
+        _accountKey == null ? AppTier.free : _readTierKey(_accountKey!);
+    _emit(_status);
 
-    _remote.watch(email: user?.email, onChanged: (granted) async {
+    _remote.watch(email: user?.email, onChanged: (tier, exists) async {
       debugPrint(
-        '[INFO] Premium cb: granted=$granted cuenta=$_accountKey '
-        'remote=$_remotePremium',
+        '[INFO] Premium cb: tier=${tier.name} exists=$exists cuenta=$_accountKey '
+        'remote=$_remoteTier',
       );
       final key = _accountKey;
-      if (key == null || granted == _remotePremium) {
-        debugPrint('[INFO] Premium cb: DESCARTADO por guard');
-        return;
+      if (key == null) return;
+      final changed = tier != _remoteTier;
+      _remoteTier = tier;
+
+      // Firebase es la autoridad: si el documento existe y dice "sin plan",
+      // apaga también los flags locales (compra cacheadas) y de debug para
+      // que un `false` deje realmente al usuario sin plan.
+      if (exists && tier == AppTier.free) {
+        debugPrint('[INFO] Premium: revocación remota -> limpiando flags de $key');
+        await _settingsBox.put('$_purchasedPrefix$key', false);
+        await _settingsBox.put('$_plusPurchasedPrefix$key', false);
+        await _settingsBox.put('$_debugPrefix$key', false);
+        await _settingsBox.put('$_plusDebugPrefix$key', false);
       }
-      debugPrint('[INFO] Premium: concesión remota=$granted para $key');
-      _remotePremium = granted;
-      if (granted) {
-        await _settingsBox.put(_grantKey(key), true);
-      } else {
-        await _settingsBox.delete(_grantKey(key));
+
+      if (changed) {
+        debugPrint('[INFO] Premium: concesión remota=${tier.name} para $key');
+        switch (tier) {
+          case AppTier.premium:
+            await _settingsBox.put(_tierKey(key), 'premium');
+            break;
+          case AppTier.premiumPlus:
+            await _settingsBox.put(_tierKey(key), 'plus');
+            break;
+          case AppTier.free:
+            await _settingsBox.delete(_tierKey(key));
+            break;
+        }
       }
-      _emit(_status.copyWith(isPremium: _isPremiumNow));
+      _emit(_status);
     });
   }
 
   Future<void> _refreshStoreInfo() async {
     try {
       if (!await _billing.isAvailable()) return;
-      final details =
-          await _billing.queryProduct(PremiumRepository.productId);
+      final details = await _billing.queryProducts({
+        PremiumRepository.productId,
+        PremiumRepository.premiumPlusId,
+      });
       if (details.isEmpty) return;
       _products = details;
-      _emit(_status.copyWith(priceText: details.first.price));
+      String? premiumPrice;
+      String? plusPrice;
+      for (final product in details) {
+        if (product.id == PremiumRepository.productId) {
+          premiumPrice = product.price;
+        } else if (product.id == PremiumRepository.premiumPlusId) {
+          plusPrice = product.price;
+        }
+      }
+      _emit(_status.copyWith(
+        priceText: premiumPrice,
+        priceTextPlus: plusPrice,
+      ));
     } catch (_) {
       // Sin tienda disponible (sideload/debug): precio por defecto en UI.
     }
@@ -156,8 +234,8 @@ class PremiumRepositoryImpl implements PremiumRepository {
       switch (purchase.status) {
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          await _setPurchasedFlag(true);
-          _emit(_status.copyWith(isPremium: true, pending: false));
+          await _setPurchasedFlag(_tierForProductId(purchase.productID));
+          _emit(_status.copyWith(pending: false));
           changed = true;
           break;
         case PurchaseStatus.pending:
@@ -177,25 +255,31 @@ class PremiumRepositoryImpl implements PremiumRepository {
     if (changed) {
       final completer = _purchaseCompleter;
       if (completer != null && !completer.isCompleted) {
-        completer.complete(_status.isPremium);
+        completer.complete(_tierNow);
       }
       _purchaseCompleter = null;
     }
   }
 
   @override
-  Future<bool> purchase() async {
-    if (_status.isPremium) return true;
+  Future<bool> purchase(AppTier tier) async {
+    if (_tierNow.value >= tier.value) return true;
+    final targetId = tier.isPremiumPlus
+        ? PremiumRepository.premiumPlusId
+        : PremiumRepository.productId;
     try {
       var details = _products;
       if (details.isEmpty) {
         if (!await _billing.isAvailable()) return false;
-        details = await _billing.queryProduct(PremiumRepository.productId);
+        details = await _billing.queryProducts({
+          PremiumRepository.productId,
+          PremiumRepository.premiumPlusId,
+        });
         _products = details;
       }
       ProductDetails? product;
       for (final candidate in details) {
-        if (candidate.id == PremiumRepository.productId) {
+        if (candidate.id == targetId) {
           product = candidate;
           break;
         }
@@ -205,13 +289,14 @@ class PremiumRepositoryImpl implements PremiumRepository {
         return false;
       }
 
-      _purchaseCompleter = Completer<bool>();
+      _purchaseCompleter = Completer<AppTier>();
       _emit(_status.copyWith(pending: true));
       await _billing.buy(product);
-      return await _purchaseCompleter!.future.timeout(
+      final confirmed = await _purchaseCompleter!.future.timeout(
         const Duration(minutes: 5),
-        onTimeout: () => _status.isPremium,
+        onTimeout: () => _tierNow,
       );
+      return confirmed.value >= tier.value;
     } catch (_) {
       _emit(_status.copyWith(pending: false));
       return false;
@@ -224,10 +309,20 @@ class PremiumRepositoryImpl implements PremiumRepository {
   @override
   Future<void> toggleDebugOverride() async {
     if (!kDebugMode || _accountKey == null) return;
-    final key = '$_debugPrefix$_accountKey';
-    final next = !(_settingsBox.get(key) as bool? ?? false);
-    await _settingsBox.put(key, next);
-    _emit(_status.copyWith(isPremium: _isPremiumNow));
+    final premiumKey = '$_debugPrefix$_accountKey';
+    final plusKey = '$_plusDebugPrefix$_accountKey';
+    if (_debugTier.isPremiumPlus) {
+      // Premium Plus actual → volver a libre.
+      await _settingsBox.delete(premiumKey);
+      await _settingsBox.delete(plusKey);
+    } else if (_debugTier.isPremium) {
+      // Premium actual → subir a Premium Plus.
+      await _settingsBox.put(plusKey, true);
+    } else {
+      // Libre → activar Premium.
+      await _settingsBox.put(premiumKey, true);
+    }
+    _emit(_status);
   }
 
   @override

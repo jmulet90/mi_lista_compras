@@ -287,6 +287,124 @@ class AppLocalizations {
       'fr': 'Partager la liste', 'de': 'Liste teilen', 'it': 'Condividi lista',
       'zh': '分享列表', 'hi': 'सूची साझा करें', 'ar': 'مشاركة القائمة', 'ru': 'Поделиться списком',
     },
+    'exportList': {
+      'es': 'Exportar', 'en': 'Export', 'pt': 'Exportar',
+      'fr': 'Exporter', 'de': 'Exportieren', 'it': 'Esporta',
+      'zh': '导出', 'hi': 'निर्यात', 'ar': 'تصدير', 'ru': 'Экспорт',
+    },
+    'exportListTitle': {
+      'es': 'Exportar lista de Comprar', 'en': 'Export shopping list',
+      'pt': 'Exportar lista de compras', 'fr': 'Exporter la liste de courses',
+      'de': 'Einkaufsliste exportieren', 'it': 'Esporta lista della spesa',
+      'zh': '导出购物清单', 'hi': 'खरीदारी सूची निर्यात करें',
+      'ar': 'تصدير قائمة التسوق', 'ru': 'Экспорт списка покупок',
+    },
+    'exportAsPdf': {
+      'es': 'PDF', 'en': 'PDF', 'pt': 'PDF',
+      'fr': 'PDF', 'de': 'PDF', 'it': 'PDF',
+      'zh': 'PDF', 'hi': 'PDF', 'ar': 'PDF', 'ru': 'PDF',
+    },
+'exportAsImage': {
+      'es': 'Imagen', 'en': 'Image', 'pt': 'Imagem',
+      'fr': 'Image', 'de': 'Bild', 'it': 'Immagine',
+      'zh': '图片', 'hi': 'छवि', 'ar': 'Picture', 'ru': 'Изображение',
+    },
+    'all': {
+      'es': 'Todas', 'en': 'All', 'pt': 'Todas', 'fr': 'Toutes', 'de': 'Alle',
+      'it': 'Tutte', 'zh': '全部', 'hi': 'सभी', 'ar': 'جميع', 'ru': 'Все',
+    },
+    'exportListEmpty': {
+      'es': 'Tu lista de Comprar está vacía', 'en': 'Your shopping list is empty',
+      'pt': 'A sua lista de compras está vazia', 'fr': 'Votre liste de courses est vide',
+      'de': 'Deine Einkaufsliste ist leer', 'it': 'La lista della spesa è vuota',
+      'zh': '您的购物清单为空', 'hi': 'आपकी खरीदारी सूची खाली है',
+      'ar': 'قائمة التسوق الخاصة بك فارغة', 'ru': 'Ваш список покупок пуст',
+    },
+    'exporting': {
+      'es': 'Generando archivo…', 'en': 'Generating file…', 'pt': 'A gerar ficheiro…',
+      'fr': 'Génération du fichier…', 'de': 'Datei wird erstellt…',
+      'it': 'Generazione del file…', 'zh': '正在生成文件…',
+      'hi': 'फ़ाइल बनाई जा रही है…', 'ar': 'جارٍ إنشاء الملف…',
+      'ru': 'Создание файла…',
+    },
+    'exportFailed': {
+      'es': 'No se pudo generar el archivo', 'en': 'Could not generate the file',
+      'pt': 'Não foi possível gerar o ficheiro', 'fr': 'Impossible de générer le fichier',
+      'de': 'Datei konnte nicht erstellt werden', 'it': 'Impossibile generare il file',
+      'zh': '无法生成文件', 'hi': 'फ़ाइल नहीं बनाई जा सकी',
+      'ar': 'تعذّر إنشاء الملف', 'ru': 'Не удалось создать файл',
+    },
+    'shoppingList': {
+      'es': 'Lista de Compras', 'en': 'Shopping List', 'pt': 'Lista de Compras',
+      'fr': 'Liste de courses', 'de': 'Einkaufsliste', 'it': 'Lista della spesa',
+      'zh': '购物清单', 'hi': 'खरीदारी सूची', 'ar': 'قائمة التسوق', 'ru': 'Список покупок',
+    },
+    'subcategory': {
+      'es': 'Subcategoría', 'en': 'Subcategory', 'pt': 'Subcategoria',
+      'fr': 'Sous-catégorie', 'de': 'Unterkategorie', 'it': 'Sottocategoria',
+      'zh': '子类别', 'hi': 'उपश्रेणी', 'ar': 'فئة فرعية', 'ru': 'Подкатегория',
+    },
+    'subcategories': {
+      'es': 'Subcategorías', 'en': 'Subcategories', 'pt': 'Subcategorias',
+      'fr': 'Sous-catégories', 'de': 'Unterkategorien', 'it': 'Sottocategorie',
+      'zh': '子类别', 'hi': 'उपश्रेणियाँ', 'ar': 'فئات فرعية', 'ru': 'Подкатегории',
+    },
+    'noSubcategory': {
+      'es': 'Sin subcategoría', 'en': 'No subcategory', 'pt': 'Sem subcategoria',
+      'fr': 'Sans sous-catégorie', 'de': 'Ohne Unterkategorie', 'it': 'Senza sottocategoria',
+      'zh': '无子类别', 'hi': 'कोई उपश्रेणी नहीं', 'ar': 'بدون فئة فرعية', 'ru': 'Без подкатегории',
+    },
+    'newSubcategory': {
+      'es': 'Nueva subcategoría', 'en': 'New subcategory', 'pt': 'Nova subcategoria',
+      'fr': 'Nouvelle sous-catégorie', 'de': 'Neue Unterkategorie', 'it': 'Nuova sottocategoria',
+      'zh': '新建子类别', 'hi': 'नई उपश्रेणी', 'ar': 'فئة فرعية جديدة', 'ru': 'Новая подкатегория',
+    },
+    'subcategoryHint': {
+      'es': 'Ej: Lácteos, Limpieza…', 'en': 'E.g. Dairy, Cleaning…',
+      'pt': 'Ex.: Laticínios, Limpeza…', 'fr': 'Ex. : Laitage, Nettoyage…',
+      'de': 'Z. B. Milchprodukte, Reinigung…', 'it': 'Es.: Latticini, Pulizia…',
+      'zh': '例如：乳制品、清洁…', 'hi': 'जैसे: डेयरी, सफ़ाई…',
+      'ar': 'مثال: ألبان، تنظيف…', 'ru': 'Напр.: Молочные, Уборка…',
+    },
+    'renameSubcategory': {
+      'es': 'Renombrar subcategoría', 'en': 'Rename subcategory', 'pt': 'Renomear subcategoria',
+      'fr': 'Renommer la sous-catégorie', 'de': 'Unterkategorie umbenennen',
+      'it': 'Rinomina sottocategoria', 'zh': '重命名子类别', 'hi': 'उपश्रेणी का नाम बदलें',
+      'ar': 'إعادة تسمية الفئة الفرعية', 'ru': 'Переименовать подкатегорию',
+    },
+    'deleteSubcategory': {
+      'es': 'Eliminar subcategoría', 'en': 'Delete subcategory', 'pt': 'Eliminar subcategoria',
+      'fr': 'Supprimer la sous-catégorie', 'de': 'Unterkategorie löschen',
+      'it': 'Elimina sottocategoria', 'zh': '删除子类别', 'hi': 'उपश्रेणी हटाएं',
+      'ar': 'حذف الفئة الفرعية', 'ru': 'Удалить подкатегорию',
+    },
+    'deleteSubcategoryConfirm': {
+      'es': 'Se quitará “{name}” de sus productos.', 'en': 'It will be removed from “{name}” products.',
+      'pt': 'Será removida dos produtos de “{name}”.', 'fr': 'Elle sera retirée des produits « {name} ».',
+      'de': 'Sie wird von den Produkten „{name}“ entfernt.', 'it': 'Sarà rimossa dai prodotti di “{name}”.',
+      'zh': '它将从“{name}”的产品中移除。', 'hi': 'इसे “{name}” के उत्पादों से हटा दिया जाएगा।',
+      'ar': 'سيتم إزالتها من منتجات «{name}».', 'ru': 'Она будет убрана из товаров «{name}».',
+    },
+    'moveProduct': {
+      'es': 'Mover producto', 'en': 'Move product', 'pt': 'Mover produto',
+      'fr': 'Déplacer le produit', 'de': 'Produkt verschieben', 'it': 'Sposta prodotto',
+      'zh': '移动产品', 'hi': 'उत्पाद स्थानांतरित करें', 'ar': 'نقل المنتج',
+      'ru': 'Переместить товар',
+    },
+    'movedProductTo': {
+      'es': 'Producto movido a {sub}', 'en': 'Product moved to {sub}',
+      'pt': 'Produto movido para {sub}', 'fr': 'Produit déplacé vers {sub}',
+      'de': 'Produkt verschoben zu {sub}', 'it': 'Prodotto spostato in {sub}',
+      'zh': '产品已移动到{sub}', 'hi': 'उत्पाद को {sub} में स्थानांतरित किया गया',
+      'ar': 'تم نقل المنتج إلى {sub}', 'ru': 'Товар перемещён в {sub}',
+    },
+    'moveToCategory': {
+      'es': 'Mover a otra categoría', 'en': 'Move to another category',
+      'pt': 'Mover para outra categoria', 'fr': 'Déplacer vers une autre catégorie',
+      'de': 'In eine andere Kategorie verschieben', 'it': 'Sposta in un\'altra categoria',
+      'zh': '移动到其他分类', 'hi': 'दूसरी श्रेणी में ले जाएँ',
+      'ar': 'نقل إلى فئة أخرى', 'ru': 'Переместить в другую категорию',
+    },
     'shareListSub': {
       'es': 'Añadir usuario secundario', 'en': 'Add secondary user',
       'pt': 'Adicionar utilizador secundário', 'fr': 'Ajouter un utilisateur secondaire',
@@ -392,6 +510,25 @@ class AppLocalizations {
       'fr': 'Ajouter un collaborateur', 'de': 'Mitarbeiter hinzufügen',
       'it': 'Aggiungi collaboratore', 'zh': '添加协作者', 'hi': 'सहयोगी जोड़ें',
       'ar': 'إضافة متعاون', 'ru': 'Добавить соавтора',
+    },
+    'collaboratorsUsed': {
+      'es': 'Colaboradores: {used}/{max}', 'en': 'Collaborators: {used}/{max}',
+      'pt': 'Colaboradores: {used}/{max}', 'fr': 'Collaborateurs : {used}/{max}',
+      'de': 'Mitarbeiter: {used}/{max}', 'it': 'Collaboratori: {used}/{max}',
+      'zh': '协作者：{used}/{max}', 'hi': 'सहयोगी: {used}/{max}',
+      'ar': 'المتعاونون: {used}/{max}', 'ru': 'Соавторы: {used}/{max}',
+    },
+    'collaboratorsPremiumPlusLimit': {
+      'es': 'Con Premium tienes 1 colaborador. Premium Plus te permite hasta 4.',
+      'en': 'With Premium you have 1 collaborator. Premium Plus allows up to 4.',
+      'pt': 'Com o Premium você tem 1 colaborador. O Premium Plus permite até 4.',
+      'fr': 'Avec Premium vous avez 1 collaborateur. Premium Plus permet jusqu’à 4.',
+      'de': 'Mit Premium hast du 1 Mitarbeiter. Premium Plus erlaubt bis zu 4.',
+      'it': 'Con Premium hai 1 collaboratore. Premium Plus consente fino a 4.',
+      'zh': '高级版含 1 名协作者，Premium Plus 最多 4 名。',
+      'hi': 'प्रीमियम में 1 सहयोगी मिलता है। प्रीमियम प्लस में 4 तक।',
+      'ar': 'تتضمن النسخة المميزة متعاونًا واحدًا، وPremium Plus يسمح حتى 4.',
+      'ru': 'С Premium у вас 1 соавтор. Premium Plus позволяет до 4.',
     },
     'collaboratorPrompt': {
       'es': 'Introduce el correo del usuario secundario y selecciona su nivel de permiso:',
@@ -741,6 +878,93 @@ class AppLocalizations {
       'ar': 'هذه الميزة حصرية للنسخة المميزة.',
       'ru': 'Эта функция доступна только в Premium.',
     },
+    'plusTitle': {
+      'es': 'Hazte Premium Plus', 'en': 'Go Premium Plus', 'pt': 'Torne-se Premium Plus',
+      'fr': 'Passer à Premium Plus', 'de': 'Premium Plus werden', 'it': 'Diventa Premium Plus',
+      'zh': '升级 Premium Plus', 'hi': 'प्रीमियम प्लस बनें', 'ar': 'الاشتراك في Premium Plus', 'ru': 'Перейти на Premium Plus',
+    },
+    'plusPriceFallback': {
+      'es': '2,99 €', 'en': '€2.99', 'pt': '2,99 €', 'fr': '2,99 €', 'de': '2,99 €',
+      'it': '2,99 €', 'zh': '2.99欧元', 'hi': '2.99 यूरो', 'ar': '2.99 يورو', 'ru': '2,99 евро',
+    },
+    'plusActive': {
+      'es': 'Ya tienes Premium Plus', 'en': 'You already have Premium Plus', 'pt': 'Você já tem Premium Plus',
+      'fr': 'Vous avez déjà Premium Plus', 'de': 'Du hast bereits Premium Plus', 'it': 'Hai già Premium Plus',
+      'zh': '你已是 Premium Plus', 'hi': 'आपके पास पहले से प्रीमियम प्लस है', 'ar': 'لديك Premium Plus بالفعل',
+      'ru': 'У вас уже есть Premium Plus',
+    },
+    'unlockPlusFor': {
+      'es': 'Hazte Premium Plus por {price}', 'en': 'Get Premium Plus for {price}',
+      'pt': 'Torne-se Premium Plus por {price}', 'fr': 'Passez à Premium Plus pour {price}',
+      'de': 'Premium Plus für {price}', 'it': 'Passa a Premium Plus per {price}',
+      'zh': '{price} 升级为 Premium Plus', 'hi': '{price} में प्रीमियम प्लस बनें',
+      'ar': 'اشترك في Premium Plus مقابل {price}', 'ru': 'Перейти на Premium Plus за {price}',
+    },
+    'plusBenefitExport': {
+      'es': 'Exporta la lista de Comprar en PDF o imagen',
+      'en': 'Export your shopping list as PDF or image',
+      'pt': 'Exporte a lista de Compras em PDF ou imagem',
+      'fr': 'Exportez votre liste de courses en PDF ou image',
+      'de': 'Exportiere deine Einkaufsliste als PDF oder Bild',
+      'it': 'Esporta la lista della spesa in PDF o immagine',
+      'zh': '将购物清单导出为 PDF 或图片',
+      'hi': 'अपनी खरीदारी सूची को PDF या छवि में निर्यात करें',
+      'ar': 'صدّر قائمة التسوق بصيغة PDF أو صورة',
+      'ru': 'Экспортируйте список покупок в PDF или изображение',
+    },
+    'plusBenefitSubcategories': {
+      'es': 'Subcategorías para organizar mejor',
+      'en': 'Subcategories to organize better',
+      'pt': 'Subcategorias para organizar melhor',
+      'fr': 'Sous-catégories pour mieux organiser',
+      'de': 'Unterkategorien für bessere Ordnung',
+      'it': 'Sottocategorie per organizzare meglio',
+      'zh': '子分类，整理更清晰',
+      'hi': 'बेहतर व्यवस्था के लिए उपश्रेणियाँ',
+      'ar': 'فئات فرعية لتنظيم أفضل',
+      'ru': 'Подкатегории для лучшей организации',
+    },
+    'plusBenefitNotifications': {
+      'es': 'Notificaciones de tus compras',
+      'en': 'Shopping notifications',
+      'pt': 'Notificações das suas compras',
+      'fr': 'Notifications de vos achats',
+      'de': 'Benachrichtigungen zu deinen Einkäufen',
+      'it': 'Notifiche dei tuoi acquisti',
+      'zh': '购物通知',
+      'hi': 'खरीदारी सूचनाएँ',
+      'ar': 'إشعارات المشتريات',
+      'ru': 'Уведомления о покупках',
+    },
+    'plusBenefitSuggestions': {
+      'es': 'Sugerencias de productos que se agotan',
+      'en': 'Smart suggestions for running-out products',
+      'pt': 'Sugestões de produtos que estão acabando',
+      'fr': 'Suggestions de produits qui s’épuisent',
+      'de': 'Vorschläge für auslaufende Produkte',
+      'it': 'Suggerimenti di prodotti in esaurimento',
+      'zh': '智能提示快用完的商品',
+      'hi': 'समाप्त हो रहे उत्पादों की सुझाव',
+      'ar': 'اقتراحات للمنتجات التي تنفد',
+      'ru': 'Подсказки о заканчивающихся товарах',
+    },
+    'plusBenefitCollaborators': {
+      'es': 'Hasta 4 colaboradores', 'en': 'Up to 4 collaborators', 'pt': 'Até 4 colaboradores',
+      'fr': 'Jusqu’à 4 collaborateurs', 'de': 'Bis zu 4 Mitarbeiter', 'it': 'Fino a 4 collaboratori',
+      'zh': '最多 4 名协作者', 'hi': 'अधिकतम 4 सहयोगी', 'ar': 'حتى 4 متعاونون', 'ru': 'До 4 участников',
+    },
+    'plusExclusive': {
+      'es': 'Esta función es exclusiva de Premium Plus.',
+      'en': 'This feature is exclusive to Premium Plus.',
+      'pt': 'Este recurso é exclusivo do Premium Plus.',
+      'fr': 'Cette fonction est exclusive à Premium Plus.',
+      'de': 'Diese Funktion ist Premium Plus vorbehalten.',
+      'it': 'Questa funzione è esclusiva di Premium Plus.',
+      'zh': '此功能为 Premium Plus 专属。',
+      'hi': 'यह सुविधा केवल प्रीमियम प्लस के लिए है।',
+      'ar': 'هذه الميزة حصرية لـ Premium Plus.',
+      'ru': 'Эта функция доступна только в Premium Plus.',
+    },
     'quantityLabel': {
       'es': 'Cantidad', 'en': 'Quantity', 'pt': 'Quantidade',
       'fr': 'Quantité', 'de': 'Menge', 'it': 'Quantità',
@@ -808,6 +1032,53 @@ class AppLocalizations {
       'ar': 'ليس لديك صلاحية لهذا الإجراء.',
       'ru': 'У вас нет разрешения на это действие.',
     },
+    // Recordatorio inteligente de compras + centro de notificaciones in-app
+    // (Premium Plus). Traducidas es/en; el resto cae a español por el
+    // fallback de _s(), igual que otras claves nuevas del proyecto.
+    'notifications': {'es': 'Notificaciones', 'en': 'Notifications'},
+    'notificationCenterEmpty': {
+      'es': 'Aún no tienes notificaciones. Te avisaremos cuando sea buen momento para ir de compras.',
+      'en': 'No notifications yet. We\'ll let you know when it\'s a good time to go shopping.',
+    },
+    'markAllRead': {'es': 'Marcar todo como leído', 'en': 'Mark all as read'},
+    'shoppingReminderTitle': {'es': '¿Vamos de compras? 🛒', 'en': 'Time to go shopping? 🛒'},
+    'shoppingReminderBody': {
+      'es': 'Según tus compras habituales, se te debe estar acabando: {items}. Toca para agregarlos a tu lista.',
+      'en': 'Based on your usual shopping, you\'re probably running low on: {items}. Tap to add them to your list.',
+    },
+    'suggestedProductsTitle': {'es': 'Productos habituales', 'en': 'Usual products'},
+    'suggestedProductsSubtitle': {
+      'es': 'Elige lo que quieras agregar a tu lista de compras.',
+      'en': 'Choose what you want to add to your shopping list.',
+    },
+    'addSuggestedToList': {'es': 'Agregar a la lista', 'en': 'Add to list'},
+    'suggestionsAddedSuccess': {
+      'es': 'Productos agregados a tu lista de compras',
+      'en': 'Products added to your shopping list',
+    },
+    'noActiveSuggestion': {
+      'es': 'Esta sugerencia ya no está disponible.',
+      'en': 'This suggestion is no longer available.',
+    },
+    'notificationsRequirePlus': {
+      'es': 'Los recordatorios inteligentes de compra son exclusivos de Premium Plus.',
+      'en': 'Smart shopping reminders are exclusive to Premium Plus.',
+    },
+    'suggestionAddMoreItems': {
+      'es': 'Agregar más productos',
+      'en': 'Add more products',
+    },
+    'suggestionSearchHint': {
+      'es': 'Buscar producto…',
+      'en': 'Search products…',
+    },
+    'suggestionEdit': {'es': 'Editar cantidad', 'en': 'Edit quantity'},
+    'suggestionEditHint': {
+      'es': 'Toca el lápiz para cambiar la cantidad',
+      'en': 'Tap the pencil to change the quantity',
+    },
+    'suggestionQuantityEmpty': {'es': 'Sin cantidad', 'en': 'No quantity'},
+    'suggestionNoResults': {'es': 'Sin resultados', 'en': 'No results'},
   };
 
   static const Map<String, Map<String, String>> _names = {
@@ -870,6 +1141,26 @@ class AppLocalizations {
     'Salmon': {'es': 'Salmón', 'en': 'Salmon', 'pt': 'Salmão', 'fr': 'Saumon', 'de': 'Lachs', 'it': 'Salmone', 'zh': '三文鱼', 'hi': 'सैल्मन', 'ar': 'سلمون', 'ru': 'Лосось'},
     'Tomatoes': {'es': 'Tomates', 'en': 'Tomatoes', 'pt': 'Tomates', 'fr': 'Tomates', 'de': 'Tomaten', 'it': 'Pomodori', 'zh': '番茄', 'hi': 'टमाटर', 'ar': 'طماطم', 'ru': 'Помидоры'},
     'White grapes': {'es': 'Uvas blancas', 'en': 'White grapes', 'pt': 'Uvas brancas', 'fr': 'Raisins blancs', 'de': 'Weiße Trauben', 'it': 'Uve bianche', 'zh': '白葡萄', 'hi': 'सफेद अंगूर', 'ar': 'عنب أبيض', 'ru': 'Белый виноград'},
+    'Garlic': {'es': 'Ajo', 'en': 'Garlic', 'pt': 'Alho', 'fr': 'Ail', 'de': 'Knoblauch', 'it': 'Aglio', 'zh': '大蒜', 'hi': 'लहसुन', 'ar': 'ثوم', 'ru': 'Чеснок'},
+    'Bell pepper': {'es': 'Pimiento', 'en': 'Bell pepper', 'pt': 'Pimento', 'fr': 'Poivron', 'de': 'Paprika', 'it': 'Peperone', 'zh': '甜椒', 'hi': 'शिमला मिर्च', 'ar': 'فلفل حلو', 'ru': 'Болгарский перец'},
+    'Olive oil': {'es': 'Aceite de oliva', 'en': 'Olive oil', 'pt': 'Azeite de oliva', 'fr': "Huile d'olive", 'de': 'Olivenöl', 'it': 'Olio d\'oliva', 'zh': '橄榄油', 'hi': 'जैतून का तेल', 'ar': 'زيت زيتون', 'ru': 'Оливковое масло'},
+    'Red onion': {'es': 'Cebolla roja', 'en': 'Red onion', 'pt': 'Cebola roxa', 'fr': 'Oignon rouge', 'de': 'Rote Zwiebel', 'it': 'Cipolla rossa', 'zh': '红洋葱', 'hi': 'लाल प्याज़', 'ar': 'بصل أحمر', 'ru': 'Красный лук'},
+    'Sunflower oil': {'es': 'Aceite de girasol', 'en': 'Sunflower oil', 'pt': 'Óleo de girassol', 'fr': "Huile de tournesol", 'de': 'Sonnenblumenöl', 'it': 'Olio di girasole', 'zh': '葵花籽油', 'hi': 'सूरजमुखी तेल', 'ar': 'زيت عباد الشمس', 'ru': 'Подсолнечное масло'},
+    'Girassol Oil': {'es': 'Aceite de girasol', 'en': 'Sunflower oil', 'pt': 'Óleo de girassol', 'fr': "Huile de tournesol", 'de': 'Sonnenblumenöl', 'it': 'Olio di girasole', 'zh': '葵花籽油', 'hi': 'सूरजमुखी तेल', 'ar': 'زيت عباد الشمس', 'ru': 'Подсолнечное масло'},
+    'Bacon': {'es': 'Tocino', 'en': 'Bacon', 'pt': 'Bacon', 'fr': 'Bacon', 'de': 'Speck', 'it': 'Pancetta', 'zh': '培根', 'hi': 'बेकन', 'ar': 'لحم مقدد', 'ru': 'Бекон'},
+    'Chorizo': {'es': 'Chorizo', 'en': 'Chorizo', 'pt': 'Chouriço', 'fr': 'Chorizo', 'de': 'Chorizo', 'it': 'Salsiccia', 'zh': '香肠', 'hi': 'चोरिज़ो', 'ar': 'شوريزو', 'ru': 'Чоризо'},
+    'Ham': {'es': 'Jamón', 'en': 'Ham', 'pt': 'Presunto', 'fr': 'Jambon', 'de': 'Schinken', 'it': 'Prosciutto', 'zh': '火腿', 'hi': 'हैम', 'ar': 'لحم مقدد', 'ru': 'Ветчина'},
+    'Hot dog': {'es': 'Salchicha', 'en': 'Hot dog', 'pt': 'Cachorro-quente', 'fr': 'Hot-dog', 'de': 'Hotdog', 'it': 'Hot dog', 'zh': '热狗', 'hi': 'हॉट डॉग', 'ar': 'هوت دوغ', 'ru': 'Хот-дог'},
+    'Shrimp': {'es': 'Camarones', 'en': 'Shrimp', 'pt': 'Camarão', 'fr': 'Crevettes', 'de': 'Garnelen', 'it': 'Gamberi', 'zh': '虾', 'hi': 'झींगा', 'ar': 'جمبري', 'ru': 'Креветки'},
+    'Coca cola': {'es': 'Coca cola', 'en': 'Coca cola', 'pt': 'Coca cola', 'fr': 'Coca cola', 'de': 'Coca cola', 'it': 'Coca cola', 'zh': '可乐', 'hi': 'कोका कोला', 'ar': 'كوكا كولا', 'ru': 'Кока-кола'},
+    'Blueberry': {'es': 'Arándano', 'en': 'Blueberry', 'pt': 'Mirtilo', 'fr': 'Myrtille', 'de': 'Blaubeere', 'it': 'Mirtillo', 'zh': '蓝莓', 'hi': 'ब्लूबेरी', 'ar': 'توت أزرق', 'ru': 'Черника'},
+    'Kiwi': {'es': 'Kiwi', 'en': 'Kiwi', 'pt': 'Kiwi', 'fr': 'Kiwi', 'de': 'Kiwi', 'it': 'Kiwi', 'zh': '猕猴桃', 'hi': 'कीवी', 'ar': 'كيوي', 'ru': 'Киви'},
+    'Mandarin': {'es': 'Mandarina', 'en': 'Mandarin', 'pt': 'Tangerina', 'fr': 'Mandarine', 'de': 'Mandarine', 'it': 'Mandarino', 'zh': '橘子', 'hi': 'संतरा', 'ar': 'يوسفي', 'ru': 'Мандарин'},
+    'Peach': {'es': 'Durazno', 'en': 'Peach', 'pt': 'Pêssego', 'fr': 'Pêche', 'de': 'Pfirsich', 'it': 'Pesca', 'zh': '桃子', 'hi': 'आड़ू', 'ar': 'خوخ', 'ru': 'Персик'},
+    'Pear': {'es': 'Pera', 'en': 'Pear', 'pt': 'Pera', 'fr': 'Poire', 'de': 'Birne', 'it': 'Pera', 'zh': '梨', 'hi': 'नाशपाती', 'ar': 'كمثرى', 'ru': 'Груша'},
+    'Raspberry': {'es': 'Frambuesa', 'en': 'Raspberry', 'pt': 'Framboesa', 'fr': 'Framboise', 'de': 'Himbeere', 'it': 'Lampone', 'zh': '树莓', 'hi': 'रसभरी', 'ar': 'توت العليق', 'ru': 'Малина'},
+    'Cherry tomato': {'es': 'Tomate cherry', 'en': 'Cherry tomato', 'pt': 'Tomate cereja', 'fr': 'Tomate cerise', 'de': 'Kirschtomate', 'it': 'Pomodoro ciliegino', 'zh': '圣女果', 'hi': 'चेरी टमाटर', 'ar': 'طماطم كرزية', 'ru': 'Помидоры черри'},
+    'Eggplant': {'es': 'Berenjena', 'en': 'Eggplant', 'pt': 'Beringela', 'fr': 'Aubergine', 'de': 'Aubergine', 'it': 'Melanzana', 'zh': '茄子', 'hi': 'बैंगन', 'ar': 'باذنجان', 'ru': 'Баклажан'},
   };
 
   String getName(String key) {
@@ -945,6 +1236,27 @@ class AppLocalizations {
   String get galleryPicker => _s('galleryPicker');
   String get shareList => _s('shareList');
   String get shareListSub => _s('shareListSub');
+  String get exportList => _s('exportList');
+  String get exportListTitle => _s('exportListTitle');
+  String get exportAsPdf => _s('exportAsPdf');
+  String get exportAsImage => _s('exportAsImage');
+  String get exportListEmpty => _s('exportListEmpty');
+  String get exporting => _s('exporting');
+  String get exportFailed => _s('exportFailed');
+  String get shoppingList => _s('shoppingList');
+  String get subcategory => _s('subcategory');
+  String get subcategories => _s('subcategories');
+  String get noSubcategory => _s('noSubcategory');
+  String get newSubcategory => _s('newSubcategory');
+  String get subcategoryHint => _s('subcategoryHint');
+  String get renameSubcategory => _s('renameSubcategory');
+  String get deleteSubcategory => _s('deleteSubcategory');
+  String deleteSubcategoryConfirm(String name) =>
+      _s('deleteSubcategoryConfirm').replaceFirst('{name}', name);
+  String get moveProduct => _s('moveProduct');
+  String movedProductTo(String sub) =>
+      _s('movedProductTo').replaceFirst('{sub}', sub);
+  String get moveToCategory => _s('moveToCategory');
   String get managePermissions => _s('managePermissions');
   String get managePermissionsSub => _s('managePermissionsSub');
   String get signOut => _s('signOut');
@@ -957,6 +1269,9 @@ class AppLocalizations {
   String get roleRead => _s('roleRead');
   String get roleUnknown => _s('roleUnknown');
   String get addCollaborator => _s('addCollaborator');
+  String get collaboratorsUsed => _s('collaboratorsUsed');
+  String get collaboratorsPremiumPlusLimit =>
+      _s('collaboratorsPremiumPlusLimit');
   String get collaboratorPrompt => _s('collaboratorPrompt');
   String get emailLabel => _s('emailLabel');
   String get savedSuccessfully => _s('savedSuccessfully');
@@ -1003,6 +1318,15 @@ class AppLocalizations {
   String get premiumBenefitGalleryView => _s('premiumBenefitGalleryView');
   String get premiumLimitCollaborators => _s('premiumLimitCollaborators');
   String get premiumFeatureExclusive => _s('premiumFeatureExclusive');
+  String get plusTitle => _s('plusTitle');
+  String get plusPriceFallback => _s('plusPriceFallback');
+  String get plusActive => _s('plusActive');
+  String get plusBenefitExport => _s('plusBenefitExport');
+  String get plusBenefitSubcategories => _s('plusBenefitSubcategories');
+  String get plusBenefitNotifications => _s('plusBenefitNotifications');
+  String get plusBenefitSuggestions => _s('plusBenefitSuggestions');
+  String get plusBenefitCollaborators => _s('plusBenefitCollaborators');
+  String get plusExclusive => _s('plusExclusive');
   String get quantityLabel => _s('quantityLabel');
   String get unitLabel => _s('unitLabel');
   String get forgotPassword => _s('forgotPassword');
@@ -1014,6 +1338,14 @@ class AppLocalizations {
   String unlockFor(String price) =>
       interpolate('unlockFor', {'price': price});
 
+  String unlockPlusFor(String price) =>
+      interpolate('unlockPlusFor', {'price': price});
+
+  String collaboratorsUsedText(int used, int max) => interpolate(
+      'collaboratorsUsed',
+      {'used': '$used', 'max': '$max'},
+    );
+
   String deleteProductConfirm(String name) =>
       interpolate('deleteProductConfirm', {'name': name});
   String deleteCategoryConfirm(String name) =>
@@ -1023,4 +1355,24 @@ class AppLocalizations {
 
   String get collaboratorRemoved => _s('collaboratorRemoved');
   String get permissionDenied => _s('permissionDenied');
+
+  String get notifications => _s('notifications');
+  String get notificationCenterEmpty => _s('notificationCenterEmpty');
+  String get markAllRead => _s('markAllRead');
+  String get shoppingReminderTitle => _s('shoppingReminderTitle');
+  String shoppingReminderBody(String items) =>
+      interpolate('shoppingReminderBody', {'items': items});
+  String get suggestedProductsTitle => _s('suggestedProductsTitle');
+  String get suggestedProductsSubtitle => _s('suggestedProductsSubtitle');
+  String get addSuggestedToList => _s('addSuggestedToList');
+  String get suggestionsAddedSuccess => _s('suggestionsAddedSuccess');
+  String get noActiveSuggestion => _s('noActiveSuggestion');
+  String get notificationsRequirePlus => _s('notificationsRequirePlus');
+  String get suggestionAddMoreItems => _s('suggestionAddMoreItems');
+  String get suggestionSearchHint => _s('suggestionSearchHint');
+  String get suggestionEdit => _s('suggestionEdit');
+  String get suggestionEditHint => _s('suggestionEditHint');
+  String get suggestionQuantityEmpty => _s('suggestionQuantityEmpty');
+  String get suggestionNoResults => _s('suggestionNoResults');
+  String get all => _s('all');
 }

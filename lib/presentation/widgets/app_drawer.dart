@@ -4,17 +4,20 @@ import 'package:flutter/material.dart';
 
 import '../../core/di.dart';
 import '../../data/bootstrap/app_initializer.dart';
+import '../../domain/entities/collaborator.dart';
 import '../../domain/repositories/collaborator_repository.dart';
 import '../../domain/repositories/premium_repository.dart';
 import '../app_settings.dart';
 import '../localization/app_localizations.dart';
 import '../screens/manage_collaborators_screen.dart';
 import 'paywall_dialog.dart';
+import 'paywall_plus_dialog.dart';
 import 'premium_limits.dart';
 
 /// Paleta compartida con las pantallas principales.
 class DrawerAccents {
-  static const emerald = Color(0xFF059669);
+  static const brand = Color(0xFFC27A22);
+  static const navy = Color(0xFF184878);
   static const rose = Color(0xFFE11D48);
   static const amber = Color(0xFFD97706);
   static const ink = Color(0xFF0F172A);
@@ -66,8 +69,8 @@ class _AppDrawerState extends State<AppDrawer> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: isDark
-                ? const [Color(0xFF12171A), Color(0xFF0F1211)]
-                : const [Color(0xFFEAFBF3), Color(0xFFF7FBF9)],
+                ? const [Color(0xFF1D1812), Color(0xFF131009)]
+                : const [Color(0xFFF7EFDD), Color(0xFFFDFBF4)],
           ),
         ),
         child: SafeArea(
@@ -83,13 +86,13 @@ class _AppDrawerState extends State<AppDrawer> {
                       width: 56,
                       height: 56,
                       decoration: const BoxDecoration(
-                        color: DrawerAccents.emerald,
+                        color: DrawerAccents.navy,
                         shape: BoxShape.circle,
                       ),
-                      padding: const EdgeInsets.all(12),
+                      clipBehavior: Clip.antiAlias,
                       child: Image.asset(
                         'assets/images/logo.png',
-                        fit: BoxFit.contain,
+                        fit: BoxFit.cover,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -127,7 +130,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   ListTile(
                     contentPadding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    leading: _iconChip(Icons.language, DrawerAccents.emerald),
+                    leading: _iconChip(Icons.language, DrawerAccents.brand),
                     title: Text(t.language, style: _titleStyle(titleColor)),
                     subtitle: Text(
                       '${t.currentLanguage.flag} ${t.currentLanguage.nativeName}',
@@ -141,10 +144,10 @@ class _AppDrawerState extends State<AppDrawer> {
                     contentPadding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                     secondary:
-                        _iconChip(Icons.dark_mode_outlined, DrawerAccents.emerald),
+                        _iconChip(Icons.dark_mode_outlined, DrawerAccents.brand),
                     title: Text(t.darkMode, style: _titleStyle(titleColor)),
                     value: settings.themeMode == ThemeMode.dark,
-                    activeThumbColor: DrawerAccents.emerald,
+                    activeThumbColor: DrawerAccents.brand,
                     onChanged: (value) async {
                       if (!PremiumLimits.checkCanEdit(context)) return;
                       if (value &&
@@ -171,11 +174,24 @@ class _AppDrawerState extends State<AppDrawer> {
                       contentPadding:
                           const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                       leading: _iconChip(
-                          Icons.person_add_alt_outlined, DrawerAccents.emerald),
+                          Icons.person_add_alt_outlined, DrawerAccents.brand),
                       title:
                           Text(t.addCollaborator, style: _titleStyle(titleColor)),
+                      subtitle: StreamBuilder<List<Collaborator>>(
+                        stream: sl<CollaboratorRepository>()
+                            .watchCollaborators(user?.email ?? ''),
+                        builder: (context, snapshot) {
+                          final used = snapshot.data?.length ?? 0;
+                          return Text(
+                            t.collaboratorsUsedText(
+                                used, PremiumLimits.maxCollaborators),
+                            style:
+                                TextStyle(color: subColor, fontSize: 12.5),
+                          );
+                        },
+                      ),
                       onTap: () async {
-                        if (!await PremiumLimits.canManageCollaborators(context)) {
+                        if (!await PremiumLimits.canAddCollaborator(context)) {
                           return;
                         }
                         if (!context.mounted) return;
@@ -186,7 +202,7 @@ class _AppDrawerState extends State<AppDrawer> {
                       contentPadding:
                           const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                       leading: _iconChip(
-                          Icons.manage_accounts_outlined, DrawerAccents.emerald),
+                          Icons.manage_accounts_outlined, DrawerAccents.brand),
                       title: Text(t.managePermissions,
                           style: _titleStyle(titleColor)),
                       subtitle: Text(
@@ -214,7 +230,10 @@ class _AppDrawerState extends State<AppDrawer> {
               // Sección: premium.
               _GlassSection(
                 isDark: isDark,
-                children: [_PremiumTile(isDark: isDark)],
+                children: [
+                  _PremiumTile(isDark: isDark),
+                  _PremiumPlusTile(isDark: isDark),
+                ],
               ),
               const SizedBox(height: 12),
 
@@ -225,7 +244,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   ListTile(
                     contentPadding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    leading: _iconChip(Icons.info_outline, DrawerAccents.emerald),
+                    leading: _iconChip(Icons.info_outline, DrawerAccents.brand),
                     title: Text(t.about, style: _titleStyle(titleColor)),
                     subtitle: Text(
                       '${t.appName} · ${t.version}',
@@ -342,7 +361,7 @@ class _AppDrawerState extends State<AppDrawer> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(t.savedSuccessfully),
-          backgroundColor: DrawerAccents.emerald,
+          backgroundColor: DrawerAccents.brand,
         ),
       );
     } catch (_) {
@@ -407,7 +426,7 @@ class _AppDrawerState extends State<AppDrawer> {
                         title: Text(lang.nativeName),
                         trailing: lang.code == current.code
                             ? const Icon(Icons.check_circle,
-                                color: DrawerAccents.emerald)
+                                color: DrawerAccents.brand)
                             : null,
                         onTap: () {
                           notifier.value = notifier.value.copyWith(
@@ -497,7 +516,7 @@ class _PremiumTileState extends State<_PremiumTile> {
           ),
         ),
         trailing: const Icon(Icons.check_circle,
-            color: DrawerAccents.emerald),
+            color: DrawerAccents.brand),
       );
     }
 
@@ -542,6 +561,86 @@ class _PremiumTileState extends State<_PremiumTile> {
         size: 21,
         color: DrawerAccents.amber,
       ),
+    );
+  }
+}
+
+class _PremiumPlusTile extends StatefulWidget {
+  const _PremiumPlusTile({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  State<_PremiumPlusTile> createState() => _PremiumPlusTileState();
+}
+
+class _PremiumPlusTileState extends State<_PremiumPlusTile> {
+  bool _effectivePlus = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPlus();
+  }
+
+  Future<void> _checkPlus() async {
+    final effective = PremiumLimits.isPremiumPlusEffectiveSync;
+    if (mounted) setState(() => _effectivePlus = effective);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final isDark = widget.isDark;
+
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: DrawerAccents.navy.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.auto_awesome,
+          size: 20,
+          color: DrawerAccents.navy,
+        ),
+      ),
+      title: Text(
+        t.plusTitle,
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+          color: isDark ? Colors.grey.shade100 : DrawerAccents.ink,
+        ),
+      ),
+      subtitle: _effectivePlus
+          ? Text(
+              t.plusActive,
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                fontSize: 12.5,
+              ),
+            )
+          : Text(
+              sl<PremiumRepository>().current().priceTextPlus ??
+                  t.plusPriceFallback,
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                fontSize: 12.5,
+              ),
+            ),
+      trailing: _effectivePlus
+          ? const Icon(Icons.check_circle, color: DrawerAccents.navy)
+          : const Icon(Icons.chevron_right),
+      onTap: () => showPremiumPlusPaywall(context),
+      onLongPress: kDebugMode
+          ? () => sl<PremiumRepository>().toggleDebugOverride()
+          : null,
     );
   }
 }

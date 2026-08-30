@@ -9,6 +9,7 @@ class Product {
     this.imageId,
     this.quantity,
     this.unit,
+    this.subcategory,
   });
 
   String nameKey;
@@ -20,6 +21,9 @@ class Product {
   String? imageId;
   double? quantity;
   String? unit;
+
+  /// Subcategoría (grupo) dentro de la categoría. Solo Premium Plus.
+  String? subcategory;
 
   String get id => nameKey.trim();
 
@@ -35,6 +39,7 @@ class Product {
     String? imageId,
     double? quantity,
     String? unit,
+    String? subcategory,
   }) {
     return Product(
       nameKey: nameKey ?? this.nameKey,
@@ -46,6 +51,7 @@ class Product {
       imageId: imageId ?? this.imageId,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
+      subcategory: subcategory ?? this.subcategory,
     );
   }
 }

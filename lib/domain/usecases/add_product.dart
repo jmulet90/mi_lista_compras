@@ -17,6 +17,7 @@ class AddProductUseCase {
     String? imagePath,
     double? quantity,
     String? unit,
+    String? subcategory,
   }) async {
     await _guard.ensureCanFullyEdit();
 
@@ -41,6 +42,7 @@ class AddProductUseCase {
       imagePath: imagePath,
       quantity: quantity,
       unit: unit,
+      subcategory: subcategory,
     ));
   }
 }

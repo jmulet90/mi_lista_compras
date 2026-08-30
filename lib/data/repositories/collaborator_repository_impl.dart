@@ -68,6 +68,12 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
   }
 
   @override
+  Future<int> countCollaborators(String ownerEmail) async {
+    final snapshot = await _remote.watchCollaborators(ownerEmail).first;
+    return snapshot.docs.length;
+  }
+
+  @override
   Future<void> updateRole({
     required String docId,
     required String ownerEmail,

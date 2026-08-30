@@ -13,8 +13,8 @@ class MoveVisuals {
           ? Icons.home_rounded
           : Icons.shopping_cart_rounded;
 
-  static MaterialColor accent(ProductMoveTarget target) =>
-      target == ProductMoveTarget.pantry ? Colors.green : Colors.red;
+  static Color accent(ProductMoveTarget target) =>
+      target == ProductMoveTarget.pantry ? const Color(0xFF059669) : Colors.red;
 }
 
 Widget buildMovePreview({String? imagePath, String? emoji}) {
@@ -124,7 +124,7 @@ class _ProductMoveOverlayState extends State<_ProductMoveOverlay>
         Offset((startCenter.dx + targetCenter.dx) / 2, math.min(startCenter.dy, targetCenter.dy) - 130);
     const double ghostSize = 46;
 
-    final MaterialColor accent = MoveVisuals.accent(widget.target);
+    final Color accent = MoveVisuals.accent(widget.target);
 
     return Material(
       type: MaterialType.transparency,
@@ -190,7 +190,7 @@ class _ProductMoveOverlayState extends State<_ProductMoveOverlay>
                           ),
                           child: Icon(
                             MoveVisuals.icon(widget.target),
-                            color: accent.shade700,
+                            color: accent,
                             size: 34,
                           ),
                         ),

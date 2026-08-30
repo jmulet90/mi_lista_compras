@@ -23,7 +23,21 @@ class ProductVisuals {
       );
     }
     if (DialogKit.isAssetRef(emoji)) {
-      return Image.asset(emoji!, fit: BoxFit.contain);
+      return Image.asset(
+        emoji!,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          // El asset referenciado no está en el bundle: cae al ícono por defecto
+          // en vez de mostrar el placeholder de imagen rota.
+          return Center(
+            child: Icon(
+              Icons.shopping_bag_outlined,
+              size: emojiSize * 0.65,
+              color: Colors.grey.shade400,
+            ),
+          );
+        },
+      );
     }
     // Sin emoji ni foto: ícono por defecto.
     return Center(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,13 +9,20 @@ import '../../core/failures.dart';
 import '../../core/utils/image_storage.dart';
 import '../../domain/entities/category_item.dart';
 import '../../domain/entities/product.dart';
+import '../../domain/entities/subcategory_item.dart';
 import '../../domain/usecases/delete_product.dart';
 import '../../domain/usecases/toggle_product.dart';
 import '../../domain/usecases/update_product.dart';
+import '../../domain/repositories/category_repository.dart';
 import '../../domain/repositories/product_repository.dart';
+import '../../domain/repositories/subcategory_repository.dart';
 import '../app_settings.dart';
 import '../localization/app_localizations.dart';
+import '../services/main_tab_controller.dart';
+import '../services/subcategory_actions.dart';
 import '../widgets/premium_limits.dart';
+import '../widgets/floating_nav_bar.dart';
+import '../widgets/floating_nav_spec.dart';
 import '../widgets/add_product_dialog.dart';
 import '../widgets/category_visuals.dart';
 import '../widgets/dialog_kit.dart';
@@ -21,26 +30,93 @@ import '../widgets/product_visuals.dart';
 import '../../core/utils/product_asset_catalog.dart';
 import '../widgets/product_move_animation.dart';
 import '../widgets/show_failure.dart';
+import '../widgets/subcategory_dialog.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final CategoryItem category;
   final bool isBuyScreen;
 
+  /// Si es distinto de null, esta pantalla actúa como el detalle de esa
+  /// subcategoría (solo sus productos, sin agrupación) y el encabezado muestra
+  /// su visual.
+  final String? subcategoryName;
+  final SubcategoryItem? subcategoryItem;
+
   const CategoryDetailScreen({
     super.key,
     required this.category,
     required this.isBuyScreen,
+    this.subcategoryName,
+    this.subcategoryItem,
   });
 
   @override
   State<CategoryDetailScreen> createState() => _CategoryDetailScreenState();
 }
 
-class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
+class _CategoryDetailScreenState extends State<CategoryDetailScreen>
+    with SingleTickerProviderStateMixin {
   final Map<String, GlobalKey> _productRowKeys = {};
+
+  /// Subcategoría expandida en la lista: null (nada), '' ("Sin subcategoría")
+  /// o el nombre de una subcategoría.
+  String? _expandedSubcategory;
+
+  /// Subcategorías persistidas de esta categoría (clave = categoría en
+  /// minúsculas; aquí solo interesa la de [widget.category]).
+  Map<String, List<SubcategoryItem>> _subcategories = {};
+  StreamSubscription<Map<String, List<SubcategoryItem>>>? _subcategoriesSub;
+
+  /// ¿El abanico del "+" está desplegado?
+  bool _isFabOpen = false;
+  late final AnimationController _fabAnimationController;
+
+  List<SubcategoryItem> get _subsForCategory =>
+      _subcategories[widget.category.key.trim().toLowerCase()] ?? const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fabAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _subcategoriesSub = sl<SubcategoryRepository>().watchAll().listen((map) {
+      if (mounted) setState(() => _subcategories = map);
+    });
+  }
+
+  @override
+  void dispose() {
+    _subcategoriesSub?.cancel();
+    _fabAnimationController.dispose();
+    super.dispose();
+  }
 
   GlobalKey _rowKeyFor(Product product) =>
       _productRowKeys.putIfAbsent(product.id, () => GlobalKey());
+
+  /// Tag de Hero común para el círculo de una subcategoría. La subcategoría
+  /// "Sin subcategoría" se representa con `''` y un sufijo estable.
+  String _subHeroTag(String subName) =>
+      'subcategory-circle-${widget.category.key}-${subName.isEmpty ? '__none__' : subName.toLowerCase()}';
+
+  /// Subcategoría efectiva del parámetro, normalizando `''` ("Sin
+  /// subcategoría") a null para nuevas asignaciones.
+  String? _subParam() {
+    final name = widget.subcategoryName;
+    if (name == null) return null;
+    return name.isEmpty ? null : name;
+  }
+
+  /// ¿El producto pertenece a la subcategoría activa? Con `''` equivale a
+  /// "Sin subcategoría"; con null (no modo sub) todo pertenece.
+  bool _productInSub(Product p) {
+    final name = widget.subcategoryName;
+    if (name == null) return true;
+    if (name.isEmpty) return SubcategoryActions.subOf(p) == null;
+    return SubcategoryActions.subOf(p) == name;
+  }
 
   void _showProductOptionsBottomSheet(BuildContext context, Product product) {
     final t = AppLocalizations.of(context);
@@ -58,6 +134,36 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(
+                Icons.drive_file_move_outline,
+                color: Color(0xFF184878),
+              ),
+              title: Text(t.moveProduct),
+              onTap: () {
+                Navigator.pop(context);
+                SubcategoryActions.promptMoveProduct(
+                  this.context,
+                  product: product,
+                  categoryKey: widget.category.key,
+                  subcategories: [for (final s in _subsForCategory) s.name],
+                  onMoved: () {
+                    if (mounted) setState(() {});
+                  },
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.drive_file_move_rtl_outlined,
+                color: Colors.orange,
+              ),
+              title: Text(t.moveToCategory),
+              onTap: () {
+                Navigator.pop(context);
+                _promptMoveToCategory(context, product);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
               title: Text('${t.delete} "${t.getProductName(product.nameKey)}"'),
               onTap: () {
@@ -71,11 +177,82 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
+  Future<void> _promptMoveToCategory(
+    BuildContext context,
+    Product product,
+  ) async {
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final List<CategoryItem> categories;
+    try {
+      categories = await sl<CategoryRepository>().getAll();
+    } on Failure catch (failure) {
+      if (context.mounted) showFailure(context, failure);
+      return;
+    }
+    final options = categories
+        .where((c) => c.key.trim().toLowerCase() !=
+            widget.category.key.trim().toLowerCase())
+        .toList();
+    if (options.isEmpty) return;
+
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final cat in options)
+              ListTile(
+                leading: Icon(
+                  Icons.category_outlined,
+                  color: const Color(0xFF184878),
+                ),
+                title: Text(t.getCategoryName(cat.key)),
+                onTap: () => Navigator.of(sheetContext).pop(cat.key),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || chosen.isEmpty) return;
+
+    try {
+      await sl<UpdateProductUseCase>()(
+        product: product,
+        newName: product.nameKey,
+        emoji: product.emoji,
+        imagePath: product.imagePath,
+        quantity: product.quantity,
+        unit: product.unit,
+        categoryKey: chosen,
+        clearSubcategory: true,
+      );
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              t.movedProductTo(t.getCategoryName(chosen)),
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        if (mounted) setState(() {});
+      }
+    } on Failure catch (failure) {
+      if (context.mounted) showFailure(context, failure);
+    }
+  }
+
   void _showEditProductDialog(BuildContext context, Product product) {
     final t = AppLocalizations.of(context);
     final accent = DialogKit.accentForBuy(widget.isBuyScreen);
-    final nameController =
-        TextEditingController(text: t.getProductName(product.nameKey));
+    final nameController = TextEditingController(
+      text: t.getProductName(product.nameKey),
+    );
     String? selectedEmoji = product.emoji;
     String? imagePath = product.imagePath;
     double? quantity = product.quantity;
@@ -110,7 +287,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     accent: accent,
                     quantity: quantity,
                     unit: unit,
-                    onQuantityChanged: (val) => setDialogState(() => quantity = val),
+                    onQuantityChanged: (val) =>
+                        setDialogState(() => quantity = val),
                     onUnitChanged: (val) => setDialogState(() => unit = val),
                   ),
                   const SizedBox(height: 16),
@@ -122,7 +300,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text(t.visualCustomization, style: TextStyle(fontSize: 12, color: DialogKit.isDark(context) ? Colors.grey.shade400 : Colors.grey.shade600)),
+                  Text(
+                    t.visualCustomization,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: DialogKit.isDark(context)
+                          ? Colors.grey.shade400
+                          : Colors.grey.shade600,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   if (pngs.isNotEmpty)
                     DialogKit.assetStrip(
@@ -221,11 +407,19 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(t.delete),
-        content: Text(t.deleteProductConfirm(t.getProductName(product.nameKey))),
+        content: Text(
+          t.deleteProductConfirm(t.getProductName(product.nameKey)),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(t.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(t.cancel),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
               try {
@@ -270,6 +464,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     }
   }
 
+  /// Cambia la pestaña principal (0 = Comprar, 1 = Despensa) y vuelve a la
+  /// pantalla principal: desde una categoría o subcategoría, tocar el carrito
+  /// o la casita lleva directo a la pantalla principal del lado tocado.
+  void _goToMain(int side) {
+    MainTabController.switchTo(side);
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   void _showQtyUnitDialog(Product product) async {
     if (!await PremiumLimits.canUseQuantityFeature(context)) return;
     if (!mounted) return;
@@ -293,11 +495,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 controller: TextEditingController(
                   text: qty != null ? DialogKit.formatQuantity(qty!) : '',
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 decoration: InputDecoration(
                   labelText: t.quantityLabel,
                   hintText: 'Ej: 2',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onChanged: (val) => qty = double.tryParse(val),
               ),
@@ -338,7 +544,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   if (qty != null && mounted) {
                     messenger.showSnackBar(
                       SnackBar(
-                        content: Text('Cantidad: ${DialogKit.formatQuantity(qty!)}${unit != null ? ' $unit' : ''}'),
+                        content: Text(
+                          'Cantidad: ${DialogKit.formatQuantity(qty!)}${unit != null ? ' $unit' : ''}',
+                        ),
                         duration: const Duration(seconds: 1),
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -354,11 +562,140 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
+  /// Abre el diálogo de nuevo producto (dentro de la categoría o de una
+  /// subcategoría expandida).
+  void _showAddProductDialog(BuildContext context, {String? subcategory}) {
+    showDialog(
+      context: context,
+      builder: (context) => AddProductDialog(
+        categories: [widget.category.key],
+        initialCategory: widget.category.key,
+        initialSubcategory: subcategory,
+        isBuyScreen: widget.isBuyScreen,
+      ),
+    );
+  }
+
+  /// Crea una subcategoría (Premium Plus; los sin Plus ven el aviso).
+  Future<void> _showAddSubcategoryDialog(BuildContext context) async {
+    final t = AppLocalizations.of(context);
+    if (!await PremiumLimits.canUsePremiumPlus(
+      context,
+      reason: t.plusExclusive,
+    )) {
+      return;
+    }
+    if (!context.mounted) return;
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) =>
+          SubcategoryDialog(categoryKey: widget.category.key, accent: accent),
+    );
+    if (!context.mounted) return;
+    if (name == null || name.isEmpty) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${t.subcategory}: $name'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _toggleFab() {
+    setState(() {
+      _isFabOpen = !_isFabOpen;
+      if (_isFabOpen) {
+        _fabAnimationController.forward();
+      } else {
+        _fabAnimationController.reverse();
+      }
+    });
+  }
+
+  /// Opciones del abanico del "+" según el contexto:
+  /// - En el detalle de una subcategoría → solo "nuevo producto".
+  /// - Nivel de categoría → "nueva subcategoría" + "nuevo producto"
+  ///   (subcategoría se oculta si hay una expandida en el acordeón).
+  List<Widget> _fabOptions(BuildContext context, AppLocalizations t) {
+    final subMode = widget.subcategoryName != null;
+    final inSubcategory = subMode || _expandedSubcategory != null;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    final options =
+        <({String heroTag, IconData icon, String label, VoidCallback onTap})>[];
+
+    if (!inSubcategory) {
+      options.add((
+        heroTag: 'btn_detail_subcategory',
+        icon: Icons.create_new_folder_outlined,
+        label: t.newSubcategory,
+        onTap: () {
+          _toggleFab();
+          _showAddSubcategoryDialog(context);
+        },
+      ));
+    }
+    options.add((
+      heroTag: 'btn_detail_product',
+      icon: Icons.add_shopping_cart_rounded,
+      label: t.newProduct,
+      onTap: () {
+        if (!PremiumLimits.checkCanEdit(context)) return;
+        _toggleFab();
+        _showAddProductDialog(
+          context,
+          subcategory: subMode
+              ? _subParam()
+              : (_expandedSubcategory == '' ? null : _expandedSubcategory),
+        );
+      },
+    ));
+
+    final buttons = <Widget>[];
+    for (var i = 0; i < options.length; i++) {
+      final o = options[i];
+      buttons.add(
+        _FanOption(
+          delay: Duration(milliseconds: 60 * i),
+          child: FloatingActionButton.extended(
+            heroTag: o.heroTag,
+            backgroundColor: dark ? const Color(0xFF1E293B) : Colors.white,
+            foregroundColor: dark
+                ? Colors.grey.shade100
+                : Colors.blueGrey.shade800,
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+              side: dark
+                  ? BorderSide(color: Colors.white.withValues(alpha: 0.12))
+                  : BorderSide.none,
+            ),
+            onPressed: o.onTap,
+            icon: Icon(o.icon, size: 22),
+            label: Text(
+              o.label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ),
+      );
+      if (i < options.length - 1) buttons.add(const SizedBox(height: 8));
+    }
+    return buttons;
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = AppSettings.of(context);
     final t = AppLocalizations.of(context);
     final localizedName = t.getCategoryName(widget.category.key);
+    final subMode = widget.subcategoryName != null;
     final isBuy = widget.isBuyScreen;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = DialogKit.accentForBuy(isBuy);
@@ -367,19 +704,22 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       end: Alignment.bottomCenter,
       colors: isDark
           ? (isBuy
-              ? const [Color(0xFF27141B), Color(0xFF141018)]
-              : const [Color(0xFF11281F), Color(0xFF131712)])
+                ? const [Color(0xFF27141B), Color(0xFF141018)]
+                : const [Color(0xFF11281F), Color(0xFF131712)])
           : (isBuy
-              ? const [Color(0xFFFFF1F2), Color(0xFFFCF8F8)]
-              : const [Color(0xFFEAFBF3), Color(0xFFF7FBF9)]),
+                ? const [Color(0xFFFFF1F2), Color(0xFFFCF8F8)]
+                : const [Color(0xFFEAFBF3), Color(0xFFF7FBF9)]),
     );
 
     return Scaffold(
+      extendBody: true,
       appBar: AppBar(
         title: Row(
           children: [
             Hero(
-              tag: 'category-circle-${widget.category.key}',
+              tag: subMode
+                  ? _subHeroTag(widget.subcategoryName!)
+                  : 'category-circle-${widget.category.key}',
               child: Container(
                 width: 34,
                 height: 34,
@@ -392,19 +732,25 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ),
                 ),
                 child: ClipOval(
-                  child: CategoryVisuals.circleChild(
-                    categoryKey: widget.category.key,
-                    imagePath: widget.category.imagePath,
-                    emoji: widget.category.emoji,
-                    emojiSize: 20,
-                  ),
+                  child: subMode
+                      ? _subVisual(widget.subcategoryItem)
+                      : CategoryVisuals.circleChild(
+                          categoryKey: widget.category.key,
+                          imagePath: widget.category.imagePath,
+                          emoji: widget.category.emoji,
+                          emojiSize: 20,
+                        ),
                 ),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                localizedName,
+                subMode
+                    ? (widget.subcategoryName!.isEmpty
+                          ? t.noSubcategory
+                          : widget.subcategoryName!)
+                    : localizedName,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 19,
@@ -420,526 +766,997 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         elevation: 0,
         scrolledUnderElevation: 0,
         foregroundColor: isDark ? Colors.white : const Color(0xFF0F172A),
-        systemOverlayStyle:
-            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+        systemOverlayStyle: isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
         flexibleSpace: Container(decoration: BoxDecoration(gradient: gradient)),
       ),
       // El cuerpo reacciona al instante a los cambios del repositorio.
       body: Container(
         decoration: BoxDecoration(gradient: gradient),
-        child: StreamBuilder<List<Product>>(
+        child: Stack(
+          children: [
+            StreamBuilder<List<Product>>(
+              stream: sl<ProductRepository>().watchAll(),
+              builder: (context, snapshot) {
+                final uniqueMap = <String, Product>{};
+                for (final product in snapshot.data ?? const <Product>[]) {
+                  if (product.categoryKey != widget.category.key) continue;
+                  if (product.isToBuy != widget.isBuyScreen) continue;
+                  uniqueMap['${product.categoryKey}_${product.nameKey.trim().toLowerCase()}_${product.isToBuy}'] =
+                      product;
+                }
+                final currentProducts = uniqueMap.values.toList();
+                final visibleProducts = subMode
+                    ? currentProducts.where(_productInSub).toList()
+                    : currentProducts;
+
+                final subNamesAll =
+                    subMode || !PremiumLimits.isPremiumPlusEffectiveSync
+                    ? const <String>[]
+                    : SubcategoryActions.visibleSubs(
+                        visibleProducts,
+                        _subsForCategory,
+                      );
+                final subNames = subNamesAll;
+
+                final showEmpty = subMode
+                    ? visibleProducts.isEmpty
+                    : visibleProducts.isEmpty && subNames.isEmpty;
+                if (showEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.isBuyScreen ? '🛒' : '📦',
+                          style: const TextStyle(fontSize: 64),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          t.noProducts,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? Colors.grey.shade100
+                                : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          t.emptyProductsSubtitle,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : Colors.grey.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final hasSubGallery = subNames.isNotEmpty;
+
+                if (settings.isGridView && hasSubGallery) {
+                  return _buildSubGalleryGrid(
+                    context,
+                    subNames,
+                    visibleProducts,
+                    accent: accent,
+                    isDark: isDark,
+                  );
+                }
+
+                return settings.isGridView && visibleProducts.isNotEmpty
+                    ? GridView.builder(
+                        padding: EdgeInsets.fromLTRB(
+                          8.0,
+                          8.0,
+                          8.0,
+                          FloatingNavSpec.height +
+                              FloatingNavSpec.bottomGap +
+                              8.0,
+                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              childAspectRatio: 0.72,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                        itemCount: visibleProducts.length,
+                        itemBuilder: (context, index) => _buildGridProduct(
+                          context,
+                          visibleProducts[index],
+                          index,
+                        ),
+                      )
+                    : ListView(
+                        padding: EdgeInsets.fromLTRB(
+                          0.0,
+                          8.0,
+                          0.0,
+                          FloatingNavSpec.height +
+                              FloatingNavSpec.bottomGap +
+                              8.0,
+                        ),
+                        children: subMode
+                            ? [
+                                for (final p in visibleProducts)
+                                  _buildListProduct(context, p),
+                              ]
+                            : _buildListChildren(context, visibleProducts),
+                      );
+              },
+            ),
+            if (_isFabOpen)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toggleFab,
+                ),
+              ),
+          ],
+        ),
+      ),
+      floatingActionButton: AnimatedBuilder(
+        animation: _fabAnimationController,
+        builder: (context, child) {
+          final t = AppLocalizations.of(context);
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Abanico de crear: crece pegado al botón principal.
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                alignment: Alignment.bottomCenter,
+                child: _isFabOpen
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: _fabOptions(context, t),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 10),
+              FloatingActionButton(
+                heroTag: 'btn_detail_main',
+                backgroundColor: accent,
+                foregroundColor: Colors.white,
+                elevation: 4,
+                shape: const CircleBorder(),
+                onPressed: () {
+                  if (!PremiumLimits.checkCanEdit(context)) return;
+                  _toggleFab();
+                },
+                child: Transform.rotate(
+                  angle: _fabAnimationController.value * 0.785398,
+                  child: const Icon(Icons.add, size: 28),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      bottomNavigationBar: StreamBuilder<List<Product>>(
         stream: sl<ProductRepository>().watchAll(),
         builder: (context, snapshot) {
-          final uniqueMap = <String, Product>{};
-          for (final product in snapshot.data ?? const <Product>[]) {
-            if (product.categoryKey != widget.category.key) continue;
-            if (product.isToBuy != widget.isBuyScreen) continue;
-            uniqueMap['${product.categoryKey}_${product.nameKey.trim().toLowerCase()}_${product.isToBuy}'] = product;
+          var buyCount = 0;
+          var stockCount = 0;
+          for (final p in snapshot.data ?? const <Product>[]) {
+            if (p.categoryKey != widget.category.key) continue;
+            if (p.isToBuy) {
+              buyCount++;
+            } else {
+              stockCount++;
+            }
           }
-          final currentProducts = uniqueMap.values.toList();
+          return FloatingNavBar(
+            currentIndex: isBuy ? 0 : 1,
+            buyCount: buyCount,
+            stockCount: stockCount,
+            onBuyTap: () => _goToMain(0),
+            onStockTap: () => _goToMain(1),
+          );
+        },
+      ),
+    );
+  }
 
-          if (currentProducts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.isBuyScreen ? '🛒' : '📦',
-                    style: const TextStyle(fontSize: 64),
+  /// Ficha de producto en galería (grid plano o mezclada con fichas de
+  /// subcategorías): círculo del producto con gestos de To Buy y borrar.
+  Widget _buildGridProduct(BuildContext context, Product product, int index) {
+    final t = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
+    return KeyedSubtree(
+      key: _rowKeyFor(product),
+      child: Dismissible(
+        key: Key('grid_${product.id}_$index'),
+        background: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF059669),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: const Icon(Icons.swap_horiz, color: Colors.white),
+        ),
+        secondaryBackground: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFE11D48),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        confirmDismiss: (direction) async {
+          if (direction == DismissDirection.startToEnd) {
+            if (!PremiumLimits.checkCanMove(context)) return false;
+            final rowRect = rectOfContext(
+              _productRowKeys[product.id]?.currentContext,
+            );
+            await _toggleProduct(product, fromRect: rowRect);
+            return false;
+          } else {
+            if (!PremiumLimits.checkCanEdit(context)) return false;
+            bool? delete = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => DialogKit.frame(
+                ctx,
+                title: Text(t.delete),
+                content: Text(
+                  t.deleteProductConfirm(t.getProductName(product.nameKey)),
+                ),
+                actions: [
+                  DialogKit.cancelButton(
+                    ctx,
+                    t.cancel,
+                    onPressed: () => Navigator.pop(ctx, false),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    t.noProducts,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.grey.shade100 : const Color(0xFF0F172A),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    t.emptyProductsSubtitle,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                      fontSize: 14,
-                    ),
+                  DialogKit.saveButton(
+                    ctx,
+                    t.delete,
+                    DialogAccents.rose,
+                    onPressed: () => Navigator.pop(ctx, true),
                   ),
                 ],
               ),
             );
+            if (delete == true) {
+              await sl<DeleteProductUseCase>()(product);
+              HapticFeedback.mediumImpact();
+              setState(() {});
+              return true;
+            }
+            return false;
           }
-
-          return settings.isGridView
-              ? GridView.builder(
-            padding: const EdgeInsets.all(8.0),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.72,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemCount: currentProducts.length,
-            itemBuilder: (context, index) {
-              final product = currentProducts[index];
-              return KeyedSubtree(
-                key: _rowKeyFor(product),
-                child: Dismissible(
-                  key: Key('grid_${product.id}_$index'),
-                  background: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF059669),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: const Icon(Icons.swap_horiz, color: Colors.white),
-                  ),
-                  secondaryBackground: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE11D48),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  confirmDismiss: (direction) async {
-                    if (direction == DismissDirection.startToEnd) {
-                      if (!PremiumLimits.checkCanMove(context)) return false;
-                      final rowRect =
-                          rectOfContext(_productRowKeys[product.id]?.currentContext);
-                      await _toggleProduct(product, fromRect: rowRect);
-                      return false;
-                    } else {
-                      if (!PremiumLimits.checkCanEdit(context)) return false;
-                      bool? delete = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => DialogKit.frame(
-                          ctx,
-                          title: Text(t.delete),
-                          content: Text(t.deleteProductConfirm(t.getProductName(product.nameKey))),
-                          actions: [
-                            DialogKit.cancelButton(
-                              ctx,
-                              t.cancel,
-                              onPressed: () => Navigator.pop(ctx, false),
-                            ),
-                            DialogKit.saveButton(
-                              ctx,
-                              t.delete,
-                              DialogAccents.rose,
-                              onPressed: () => Navigator.pop(ctx, true),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (delete == true) {
-                        await sl<DeleteProductUseCase>()(product);
-                        HapticFeedback.mediumImpact();
-                        setState(() {});
-                        return true;
-                      }
-                      return false;
-                    }
-                  },
-                  child: Card(
-                  elevation: 0,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.06)
-                      : Colors.white.withValues(alpha: 0.62),
-                  surfaceTintColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.12)
-                          : Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      if (!PremiumLimits.checkCanEdit(context)) return;
-                      _showQtyUnitDialog(product);
-                    },
-                    onLongPress: () {
-                      if (!PremiumLimits.checkCanEdit(context)) return;
-                      _showProductOptionsBottomSheet(context, product);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(6.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Center(
-                              child: Container(
-                                width: 112,
-                                height: 112,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: accent.withValues(alpha: 0.10),
-                                  border: Border.all(
-                                    color: accent.withValues(alpha: 0.35),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: ClipOval(
-                                  child: ProductVisuals.circleChild(
-                                    imagePath: product.imagePath,
-                                    emoji: product.emoji,
-                                    emojiSize: 80,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          if (product.quantity != null)
-                            Text(
-                              '${DialogKit.formatQuantity(product.quantity!)}${product.unit != null ? ' ${product.unit}' : ''}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                letterSpacing: 0.1,
-                                color: accent,
-                              ),
-                            ),
-                          Text(
-                            t.getProductName(product.nameKey),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13.5,
-                              letterSpacing: 0.1,
-                              color: isDark ? Colors.grey.shade200 : const Color(0xFF334155),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  ),
-                ),
-              );
-            },
-          )
-              : ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            itemCount: currentProducts.length,
-            itemBuilder: (context, index) {
-              final product = currentProducts[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                elevation: 0,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.white.withValues(alpha: 0.62),
-                surfaceTintColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.12)
-                        : Colors.white.withValues(alpha: 0.8),
-                  ),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Dismissible(
-                  key: Key('${product.id}_$index'),
-                  background: Container(
-                    color: const Color(0xFF059669),
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: const Icon(Icons.swap_horiz, color: Colors.white),
-                  ),
-                  secondaryBackground: Container(
-                    color: const Color(0xFFE11D48),
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  confirmDismiss: (direction) async {
-                    if (direction == DismissDirection.startToEnd) {
-                      if (!PremiumLimits.checkCanMove(context)) return false;
-                      final rowRect =
-                          rectOfContext(_productRowKeys[product.id]?.currentContext);
-                      await _toggleProduct(product, fromRect: rowRect);
-                      return false;
-                    } else {
-                      if (!PremiumLimits.checkCanEdit(context)) return false;
-                      bool? delete = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => DialogKit.frame(
-                          ctx,
-                          title: Text(t.delete),
-                          content: Text(t.deleteProductConfirm(t.getProductName(product.nameKey))),
-                          actions: [
-                            DialogKit.cancelButton(
-                              ctx,
-                              t.cancel,
-                              onPressed: () => Navigator.pop(ctx, false),
-                            ),
-                            DialogKit.saveButton(
-                              ctx,
-                              t.delete,
-                              DialogAccents.rose,
-                              onPressed: () => Navigator.pop(ctx, true),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (delete == true) {
-                        await sl<DeleteProductUseCase>()(product);
-                        HapticFeedback.mediumImpact();
-                        setState(() {});
-                        return true;
-                      }
-                      return false;
-                    }
-                  },
-                  child: KeyedSubtree(
-                    key: _rowKeyFor(product),
-                    child: InkWell(
-                      onLongPress: () {
-                        if (!PremiumLimits.checkCanEdit(context)) return;
-                        _showProductOptionsBottomSheet(context, product);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: accent.withValues(alpha: 0.10),
-                                border: Border.all(
-                                  color: accent.withValues(alpha: 0.35),
-                                  width: 2,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: ProductVisuals.circleChild(
-                                  imagePath: product.imagePath,
-                                  emoji: product.emoji,
-                                  emojiSize: 48,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Text(
-                                t.getProductName(product.nameKey),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  letterSpacing: -0.1,
-                                  color: isDark ? Colors.grey.shade100 : const Color(0xFF0F172A),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            _InlineQtyUnitDetail(
-                              product: product,
-                              accent: accent,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
         },
+        child: Card(
+          elevation: 0,
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.white.withValues(alpha: 0.62),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.8),
+            ),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () {
+              if (!PremiumLimits.checkCanEdit(context)) return;
+              _showQtyUnitDialog(product);
+            },
+            onLongPress: () {
+              if (!PremiumLimits.checkCanEdit(context)) return;
+              _showProductOptionsBottomSheet(context, product);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(6.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                        width: 112,
+                        height: 112,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: accent.withValues(alpha: 0.10),
+                          border: Border.all(
+                            color: accent.withValues(alpha: 0.35),
+                            width: 2,
+                          ),
+                        ),
+                        child: ClipOval(
+                          child: ProductVisuals.circleChild(
+                            imagePath: product.imagePath,
+                            emoji: product.emoji,
+                            emojiSize: 80,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (product.quantity != null)
+                    Text(
+                      '${DialogKit.formatQuantity(product.quantity!)}${product.unit != null ? ' ${product.unit}' : ''}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        letterSpacing: 0.1,
+                        color: accent,
+                      ),
+                    ),
+                  Text(
+                    t.getProductName(product.nameKey),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                      letterSpacing: 0.1,
+                      color: isDark
+                          ? Colors.grey.shade200
+                          : const Color(0xFF334155),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: accent,
-        foregroundColor: Colors.white,
-        onPressed: () {
-          if (!PremiumLimits.checkCanEdit(context)) return;
-          showDialog(
-            context: context,
-            builder: (context) => AddProductDialog(
-              categories: [widget.category.key],
-              initialCategory: widget.category.key,
-              isBuyScreen: widget.isBuyScreen,
+    );
+  }
+
+  /// Galería del nivel de categoría: fichas tocables por subcategoría (y una
+  /// "Sin subcategoría" si hay productos sueltos). Sin acordeón, todo a tap.
+  Widget _buildSubGalleryGrid(
+    BuildContext context,
+    List<String> subNames,
+    List<Product> visibleProducts, {
+    required Color accent,
+    required bool isDark,
+  }) {
+    final ungrouped = visibleProducts
+        .where((p) => SubcategoryActions.subOf(p) == null)
+        .toList();
+    final cells = <Widget>[
+      for (final name in subNames)
+        _buildSubGalleryTile(
+          context,
+          name: name,
+          item: SubcategoryActions.itemNamed(_subsForCategory, name),
+          count: visibleProducts
+              .where((p) => SubcategoryActions.subOf(p) == name)
+              .length,
+          tag: _subHeroTag(name),
+          accent: accent,
+          isDark: isDark,
+          onTap: () => _pushSubDetails(name),
+        ),
+      // Los productos sin subcategoría se muestran directamente, mezclados
+      // con las fichas de subcategorías (sin carpeta "Sin subcategoría").
+      for (var i = 0; i < ungrouped.length; i++)
+        _buildGridProduct(context, ungrouped[i], i),
+    ];
+    return GridView.builder(
+      key: const ValueKey('grid-subs'),
+      padding: EdgeInsets.fromLTRB(
+        12.0,
+        12.0,
+        12.0,
+        FloatingNavSpec.height + FloatingNavSpec.bottomGap + 8.0,
+      ),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 0.82,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: cells.length,
+      itemBuilder: (context, index) => cells[index],
+    );
+  }
+
+  Widget _buildSubGalleryTile(
+    BuildContext context, {
+    required String name,
+    required SubcategoryItem? item,
+    required int count,
+    required String tag,
+    required Color accent,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    final t = AppLocalizations.of(context);
+    final label = name.isEmpty ? t.noSubcategory : name;
+    return Card(
+      elevation: 0,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.white.withValues(alpha: 0.62),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.8),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        onLongPress: name.isEmpty
+            ? null
+            : () {
+                if (!PremiumLimits.checkCanEdit(context)) return;
+                SubcategoryActions.showMenu(
+                  context,
+                  categoryKey: widget.category.key,
+                  sub: name,
+                  accent: accent,
+                  onRenamed: () {
+                    if (mounted) setState(() {});
+                  },
+                  onDeleted: () {
+                    if (mounted) setState(() {});
+                  },
+                );
+              },
+        child: Padding(
+          padding: const EdgeInsets.all(6.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Center(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Hero(
+                        tag: tag,
+                        child: Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            color: count > 0
+                                ? accent.withValues(alpha: 0.10)
+                                : (isDark
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : Colors.grey.shade100),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: count > 0
+                                  ? accent.withValues(alpha: 0.35)
+                                  : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: _subVisual(item, emojiSize: 48),
+                          ),
+                        ),
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          right: -2,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: accent,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 20,
+                              minHeight: 20,
+                            ),
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13.5,
+                  letterSpacing: 0.1,
+                  color: isDark
+                      ? Colors.grey.shade200
+                      : const Color(0xFF334155),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pushSubDetails(String name) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryDetailScreen(
+          category: widget.category,
+          isBuyScreen: widget.isBuyScreen,
+          subcategoryName: name.isEmpty ? '' : name,
+          subcategoryItem: name.isEmpty
+              ? null
+              : SubcategoryActions.itemNamed(_subsForCategory, name),
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// Visual de una subcategoría: foto > emoji > carpeta por defecto.
+  Widget _subVisual(SubcategoryItem? item, {double emojiSize = 22}) {
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
+    final defaultsToFolder =
+        item == null ||
+        (item.imagePath == null && (item.emoji == null || item.emoji!.isEmpty));
+    if (defaultsToFolder) {
+      return Center(
+        child: Icon(
+          Icons.folder_open_rounded,
+          size: emojiSize + 6,
+          color: accent,
+        ),
+      );
+    }
+    return ProductVisuals.circleChild(
+      imagePath: item.imagePath,
+      emoji: item.emoji,
+      emojiSize: emojiSize,
+    );
+  }
+
+  /// Contenido de la lista según subcategorías (Premium Plus):
+  /// - Sin subcategorías → productos directamente.
+  /// - Con subcategorías → filas plegables por subcategoría con contador, más
+  ///   una fila "Sin subcategoría" si hay productos sin asignar.
+  List<Widget> _buildListChildren(
+    BuildContext context,
+    List<Product> products,
+  ) {
+    final t = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
+
+    final plus = PremiumLimits.isPremiumPlusEffectiveSync;
+    final subs = SubcategoryActions.visibleSubs(
+      products,
+      _subsForCategory,
+    );
+    if (!plus || subs.isEmpty) {
+      return [for (final p in products) _buildListProduct(context, p)];
+    }
+
+    final children = <Widget>[];
+    void tile(Product p) => children.add(_buildListProduct(context, p));
+
+    for (final sub in subs) {
+      final items = products
+          .where((p) => SubcategoryActions.subOf(p) == sub)
+          .toList();
+      final isOpen = _expandedSubcategory == sub;
+      children.add(
+        _subRow(context, sub, items.length, isOpen, t, isDark, accent),
+      );
+      if (isOpen) items.forEach(tile);
+    }
+    // Los productos sin subcategoría se muestran directamente, mezclados
+    // con las filas de subcategorías (sin carpeta "Sin subcategoría").
+    SubcategoryActions.ungrouped(products).forEach(tile);
+    return children;
+  }
+
+  Widget _subRow(
+    BuildContext context,
+    String? sub,
+    int count,
+    bool isOpen,
+    AppLocalizations t,
+    bool isDark,
+    Color accent,
+  ) {
+    final label = sub ?? t.noSubcategory;
+    final item = sub == null
+        ? null
+        : SubcategoryActions.itemNamed(_subsForCategory, sub);
+    final defaultsToFolder =
+        item == null ||
+        (item.imagePath == null && (item.emoji == null || item.emoji!.isEmpty));
+    final hasItems = count > 0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.62),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.white.withValues(alpha: 0.8),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: sub == null
+              ? () {
+                  setState(() {
+                    _expandedSubcategory = isOpen ? null : '';
+                  });
+                }
+              : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CategoryDetailScreen(
+                        category: widget.category,
+                        isBuyScreen: widget.isBuyScreen,
+                        subcategoryName: sub,
+                        subcategoryItem: item,
+                      ),
+                    ),
+                  );
+                },
+          onLongPress: sub == null
+              ? null
+              : () => SubcategoryActions.showMenu(
+                  context,
+                  categoryKey: widget.category.key,
+                  sub: sub,
+                  accent: accent,
+                  onRenamed: () => setState(() {}),
+                  onDeleted: () => setState(() {}),
+                ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Hero(
+                  tag:
+                      'subcategory-circle-${widget.category.key}-${(sub ?? '').toLowerCase()}',
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accent.withValues(alpha: 0.10),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.35),
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: defaultsToFolder
+                          ? Center(
+                              child: Icon(
+                                sub == null
+                                    ? Icons.inbox_outlined
+                                    : Icons.folder_open_rounded,
+                                size: 28,
+                                color: accent,
+                              ),
+                            )
+                          : ProductVisuals.circleChild(
+                              imagePath: item.imagePath,
+                              emoji: item.emoji,
+                              emojiSize: 30,
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? Colors.grey.shade100
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: hasItems
+                              ? accent.withValues(alpha: 0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$count ${t.productsCount}',
+                          style: TextStyle(
+                            color: hasItems
+                                ? accent
+                                : (isDark ? Colors.grey.shade500 : Colors.grey),
+                            fontSize: 12,
+                            fontWeight: hasItems
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 40,
+                    height: 40,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(
+                    isOpen
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 22,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _expandedSubcategory = isOpen ? null : (sub ?? '');
+                    });
+                  },
+                ),
+              ],
             ),
-          );
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListProduct(BuildContext context, Product product) {
+    final t = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+      elevation: 0,
+      color: isDark
+          ? Colors.white.withValues(alpha: 0.06)
+          : Colors.white.withValues(alpha: 0.62),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.8),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Dismissible(
+        key: Key('detail_${product.id}'),
+        background: Container(
+          color: const Color(0xFF059669),
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: const Icon(Icons.swap_horiz, color: Colors.white),
+        ),
+        secondaryBackground: Container(
+          color: const Color(0xFFE11D48),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        confirmDismiss: (direction) async {
+          if (direction == DismissDirection.startToEnd) {
+            if (!PremiumLimits.checkCanMove(context)) return false;
+            final rowRect = rectOfContext(
+              _productRowKeys[product.id]?.currentContext,
+            );
+            await _toggleProduct(product, fromRect: rowRect);
+            return false;
+          } else {
+            if (!PremiumLimits.checkCanEdit(context)) return false;
+            bool? delete = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => DialogKit.frame(
+                ctx,
+                title: Text(t.delete),
+                content: Text(
+                  t.deleteProductConfirm(t.getProductName(product.nameKey)),
+                ),
+                actions: [
+                  DialogKit.cancelButton(
+                    ctx,
+                    t.cancel,
+                    onPressed: () => Navigator.pop(ctx, false),
+                  ),
+                  DialogKit.saveButton(
+                    ctx,
+                    t.delete,
+                    DialogAccents.rose,
+                    onPressed: () => Navigator.pop(ctx, true),
+                  ),
+                ],
+              ),
+            );
+            if (delete == true) {
+              await sl<DeleteProductUseCase>()(product);
+              HapticFeedback.mediumImpact();
+              setState(() {});
+              return true;
+            }
+            return false;
+          }
         },
-        child: const Icon(Icons.add),
+        child: KeyedSubtree(
+          key: _rowKeyFor(product),
+          child: InkWell(
+            onTap: () {
+              if (!PremiumLimits.checkCanEdit(context)) return;
+              _showQtyUnitDialog(product);
+            },
+            onLongPress: () {
+              if (!PremiumLimits.checkCanEdit(context)) return;
+              _showProductOptionsBottomSheet(context, product);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: accent.withValues(alpha: 0.10),
+                      border: Border.all(
+                        color: accent.withValues(alpha: 0.35),
+                        width: 2,
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: ProductVisuals.circleChild(
+                        imagePath: product.imagePath,
+                        emoji: product.emoji,
+                        emojiSize: 48,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      t.getProductName(product.nameKey),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        letterSpacing: -0.1,
+                        color: isDark
+                            ? Colors.grey.shade100
+                            : const Color(0xFF0F172A),
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (product.quantity != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: Text(
+                        '${DialogKit.formatQuantity(product.quantity!)}${product.unit != null ? ' ${product.unit}' : ''}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: accent,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _InlineQtyUnitDetail extends StatefulWidget {
-  final Product product;
-  final Color accent;
+class _FanOption extends StatefulWidget {
+  const _FanOption({required this.delay, required this.child});
 
-  const _InlineQtyUnitDetail({
-    required this.product,
-    required this.accent,
-  });
+  final Duration delay;
+  final Widget child;
 
   @override
-  State<_InlineQtyUnitDetail> createState() => _InlineQtyUnitDetailState();
+  State<_FanOption> createState() => _FanOptionState();
 }
 
-class _InlineQtyUnitDetailState extends State<_InlineQtyUnitDetail> {
-  late double? _qty;
-  late String? _unit;
+class _FanOptionState extends State<_FanOption>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _slide;
 
   @override
   void initState() {
     super.initState();
-    _qty = widget.product.quantity;
-    _unit = widget.product.unit;
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+      value: 0,
+    );
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    _opacity = curved;
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.6),
+      end: Offset.zero,
+    ).animate(curved);
+    Future.delayed(widget.delay, () {
+      if (mounted) _controller.forward();
+    });
   }
 
   @override
-  void didUpdateWidget(covariant _InlineQtyUnitDetail oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.product.quantity != widget.product.quantity) _qty = widget.product.quantity;
-    if (oldWidget.product.unit != widget.product.unit) _unit = widget.product.unit;
-  }
-
-  Future<void> _update({double? qty, String? unit}) async {
-    setState(() {
-      _qty = qty;
-      _unit = unit;
-    });
-    try {
-      await sl<UpdateProductUseCase>()(
-        product: widget.product,
-        newName: widget.product.nameKey,
-        emoji: widget.product.emoji,
-        imagePath: widget.product.imagePath,
-        quantity: qty,
-        unit: unit,
-      );
-    } on Failure catch (_) {}
-  }
-
-  void _showQtyInput() async {
-    if (!await PremiumLimits.canUseQuantityFeature(context)) return;
-    if (!mounted) return;
-    final ctrl = TextEditingController(text: _qty != null ? DialogKit.formatQuantity(_qty!) : '');
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cantidad', style: TextStyle(fontSize: 16)),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            hintText: 'Ej: 2',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          TextButton(
-            onPressed: () {
-              final val = double.tryParse(ctrl.text.trim());
-              _update(qty: val, unit: _unit);
-              Navigator.pop(ctx);
-              if (val != null && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Cantidad: ${DialogKit.formatQuantity(val)}'),
-                    duration: const Duration(seconds: 1),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final textSub = dark ? Colors.grey.shade400 : Colors.grey.shade600;
-    final showQty = _qty != null;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: _showQtyInput,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: widget.accent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: widget.accent.withValues(alpha: 0.25)),
-            ),
-            child: showQty
-                ? Text(
-                    DialogKit.formatQuantity(_qty!),
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textSub),
-                  )
-                : Icon(Icons.add, size: 16, color: widget.accent),
-          ),
-        ),
-        const SizedBox(width: 6),
-        GestureDetector(
-          onTap: _showUnitPicker,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: widget.accent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: widget.accent.withValues(alpha: 0.25)),
-            ),
-            child: Text(
-              _unit ?? 'un',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: textSub),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showUnitPicker() async {
-    if (!await PremiumLimits.canUseQuantityFeature(context)) return;
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('Unidad', style: TextStyle(fontSize: 16)),
-        children: DialogKit.unitOptions.map((u) {
-          final selected = u == _unit;
-          return SimpleDialogOption(
-            onPressed: () {
-              _update(qty: _qty, unit: u);
-              Navigator.pop(ctx);
-            },
-            child: Text(
-              u,
-              style: TextStyle(
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-                color: selected ? widget.accent : null,
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(position: _slide, child: widget.child),
     );
   }
 }
-

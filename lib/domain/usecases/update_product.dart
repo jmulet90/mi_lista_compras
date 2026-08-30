@@ -10,6 +10,11 @@ class UpdateProductUseCase {
   final ProductRepository _products;
   final AccessGuard _guard;
 
+  /// Valor que indica que el llamador no tocó la subcategoría: se conserva
+  /// la actual. Si se quiere sacar el producto de su subcategoría hay que
+  /// pasar `subcategory: null`.
+  static const Object _preserveSubcategory = Object();
+
   Future<void> call({
     required Product product,
     required String newName,
@@ -17,6 +22,9 @@ class UpdateProductUseCase {
     String? imagePath,
     double? quantity,
     String? unit,
+    Object? subcategory = _preserveSubcategory,
+    String? categoryKey,
+    bool clearSubcategory = false,
   }) async {
     await _guard.ensureCanFullyEdit();
 
@@ -25,13 +33,23 @@ class UpdateProductUseCase {
       throw const ValidationFailure('El nombre del producto es obligatorio');
     }
 
+    final String? newSubcategory = clearSubcategory
+        ? null
+        : identical(subcategory, _preserveSubcategory)
+            ? product.subcategory
+            : subcategory as String?;
+
     final oldId = product.id;
     product
       ..nameKey = nameKey
       ..emoji = emoji
       ..imagePath = imagePath
       ..quantity = quantity
-      ..unit = unit;
+      ..unit = unit
+      ..subcategory = newSubcategory;
+    if (categoryKey != null && categoryKey.isNotEmpty) {
+      product.categoryKey = categoryKey;
+    }
 
     await _products.upsert(product, previousId: oldId);
 

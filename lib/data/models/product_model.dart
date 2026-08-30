@@ -33,6 +33,9 @@ class ProductModel extends HiveObject {
   @HiveField(8)
   String? unit;
 
+  @HiveField(9)
+  String? subcategory;
+
   ProductModel({
     required this.nameKey,
     required this.categoryKey,
@@ -43,6 +46,7 @@ class ProductModel extends HiveObject {
     this.imageId,
     this.quantity,
     this.unit,
+    this.subcategory,
   });
 
   String get uniqueKey => '${categoryKey}_${nameKey.trim().toLowerCase()}';
@@ -58,6 +62,7 @@ class ProductModel extends HiveObject {
       imageId: product.imageId,
       quantity: product.quantity,
       unit: product.unit,
+      subcategory: product.subcategory,
     );
   }
 
@@ -72,6 +77,7 @@ class ProductModel extends HiveObject {
       imageId: map['imageId'] as String?,
       quantity: (map['quantity'] as num?)?.toDouble(),
       unit: map['unit'] as String?,
+      subcategory: map['subcategory'] as String?,
     );
   }
 
@@ -86,6 +92,7 @@ class ProductModel extends HiveObject {
       imageId: imageId,
       quantity: quantity,
       unit: unit,
+      subcategory: subcategory,
     );
   }
 
@@ -102,6 +109,7 @@ class ProductModel extends HiveObject {
       'imageId': imageId,
       'quantity': quantity,
       'unit': unit,
+      'subcategory': subcategory,
     };
   }
 }

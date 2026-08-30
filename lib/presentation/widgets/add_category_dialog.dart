@@ -7,6 +7,7 @@ import '../../core/utils/image_storage.dart';
 import '../../domain/usecases/add_category.dart';
 import '../localization/app_localizations.dart';
 import 'dialog_kit.dart';
+import 'category_visuals.dart';
 import 'show_failure.dart';
 
 class AddCategoryDialog extends StatefulWidget {
@@ -20,21 +21,32 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
   late TextEditingController _nameController;
   String? _selectedEmoji;
   String? _imagePath;
+  bool _userPicked = false;
 
-  static const List<String> _emojis = ['🍲', '🥩', '☕', '🥐', '🧀', '🍞', '🥞', '🥓',  '🍎', '🍌', '🥦', '🥔','🥂', '🍷', '🍺', '🧃', '🥛', '☕', '🫖', '🧽', '✨', '🧼', '🧻', '🧹', '🧺',  '📦', '🛒', '🏠', '💡', '🐾', '💊', '🍼', '🔋'];
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _selectedEmoji = _emojis.first;
+    _selectedEmoji = CategoryVisuals.assets.isNotEmpty
+        ? CategoryVisuals.assets.first
+        : null;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  /// Elige automáticamente el PNG de categoría que corresponde al nombre
+  /// tecleado (resolviendo la clave canónica con `findNameKey`).
+  String? _autoPngFor(String? text) {
+    if (text == null || text.trim().isEmpty) return null;
+    final key = AppLocalizations.findNameKey(text.trim());
+    if (key == null) return null;
+    return CategoryVisuals.assetFor(key);
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -49,6 +61,7 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
       setState(() {
         _imagePath = savedPath;
         _selectedEmoji = null;
+        _userPicked = true;
       });
     }
   }
@@ -57,6 +70,11 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     const accent = DialogAccents.emerald;
+
+if (!_userPicked) {
+      final autoPng = _autoPngFor(_nameController.text);
+      _selectedEmoji = autoPng ?? CategoryVisuals.assets.first;
+    }
 
     return DialogKit.frame(
       context,
@@ -75,6 +93,10 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                 label: t.addCategory,
                 hint: t.exampleCategoryHint,
               ),
+              onChanged: (_) {
+                if (_userPicked) return;
+                setState(() {});
+              },
             ),
             const SizedBox(height: 16),
             Text(
@@ -95,15 +117,16 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            DialogKit.emojiStrip(
+            DialogKit.assetStrip(
               context: context,
               accent: accent,
-              emojis: _emojis,
-              selected: _selectedEmoji,
-              onSelect: (emoji) {
+              assets: CategoryVisuals.assets,
+              selected: _imagePath == null ? _selectedEmoji : null,
+              onSelect: (asset) {
                 setState(() {
-                  _selectedEmoji = emoji;
+                  _selectedEmoji = asset;
                   _imagePath = null;
+                  _userPicked = true;
                 });
               },
             ),

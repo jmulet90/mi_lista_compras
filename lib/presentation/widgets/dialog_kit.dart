@@ -101,7 +101,15 @@ class DialogKit {
             : isAssetRef(emoji)
                 ? Padding(
                     padding: const EdgeInsets.all(6),
-                    child: Image.asset(emoji!, fit: BoxFit.contain),
+                    child: Image.asset(
+                      emoji!,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 26,
+                        color: accent.withValues(alpha: 0.5),
+                      ),
+                    ),
                   )
                 : Center(
                     child: Icon(
@@ -289,7 +297,14 @@ class DialogKit {
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(isSelected ? 5 : 3),
-                  child: Image.asset(asset, fit: BoxFit.contain),
+                  child: Image.asset(
+                    asset,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => Icon(
+                      Icons.image_not_supported_outlined,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
                 ),
               ),
             ),

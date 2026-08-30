@@ -8,12 +8,13 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/collaborator_repository.dart';
 import '../localization/app_localizations.dart';
 import '../widgets/dialog_kit.dart';
+import '../widgets/premium_limits.dart';
 
 class ManageCollaboratorsScreen extends StatelessWidget {
   const ManageCollaboratorsScreen({super.key});
 
   static const _knownRoles = ['full', 'dynamic', 'read'];
-  static const _emerald = Color(0xFF059669);
+  static const _brand = Color(0xFFC27A22);
   static const _rose = Color(0xFFE11D48);
 
   @override
@@ -28,7 +29,7 @@ class ManageCollaboratorsScreen extends StatelessWidget {
       end: Alignment.bottomCenter,
       colors: isDark
           ? const [Color(0xFF12171A), Color(0xFF0F1211)]
-          : const [Color(0xFFEAFBF3), Color(0xFFF7FBF9)],
+          : const [Color(0xFFF7EFDD), Color(0xFFFDFBF4)],
     );
 
     void showError(String message) {
@@ -64,32 +65,47 @@ class ManageCollaboratorsScreen extends StatelessWidget {
                 stream:
                     collaboratorRepository.watchCollaborators(ownerEmail),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
                   final collaborators =
                       snapshot.data ?? const <Collaborator>[];
+                  final count = collaborators.length;
 
-                  if (collaborators.isEmpty) {
-                    return Center(
-                      child: Text(
-                        t.noCollaborators,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: isDark
-                              ? Colors.grey.shade400
-                              : Colors.grey.shade600,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding:
+                            const EdgeInsets.fromLTRB(20, 10, 20, 4),
+                        child: Text(
+                          t.collaboratorsUsedText(
+                              count, PremiumLimits.maxCollaborators),
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? Colors.grey.shade400
+                                : const Color(0xFF334155),
+                          ),
                         ),
                       ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(top: 4, bottom: 16),
-                    itemCount: collaborators.length,
-                    itemBuilder: (context, index) {
+                      Expanded(
+                        child: collaborators.isEmpty
+                            ? Center(
+                                child: Text(
+                                  t.noCollaborators,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: isDark
+                                        ? Colors.grey.shade400
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.only(
+                                    top: 4, bottom: 16),
+                                itemCount: collaborators.length,
+                                itemBuilder: (context, index) {
                       final collaborator = collaborators[index];
                       final email = collaborator.email;
                       final currentRole = collaborator.role;
@@ -119,9 +135,9 @@ class ManageCollaboratorsScreen extends StatelessWidget {
                             height: 44,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _emerald.withValues(alpha: 0.10),
+                              color: _brand.withValues(alpha: 0.10),
                               border: Border.all(
-                                color: _emerald.withValues(alpha: 0.35),
+                                color: _brand.withValues(alpha: 0.35),
                                 width: 1.6,
                               ),
                             ),
@@ -130,7 +146,7 @@ class ManageCollaboratorsScreen extends StatelessWidget {
                               size: 22,
                               color: isDark
                                   ? Colors.grey.shade200
-                                  : const Color(0xFF065F46),
+                                  : const Color(0xFF9A6116),
                             ),
                           ),
                           title: Text(
@@ -229,9 +245,12 @@ class ManageCollaboratorsScreen extends StatelessWidget {
                         ),
                       );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
