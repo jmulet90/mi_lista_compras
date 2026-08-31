@@ -46,6 +46,7 @@ class AppInitializer {
     'Breakfast',
     'Fruits',
     'Vegetables',
+    'Baby',
   ];
 
   static const Map<String, String> _seedCategoryEmoji = {
@@ -57,6 +58,7 @@ class AppInitializer {
     'Breakfast': '🥐',
     'Fruits': '🍎',
     'Vegetables': '🥦',
+    'Baby': '🍼',
   };
 
   /// Nombres legados que apuntan a UNA categoría canónica (versiones
@@ -84,6 +86,8 @@ class AppInitializer {
     'verduras': 'Vegetables',
     'verdura': 'Vegetables',
     'vegetales': 'Vegetables',
+    'baby': 'Baby',
+    'bebe': 'Baby',
   };
 
   /// Nombres legados combinados que deben repartirse entre varias canónicas.
@@ -357,6 +361,17 @@ class AppInitializer {
         for (final key in _canonicalCategories)
           CategoryModel(key: key, emoji: _seedCategoryEmoji[key]),
       ]);
+    } else {
+      // Usuario existente: añadir solo las categorías canónicas que falten
+      // (p. ej. "Baby" añadida en una versión nueva) sin tocar las suyas.
+      for (final key in _canonicalCategories) {
+        if (!categories.exists(key)) {
+          await categories.add(CategoryModel(
+            key: key,
+            emoji: _seedCategoryEmoji[key],
+          ));
+        }
+      }
     }
 
     // Catálogo de productos semilla derivado dinámicamente de los PNG en

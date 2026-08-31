@@ -20,6 +20,7 @@ import '../app_settings.dart';
 import '../localization/app_localizations.dart';
 import '../services/main_tab_controller.dart';
 import '../services/subcategory_actions.dart';
+import '../widgets/action_sheet_menu.dart';
 import '../widgets/premium_limits.dart';
 import '../widgets/floating_nav_bar.dart';
 import '../widgets/floating_nav_spec.dart';
@@ -120,60 +121,54 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
 
   void _showProductOptionsBottomSheet(BuildContext context, Product product) {
     final t = AppLocalizations.of(context);
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit, color: Colors.blueGrey),
-              title: Text('${t.edit} "${t.getProductName(product.nameKey)}"'),
-              onTap: () {
-                Navigator.pop(context);
-                _showEditProductDialog(context, product);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.drive_file_move_outline,
-                color: Color(0xFF184878),
-              ),
-              title: Text(t.moveProduct),
-              onTap: () {
-                Navigator.pop(context);
-                SubcategoryActions.promptMoveProduct(
-                  this.context,
-                  product: product,
-                  categoryKey: widget.category.key,
-                  subcategories: [for (final s in _subsForCategory) s.name],
-                  onMoved: () {
-                    if (mounted) setState(() {});
-                  },
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.drive_file_move_rtl_outlined,
-                color: Colors.orange,
-              ),
-              title: Text(t.moveToCategory),
-              onTap: () {
-                Navigator.pop(context);
-                _promptMoveToCategory(context, product);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: Text('${t.delete} "${t.getProductName(product.nameKey)}"'),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDeleteProduct(context, product);
-              },
-            ),
-          ],
+    ActionSheetMenu.show(
+      context,
+      options: [
+        ActionSheetOption(
+          icon: Icons.edit,
+          label: '${t.edit} "${t.getProductName(product.nameKey)}"',
+          color: const Color(0xFF52606D),
+          onTap: () {
+            Navigator.pop(context);
+            _showEditProductDialog(context, product);
+          },
         ),
-      ),
+        ActionSheetOption(
+          icon: Icons.drive_file_move_outline,
+          label: t.moveProduct,
+          color: const Color(0xFF184878),
+          onTap: () {
+            Navigator.pop(context);
+            SubcategoryActions.promptMoveProduct(
+              this.context,
+              product: product,
+              categoryKey: widget.category.key,
+              subcategories: [for (final s in _subsForCategory) s.name],
+              onMoved: () {
+                if (mounted) setState(() {});
+              },
+            );
+          },
+        ),
+        ActionSheetOption(
+          icon: Icons.drive_file_move_rtl_outlined,
+          label: t.moveToCategory,
+          color: const Color(0xFFE8830C),
+          onTap: () {
+            Navigator.pop(context);
+            _promptMoveToCategory(context, product);
+          },
+        ),
+        ActionSheetOption(
+          icon: Icons.delete,
+          label: '${t.delete} "${t.getProductName(product.nameKey)}"',
+          color: const Color(0xFFE11D48),
+          onTap: () {
+            Navigator.pop(context);
+            _confirmDeleteProduct(context, product);
+          },
+        ),
+      ],
     );
   }
 

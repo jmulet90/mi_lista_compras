@@ -55,6 +55,7 @@ flutter:
     - assets/images/emojis/products/breakfast/
     - assets/images/emojis/products/fruits/
     - assets/images/emojis/products/vegetables/
+    - assets/images/emojis/products/baby/
 
 flutter_launcher_icons:
   image_path: "assets/icons/app_icon.png"

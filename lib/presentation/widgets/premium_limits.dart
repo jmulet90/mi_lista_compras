@@ -146,10 +146,10 @@ class PremiumLimits {
     );
   }
 
-  /// Funciones de apariencia exclusivas de premium (modo oscuro, galería).
+  /// Funciones de apariencia (modo oscuro, vista galería).
+  /// En modo free están desbloqueadas para todos los usuarios.
   static Future<bool> canUseAppearanceFeature(BuildContext context) async {
-    if (await isPremiumEffective()) return true;
-    return _gate(context, AppLocalizations.of(context).premiumFeatureExclusive);
+    return true;
   }
 
   /// Cantidades y unidades en productos: owner y Control Total.

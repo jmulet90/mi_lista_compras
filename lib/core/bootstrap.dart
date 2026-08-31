@@ -326,13 +326,26 @@ void _watchAuthState(
       _loadedOwner = owner;
       _syncRunning = false;
 
+      // Garantía: si hay un usuario autenticado vivo pero los datos locales
+      // están vacíos (p. ej. cuenta nueva tras un logout, donde el seed no
+      // corrió), siembra los defaults antes de mostrar la lista. Determinista:
+      // no depende de timing ni de que previousOwner/previousUid hayan
+      // capturado la cuenta anterior.
+      if (user != null &&
+          owner != null &&
+          initializer.categories.isEmpty) {
+        await initializer.seedIfEmpty();
+      }
+
       if (user == null || owner == null) {
         // Firebase no confirmó sesión y, sin un usuario autenticado vivo, NO
         // se abre la lista: la app no está pensada para usarse sin sesión.
         // Un usuario de verdad se restaura desde el almacenamiento local de
         // Firebase incluso sin red; si no hay sesión viva, se va al login.
         final liveUser = FirebaseAuth.instance.currentUser != null;
-        if (sessionStatus.value == AppSessionPhase.loading && liveUser) {
+        if (liveUser &&
+            (sessionStatus.value == AppSessionPhase.loading ||
+                sessionStatus.value == AppSessionPhase.authenticatedLoadingData)) {
           sessionStatus.value = AppSessionPhase.ready;
         } else if (sessionStatus.value == AppSessionPhase.loading) {
           sessionStatus.value = AppSessionPhase.unauthenticated;
@@ -353,11 +366,14 @@ void _watchAuthState(
 /// los datos de la cuenta cargada, y volver a la pantalla de login.
 Future<void> _performRealLogout(AppInitializer initializer,
     SessionStatusNotifier sessionStatus) async {
-  await initializer.setLastAuthUid(null);
-  await initializer.clearUserData();
+  // Cambiar a unauthenticated ANTES de vaciar los datos: evita el pantallazo
+  // en el que la lista se ve con Hive ya vacío pero la fase aún es 'ready'.
+  // La UI salta al login inmediatamente y el vaciado ocurre sin pintarse.
   _loadedOwner = null;
   _syncRunning = false;
   sessionStatus.value = AppSessionPhase.unauthenticated;
+  await initializer.setLastAuthUid(null);
+  await initializer.clearUserData();
 }
 
 /// Arranca la sincronización bidireccional (reiniciable por cuenta).

@@ -12,6 +12,7 @@ import '../../domain/usecases/update_product.dart';
 import '../localization/app_localizations.dart';
 import '../screens/category_detail_screen.dart';
 import '../services/subcategory_actions.dart';
+import 'action_sheet_menu.dart';
 import 'category_visuals.dart';
 import 'dialog_kit.dart';
 import 'premium_limits.dart';
@@ -82,49 +83,45 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
 
   void _showProductOptionsBottomSheet(BuildContext context, Product product) {
     final t = AppLocalizations.of(context);
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit, color: Colors.blueGrey),
-              title: Text('${t.edit} "${t.getProductName(product.nameKey)}"'),
-              onTap: () {
-                Navigator.pop(context);
-                widget.onEditProduct(context, product);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.drive_file_move_outline,
-                color: Color(0xFF184878),
-              ),
-              title: Text(t.moveProduct),
-              onTap: () {
-                Navigator.pop(context);
-                SubcategoryActions.promptMoveProduct(
-                  this.context,
-                  product: product,
-                  categoryKey: widget.catItem.key,
-                  subcategories: [for (final s in widget.subcategories) s.name],
-                  onMoved: () {
-                    if (mounted) setState(() {});
-                  },
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: Text('${t.delete} "${t.getProductName(product.nameKey)}"'),
-              onTap: () {
-                Navigator.pop(context);
-                widget.onDeleteProduct(context, product);
-              },
-            ),
-          ],
+    ActionSheetMenu.show(
+      context,
+      options: [
+        ActionSheetOption(
+          icon: Icons.edit,
+          label: '${t.edit} "${t.getProductName(product.nameKey)}"',
+          color: const Color(0xFF52606D),
+          onTap: () {
+            Navigator.pop(context);
+            widget.onEditProduct(context, product);
+          },
         ),
-      ),
+        ActionSheetOption(
+          icon: Icons.drive_file_move_outline,
+          label: t.moveProduct,
+          color: const Color(0xFF184878),
+          onTap: () {
+            Navigator.pop(context);
+            SubcategoryActions.promptMoveProduct(
+              this.context,
+              product: product,
+              categoryKey: widget.catItem.key,
+              subcategories: [for (final s in widget.subcategories) s.name],
+              onMoved: () {
+                if (mounted) setState(() {});
+              },
+            );
+          },
+        ),
+        ActionSheetOption(
+          icon: Icons.delete,
+          label: '${t.delete} "${t.getProductName(product.nameKey)}"',
+          color: const Color(0xFFE11D48),
+          onTap: () {
+            Navigator.pop(context);
+            widget.onDeleteProduct(context, product);
+          },
+        ),
+      ],
     );
   }
 

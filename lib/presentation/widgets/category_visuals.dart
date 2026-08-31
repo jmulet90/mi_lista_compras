@@ -14,6 +14,7 @@ class CategoryVisuals {
     'Breakfast': 'assets/images/emojis/categories/breakfast.png',
     'Fruits': 'assets/images/emojis/categories/fruits.png',
     'Vegetables': 'assets/images/emojis/categories/vegetables.png',
+    'Baby': 'assets/images/emojis/categories/baby.png',
   };
 
   static String? assetFor(String categoryKey) => _categoryAssets[categoryKey];

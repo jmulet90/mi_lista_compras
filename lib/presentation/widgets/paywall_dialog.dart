@@ -89,12 +89,6 @@ class _PaywallDialogState extends State<_PaywallDialog> {
               _benefitRow(Icons.group_outlined,
                   t.premiumBenefitCollaborators, status.isPremium),
               const SizedBox(height: 10),
-              _benefitRow(Icons.dark_mode_outlined,
-                  t.premiumBenefitDarkMode, status.isPremium),
-              const SizedBox(height: 10),
-              _benefitRow(Icons.grid_view_outlined,
-                  t.premiumBenefitGalleryView, status.isPremium),
-              const SizedBox(height: 10),
               _benefitRow(Icons.favorite_outline,
                   t.premiumBenefit3, status.isPremium),
               if (status.pending) ...[

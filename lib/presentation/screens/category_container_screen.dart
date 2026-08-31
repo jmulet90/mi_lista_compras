@@ -24,6 +24,7 @@ import '../services/shopping_list_exporter.dart';
 import '../services/subcategory_actions.dart';
 import '../widgets/add_category_dialog.dart';
 import '../widgets/add_product_dialog.dart';
+import '../widgets/action_sheet_menu.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/category_visuals.dart';
 import '../widgets/dialog_kit.dart';
@@ -64,22 +65,27 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
   late final AnimationController _viewFabController;
   late final Animation<double> _viewExpandAnimation;
 
-  /// Contexto del acordeón: categoría expandida y subcategoría expandida.
-  /// `_expandedSubcategory` es null (nada expandido), '' ("Sin subcategoría")
-  /// o el nombre de una subcategoría.
+  /// Popup de exportar anclado al botÃ³n de compartir (AppBar).
+  final GlobalKey _exportKey = GlobalKey();
+  bool _isExportOpen = false;
+  OverlayEntry? _exportOverlay;
+
+  /// Contexto del acordeÃ³n: categorÃ­a expandida y subcategorÃ­a expandida.
+  /// `_expandedSubcategory` es null (nada expandido), '' ("Sin subcategorÃ­a")
+  /// o el nombre de una subcategorÃ­a.
   String? _expandedCategoryKey;
   String? _expandedSubcategory;
 
-  /// Subcategorías persistidas por categoría (clave = categoría en minúsculas).
+  /// SubcategorÃ­as persistidas por categorÃ­a (clave = categorÃ­a en minÃºsculas).
   Map<String, List<SubcategoryItem>> _subcategories = {};
   StreamSubscription<Map<String, List<SubcategoryItem>>>? _subcategoriesSub;
 
   List<SubcategoryItem> _subcategoriesOf(CategoryItem catItem) =>
       _subcategories[catItem.key.trim().toLowerCase()] ?? const [];
 
-  /// Cantidad de subcategorías distintas de [catItem] (persistidas + las que
+  /// Cantidad de subcategorÃ­as distintas de [catItem] (persistidas + las que
   /// aparecen en sus productos). Exclusivo Premium Plus: sin el plan siempre
-  /// devuelve 0, para no insinuar una función bloqueada dentro de la tarjeta.
+  /// devuelve 0, para no insinuar una funciÃ³n bloqueada dentro de la tarjeta.
   int _subcategoryCountOf(CategoryItem catItem, List<Product> catProducts) {
     if (!PremiumLimits.isPremiumPlusEffectiveSync) return 0;
     return SubcategoryActions.visibleSubs(catProducts).length;
@@ -118,6 +124,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
   @override
   void dispose() {
     _subcategoriesSub?.cancel();
+    _exportOverlay?.remove();
     _fabAnimationController.dispose();
     _viewFabController.dispose();
     super.dispose();
@@ -145,10 +152,10 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
     });
   }
 
-  /// Opciones del abanico de crear según el contexto del acordeón:
-  /// - Ninguna categoría expandida → solo "crear categoría".
-  /// - Categoría expandida (sin subcategoría) → "nueva subcategoría" y "nuevo producto".
-  /// - Subcategoría expandida → solo "nuevo producto" (en esa subcategoría).
+  /// Opciones del abanico de crear segÃºn el contexto del acordeÃ³n:
+  /// - Ninguna categorÃ­a expandida â†’ solo "crear categorÃ­a".
+  /// - CategorÃ­a expandida (sin subcategorÃ­a) â†’ "nueva subcategorÃ­a" y "nuevo producto".
+  /// - SubcategorÃ­a expandida â†’ solo "nuevo producto" (en esa subcategorÃ­a).
   List<Widget> _createFanOptions(
     BuildContext context,
     AppLocalizations t, {
@@ -282,14 +289,14 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
     String? initialCategoryKey,
     String? initialSubcategory,
   }) {
-    /// Asegurarse de que la categoría expandida siempre esté en la lista,
-    /// incluso si es una categoría nueva que aún no aparece en widget.categories
+    /// Asegurarse de que la categorÃ­a expandida siempre estÃ© en la lista,
+    /// incluso si es una categorÃ­a nueva que aÃºn no aparece en widget.categories
     final allCategories = <String>[];
     if (widget.categories.isNotEmpty) {
       allCategories.addAll(widget.categories.map((c) => c.key));
     }
 
-    /// Agregar la categoría expandida si existe y no está ya en la lista
+    /// Agregar la categorÃ­a expandida si existe y no estÃ¡ ya en la lista
     if (initialCategoryKey != null &&
         !allCategories.contains(initialCategoryKey)) {
       allCategories.add(initialCategoryKey);
@@ -305,7 +312,8 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
       ),
     );
   }
-  /// Crea una subcategoría en la categoría expandida. Las subcategorías son
+
+  /// Crea una subcategorÃ­a en la categorÃ­a expandida. Las subcategorÃ­as son
   /// Premium Plus: los usuarios sin Plus ven el paywall (bloqueado con aviso).
   Future<void> _showAddSubcategoryDialog(BuildContext context) async {
     final t = AppLocalizations.of(context);
@@ -334,7 +342,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
     );
   }
 
-  Future<void> _onExportPressed(BuildContext context) async {
+  Future<void> _doExport(BuildContext context, String choice) async {
     final t = AppLocalizations.of(context);
     if (!await PremiumLimits.canUsePremiumPlus(
       context,
@@ -342,45 +350,6 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
     )) {
       return;
     }
-    if (!context.mounted) return;
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  t.exportListTitle,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.picture_as_pdf,
-                color: Color(0xFF184878),
-              ),
-              title: Text(t.exportAsPdf),
-              onTap: () => Navigator.of(sheetContext).pop('pdf'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.image, color: Color(0xFF184878)),
-              title: Text(t.exportAsImage),
-              onTap: () => Navigator.of(sheetContext).pop('img'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
     if (!context.mounted) return;
     if (choice == 'pdf') {
       await ShoppingListExporter.exportAsPdf(
@@ -395,6 +364,139 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
         categories: widget.categories,
       );
     }
+  }
+
+  /// Abre o cierra el popup de exportar anclado justo debajo del botÃ³n de
+  /// compartir del AppBar, con la misma animaciÃ³n que el abanico de FABs.
+  void _toggleExportPopup() {
+    if (_isExportOpen) {
+      _closeExportPopup();
+      return;
+    }
+    final overlay = Overlay.of(context);
+    _exportOverlay = OverlayEntry(
+      builder: (overlayContext) {
+        return _buildExportOverlay(overlayContext);
+      },
+    );
+    overlay.insert(_exportOverlay!);
+    setState(() => _isExportOpen = true);
+  }
+
+  void _closeExportPopup() {
+    _exportOverlay?.remove();
+    _exportOverlay = null;
+    if (mounted) setState(() => _isExportOpen = false);
+  }
+
+  /// Construye el overlay del popup de exportar. Calcula la posiciÃ³n del botÃ³n
+  /// de compartir (el ancla) y despliega los 2 botones pegados debajo de Ã©l.
+  Widget _buildExportOverlay(BuildContext overlayContext) {
+    final t = AppLocalizations.of(overlayContext);
+    final isDark = Theme.of(overlayContext).brightness == Brightness.dark;
+    final box = _exportKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize || !_exportKey.currentContext!.mounted) {
+      return const SizedBox.shrink();
+    }
+    final overlayBox =
+        Overlay.of(overlayContext).context.findRenderObject() as RenderBox;
+    final target = box.localToGlobal(Offset.zero, ancestor: overlayBox);
+    const popupWidth = 190.0;
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => _closeExportPopup(),
+          ),
+        ),
+        Positioned(
+          left: (target.dx + box.size.width - popupWidth).clamp(
+            8.0,
+            overlayBox.size.width - popupWidth - 8.0,
+          ),
+          top: target.dy + box.size.height + 8,
+          width: popupWidth,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _FanOption(
+                delay: Duration.zero,
+                dropDown: true,
+                child: FloatingActionButton.extended(
+                  heroTag: 'btn_export_pdf',
+                  backgroundColor: isDark
+                      ? const Color(0xFF1E293B)
+                      : Colors.white,
+                  foregroundColor: isDark
+                      ? Colors.grey.shade100
+                      : Colors.blueGrey.shade800,
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    side: isDark
+                        ? BorderSide(
+                            color: Colors.white.withValues(alpha: 0.12),
+                          )
+                        : BorderSide.none,
+                  ),
+                  onPressed: () {
+                    _closeExportPopup();
+                    _doExport(context, 'pdf');
+                  },
+                  icon: const Icon(Icons.picture_as_pdf, size: 22),
+                  label: Text(
+                    t.exportAsPdf,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _FanOption(
+                delay: const Duration(milliseconds: 60),
+                dropDown: true,
+                child: FloatingActionButton.extended(
+                  heroTag: 'btn_export_img',
+                  backgroundColor: isDark
+                      ? const Color(0xFF1E293B)
+                      : Colors.white,
+                  foregroundColor: isDark
+                      ? Colors.grey.shade100
+                      : Colors.blueGrey.shade800,
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    side: isDark
+                        ? BorderSide(
+                            color: Colors.white.withValues(alpha: 0.12),
+                          )
+                        : BorderSide.none,
+                  ),
+                  onPressed: () {
+                    _closeExportPopup();
+                    _doExport(context, 'img');
+                  },
+                  icon: const Icon(Icons.image, size: 22),
+                  label: Text(
+                    t.exportAsImage,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _showAdvancedAddCategoryDialog(BuildContext context) async {
@@ -600,6 +702,39 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
           ),
         ],
       ),
+    );
+  }
+
+  /// Menú de categoría al hacer long press (Editar/Borrar) con el mismo
+  /// diseño y animación que el popup de exportar PDF/Imagen.
+  void _showCategoryActionsSheet(
+    BuildContext context,
+    CategoryItem catItem,
+    String localizedCategoryName,
+  ) {
+    final t = AppLocalizations.of(context);
+    ActionSheetMenu.show(
+      context,
+      options: [
+        ActionSheetOption(
+          icon: Icons.edit,
+          label: '${t.edit} "$localizedCategoryName"',
+          color: const Color(0xFF52606D),
+          onTap: () {
+            Navigator.pop(context);
+            _showEditCategoryDialog(context, catItem);
+          },
+        ),
+        ActionSheetOption(
+          icon: Icons.delete,
+          label: '${t.delete} "$localizedCategoryName"',
+          color: const Color(0xFFE11D48),
+          onTap: () {
+            Navigator.pop(context);
+            _confirmDeleteCategory(context, catItem);
+          },
+        ),
+      ],
     );
   }
 
@@ -884,9 +1019,10 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
         actions: [
           if (widget.isBuyScreen)
             IconButton(
+              key: _exportKey,
               tooltip: t.exportList,
               icon: const Icon(Icons.ios_share),
-              onPressed: () => _onExportPressed(context),
+              onPressed: () => _toggleExportPopup(),
             ),
           const NotificationBellIcon(),
         ],
@@ -898,7 +1034,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Opciones de vistas: crecen pegadas al botón de vistas.
+              // Opciones de vistas: crecen pegadas al botÃ³n de vistas.
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
@@ -984,7 +1120,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                     : const SizedBox.shrink(),
               ),
               const SizedBox(height: 10),
-              // Botón de vistas; sube cuando se despliega el abanico de crear.
+              // BotÃ³n de vistas; sube cuando se despliega el abanico de crear.
               Padding(
                 padding: const EdgeInsets.only(bottom: 2.0),
                 child: FloatingActionButton(
@@ -1016,7 +1152,7 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                 ),
               ),
               const SizedBox(height: 10),
-              // Abanico de crear: entre el botón principal y el de vistas.
+              // Abanico de crear: entre el botÃ³n principal y el de vistas.
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOut,
@@ -1189,46 +1325,10 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                             },
                             onLongPress: () {
                               if (!PremiumLimits.checkCanEdit(context)) return;
-                              showModalBottomSheet(
-                                context: context,
-                                builder: (context) => SafeArea(
-                                  child: Wrap(
-                                    children: [
-                                      ListTile(
-                                        leading: const Icon(
-                                          Icons.edit,
-                                          color: Colors.blueGrey,
-                                        ),
-                                        title: Text(
-                                          '${t.edit} "$localizedCategoryName"',
-                                        ),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                          _showEditCategoryDialog(
-                                            context,
-                                            catItem,
-                                          );
-                                        },
-                                      ),
-                                      ListTile(
-                                        leading: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ),
-                                        title: Text(
-                                          '${t.delete} "$localizedCategoryName"',
-                                        ),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                          _confirmDeleteCategory(
-                                            context,
-                                            catItem,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              _showCategoryActionsSheet(
+                                context,
+                                catItem,
+                                localizedCategoryName,
                               );
                             },
                             child: Padding(
@@ -1310,9 +1410,9 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                                                 ),
                                               ),
                                             ),
-                                          // Insignia de subcategorías (Premium Plus): indica
+                                          // Insignia de subcategorÃ­as (Premium Plus): indica
                                           // que al entrar se navega primero por sus
-                                          // subcategorías antes de llegar a los productos.
+                                          // subcategorÃ­as antes de llegar a los productos.
                                           if (subCount > 0)
                                             Positioned(
                                               left: -2,
@@ -1440,46 +1540,10 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                           },
                           onLongPressCard: () {
                             if (!PremiumLimits.checkCanEdit(context)) return;
-                            showModalBottomSheet(
-                              context: context,
-                              builder: (context) => SafeArea(
-                                child: Wrap(
-                                  children: [
-                                    ListTile(
-                                      leading: const Icon(
-                                        Icons.edit,
-                                        color: Colors.blueGrey,
-                                      ),
-                                      title: Text(
-                                        '${t.edit} "$localizedCategoryName"',
-                                      ),
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        _showEditCategoryDialog(
-                                          context,
-                                          catItem,
-                                        );
-                                      },
-                                    ),
-                                    ListTile(
-                                      leading: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                      ),
-                                      title: Text(
-                                        '${t.delete} "$localizedCategoryName"',
-                                      ),
-                                      onTap: () {
-                                        Navigator.pop(context);
-                                        _confirmDeleteCategory(
-                                          context,
-                                          catItem,
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            _showCategoryActionsSheet(
+                              context,
+                              catItem,
+                              localizedCategoryName,
                             );
                           },
                           onEditProduct: _showEditProductDialog,
@@ -1562,13 +1626,21 @@ class _StaggeredItemState extends State<_StaggeredItem>
   }
 }
 
-/// Opción del abanico de crear: aparece con fade + slide escalonado según un
-/// retraso por índice, imitando el "abanico" de un speed dial.
+/// OpciÃ³n del abanico de crear: aparece con fade + slide escalonado segÃºn un
+/// retraso por Ã­ndice, imitando el "abanico" de un speed dial.
 class _FanOption extends StatefulWidget {
-  const _FanOption({required this.delay, required this.child});
+  const _FanOption({
+    required this.delay,
+    required this.child,
+    this.dropDown = false,
+  });
 
   final Duration delay;
   final Widget child;
+
+  /// Cuando es true los botones se deslizan hacia abajo (popup desplegable
+  /// debajo del botÃ³n de compartir); si no, hacia arriba (abanico de FABs).
+  final bool dropDown;
 
   @override
   State<_FanOption> createState() => _FanOptionState();
@@ -1594,7 +1666,7 @@ class _FanOptionState extends State<_FanOption>
     );
     _opacity = curved;
     _slide = Tween<Offset>(
-      begin: const Offset(0, 0.6),
+      begin: Offset(0, widget.dropDown ? -0.6 : 0.6),
       end: Offset.zero,
     ).animate(curved);
     Future.delayed(widget.delay, () {

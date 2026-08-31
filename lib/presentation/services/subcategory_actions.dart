@@ -8,6 +8,7 @@ import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/subcategory_repository.dart';
 import '../../domain/usecases/update_product.dart';
 import '../localization/app_localizations.dart';
+import '../widgets/action_sheet_menu.dart';
 import '../widgets/dialog_kit.dart';
 import '../widgets/show_failure.dart';
 
@@ -342,26 +343,24 @@ class SubcategoryActions {
     final t = AppLocalizations.of(context);
     final action = await showModalBottomSheet<String>(
       context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.drive_file_rename_outline, color: accent),
-                title: Text(t.renameSubcategory),
-                onTap: () => Navigator.of(sheetContext).pop('rename'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Color(0xFFE11D48)),
-                title: Text(t.deleteSubcategory),
-                onTap: () => Navigator.of(sheetContext).pop('delete'),
-              ),
-              const SizedBox(height: 8),
-            ],
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.35),
+      elevation: 0,
+      builder: (sheetContext) => ActionSheetMenuOptions(
+        options: [
+          ActionSheetOption(
+            icon: Icons.drive_file_rename_outline,
+            label: t.renameSubcategory,
+            color: const Color(0xFF52606D),
+            onTap: () => Navigator.of(sheetContext).pop('rename'),
           ),
-        ),
+          ActionSheetOption(
+            icon: Icons.delete_outline,
+            label: t.deleteSubcategory,
+            color: const Color(0xFFE11D48),
+            onTap: () => Navigator.of(sheetContext).pop('delete'),
+          ),
+        ],
       ),
     );
     if (!context.mounted) return;
