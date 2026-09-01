@@ -1178,6 +1178,8 @@ class AppLocalizations {
     'Toilet paper': {'es': 'Papel higiénico', 'en': 'Toilet paper', 'pt': 'Papel higiénico', 'fr': 'Papier toilette', 'de': 'Klopapier', 'it': 'Carta igienica', 'zh': '卫生纸', 'hi': 'टॉयलेट पेपर', 'ar': 'ورق تواليت', 'ru': 'Туалетная бумага'},
     'Soap': {'es': 'Jabón', 'en': 'Soap', 'pt': 'Sabonete', 'fr': 'Savon', 'de': 'Seife', 'it': 'Sapone', 'zh': '肥皂', 'hi': 'साबुन', 'ar': 'صابون', 'ru': 'Мыло'},
     'Detergent': {'es': 'Detergente', 'en': 'Detergent', 'pt': 'Detergente', 'fr': 'Détergent', 'de': 'Waschmittel', 'it': 'Detersivo', 'zh': '洗涤剂', 'hi': 'डिटर्जेंट', 'ar': 'منظف', 'ru': 'Стиральный порошок'},
+    'Garbage bag': {'es': 'Bolsa de basura', 'en': 'Garbage bag', 'pt': 'Saco de lixo', 'fr': 'Sac poubelle', 'de': 'Müllbeutel', 'it': 'Sacchetto per la spazzatura', 'zh': '垃圾袋', 'hi': 'कचरा बैग', 'ar': 'كيس قمامة', 'ru': 'Мусорный пакет'},
+    'Paper towels': {'es': 'Toallas de papel', 'en': 'Paper towels', 'pt': 'Toalhas de papel', 'fr': 'Essuie-tout', 'de': 'Küchenpapier', 'it': 'Carta assorbente', 'zh': '厨房纸巾', 'hi': 'पेपर टॉवल', 'ar': 'مناشف ورقية', 'ru': 'Бумажные полотенца'},
     'Shampoo': {'es': 'Champú', 'en': 'Shampoo', 'pt': 'Shampoo', 'fr': 'Shampooing', 'de': 'Shampoo', 'it': 'Shampoo', 'zh': '洗发水', 'hi': 'शैम्पू', 'ar': 'شامبو', 'ru': 'Шампунь'},
     'Toothpaste': {'es': 'Pasta de dientes', 'en': 'Toothpaste', 'pt': 'Creme dental', 'fr': 'Dentifrice', 'de': 'Zahnpasta', 'it': 'Dentifricio', 'zh': '牙膏', 'hi': 'टूथपेस्ट', 'ar': 'معجون أسنان', 'ru': 'Зубная паста'},
     'Apples': {'es': 'Manzanas', 'en': 'Apples', 'pt': 'Maçãs', 'fr': 'Pommes', 'de': 'Äpfel', 'it': 'Mele', 'zh': '苹果', 'hi': 'सेब', 'ar': 'تفاح', 'ru': 'Яблоки'},
@@ -1242,6 +1244,7 @@ class AppLocalizations {
     'Conditioner': {'es': 'Acondicionador', 'en': 'Conditioner', 'pt': 'Condicionador', 'fr': 'Après-shampooing', 'de': 'Spülung', 'it': 'Balsamo', 'zh': '护发素', 'hi': 'कंडीशनर', 'ar': 'بلسم الشعر', 'ru': 'Кондиционер для волос'},
     'Bath gel': {'es': 'Gel de baño', 'en': 'Bath gel', 'pt': 'Gel de banho', 'fr': 'Gel douche', 'de': 'Duschgel', 'it': 'Bagnoschiuma', 'zh': '沐浴露', 'hi': 'बाथ जेल', 'ar': 'جل الاستحمام', 'ru': 'Гель для душа'},
     'Baby wipes': {'es': 'Toallitas húmedas', 'en': 'Baby wipes', 'pt': 'Toalhetes', 'fr': 'Lingettes', 'de': 'Feuchttücher', 'it': 'Salviettine', 'zh': '婴儿湿巾', 'hi': 'बेबी वाइप्स', 'ar': 'مناديل مبللة', 'ru': 'Влажные салфетки'},
+    'Wet wipes': {'es': 'Toallitas húmedas', 'en': 'Wet wipes', 'pt': 'Toalhetes húmidos', 'fr': 'Lingettes humides', 'de': 'Feuchttücher', 'it': 'Salviettine umidificate', 'zh': '湿巾', 'hi': 'वेट वाइप्स', 'ar': 'مناديل مبللة', 'ru': 'Влажные салфетки'},
     'Baby diapers': {'es': 'Pañales', 'en': 'Baby diapers', 'pt': 'Fraldas', 'fr': 'Couches', 'de': 'Windeln', 'it': 'Pannolini', 'zh': '婴儿纸尿裤', 'hi': 'बेबी डायपर', 'ar': 'حفاضات للأطفال', 'ru': 'Подгузники'},
     'Sausage': {'es': 'Salchicha', 'en': 'Sausage', 'pt': 'Salsicha', 'fr': 'Saucisse', 'de': 'Wurst', 'it': 'Salsiccia', 'zh': '香肠', 'hi': 'सॉसेज', 'ar': 'سجق', 'ru': 'Колбаса'},
   };

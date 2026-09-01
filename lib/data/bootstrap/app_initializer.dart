@@ -486,6 +486,24 @@ class AppInitializer {
       'assets/images/emojis/products/meats/pork.png',
       'assets/images/emojis/products/meats/Salmon.png',
     ],
+    'Cleaning': [
+      'assets/images/emojis/products/cleaning/detergent.png',
+      'assets/images/emojis/products/cleaning/dish sponge.png',
+      'assets/images/emojis/products/cleaning/dish washer.png',
+      'assets/images/emojis/products/cleaning/garbage bag.png',
+      'assets/images/emojis/products/cleaning/paper towels.png',
+      'assets/images/emojis/products/cleaning/scouring pad.png',
+      'assets/images/emojis/products/cleaning/softener.png',
+    ],
+    'Personal care': [
+      'assets/images/emojis/products/personal_care/bath gel.png',
+      'assets/images/emojis/products/personal_care/condiotioner.png',
+      'assets/images/emojis/products/personal_care/shampoo.png',
+      'assets/images/emojis/products/personal_care/soap.png',
+      'assets/images/emojis/products/personal_care/toilet paper.png',
+      'assets/images/emojis/products/personal_care/toothpaste.png',
+      'assets/images/emojis/products/personal_care/wet wipes.png',
+    ],
     'Drinks': [
       'assets/images/emojis/products/drinks/apple juice.png',
       'assets/images/emojis/products/drinks/beer.png',
@@ -528,6 +546,8 @@ class AppInitializer {
     // 'girassol oil.png' es un fallo ortográfico del archivo; el diccionario usa
     // la clave canónica en inglés.
     'Girassol Oil': 'Sunflower oil',
+    // 'condiotioner.png' está mal escrito en el archivo de assets.
+    'Condiotioner': 'Conditioner',
   };
 
   /// Deriva el [nameKey] canónico de un producto semilla a partir del nombre
