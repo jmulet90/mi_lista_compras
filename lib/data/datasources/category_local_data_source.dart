@@ -61,6 +61,12 @@ class CategoryLocalDataSource {
       final entry = _box.get(slot);
       if (entry == null || !_sameKey(entry.key, currentKey)) continue;
 
+      // Nunca sobrescribir otra categoría que ya ocupe la clave destino:
+      // si hay colisión, abortamos sin tocar nada (el usecase ya la previene).
+      final collides = _box.values
+          .any((c) => c != entry && _sameKey(c.key, model.key));
+      if (collides) return false;
+
       entry
         ..key = model.key
         ..emoji = model.emoji

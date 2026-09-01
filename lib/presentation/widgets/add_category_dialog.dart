@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/di.dart';
 import '../../core/failures.dart';
 import '../../core/utils/image_storage.dart';
+import '../../domain/repositories/category_repository.dart';
 import '../../domain/usecases/add_category.dart';
 import '../localization/app_localizations.dart';
 import 'dialog_kit.dart';
@@ -148,11 +149,23 @@ if (!_userPicked) {
           t.save,
           accent,
           onPressed: () async {
-            if (_nameController.text.trim().isNotEmpty) {
+            final text = _nameController.text.trim();
+            if (text.isNotEmpty) {
+              final key = AppLocalizations.findNameKey(text) ?? text;
+              if (await sl<CategoryRepository>().exists(key)) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(t.categoryAlreadyExists),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
               try {
                 await sl<AddCategoryUseCase>()(
-                  name: AppLocalizations.findNameKey(_nameController.text.trim()) ??
-                      _nameController.text.trim(),
+                  name: key,
                   emoji: _selectedEmoji ?? '📦',
                   imagePath: _imagePath,
                 );

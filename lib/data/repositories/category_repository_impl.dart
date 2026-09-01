@@ -51,6 +51,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
     } catch (e) {
       throw CacheFailure('No se pudo crear la categoría: $e');
     }
+    // Si el usuario re-crea una categoría que antes borró/renombró, quitar el
+    // tombstone para que el sync no la vuelva a eliminar de la nube.
+    await _deletedKeys.delete(category.key.trim());
     await _safeSyncUp(category);
   }
 
@@ -59,13 +62,18 @@ class CategoryRepositoryImpl implements CategoryRepository {
     required String currentKey,
     required CategoryItem category,
   }) async {
+    final bool ok;
     try {
-      await _local.update(
+      ok = await _local.update(
         currentKey: currentKey,
         model: CategoryModel.fromEntity(category),
       );
     } catch (e) {
       throw CacheFailure('No se pudo actualizar la categoría: $e');
+    }
+    if (!ok) {
+      throw CacheFailure(
+          'No se pudo actualizar la categoría (clave duplicada o no encontrada)');
     }
 
     // Si cambió la clave, el documento con la clave vieja se retira.
@@ -73,6 +81,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
         category.key.trim().toLowerCase()) {
       await _safeDelete(currentKey);
     }
+    await _deletedKeys.delete(category.key.trim());
     await _safeSyncUp(category);
   }
 

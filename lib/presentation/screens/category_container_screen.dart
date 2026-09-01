@@ -11,6 +11,7 @@ import '../../core/utils/product_asset_catalog.dart';
 import '../../domain/entities/category_item.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/subcategory_item.dart';
+import '../../domain/repositories/category_repository.dart';
 import '../../domain/repositories/subcategory_repository.dart';
 import '../../domain/usecases/delete_category.dart';
 import '../../domain/usecases/rename_category.dart';
@@ -639,15 +640,28 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                 accent,
                 onPressed: () async {
                   final messenger = ScaffoldMessenger.of(context);
-                  if (nameController.text.trim().isNotEmpty) {
+                  final text = nameController.text.trim();
+                  if (text.isNotEmpty) {
+                    final newKey =
+                        AppLocalizations.findNameKey(text) ?? text;
+                    // El renombrado a un nombre ya ocupado antes se
+                    // comportaba mal (sobrescribía otra categoría): aquí se
+                    // bloquea con un aviso claro.
+                    if (newKey.trim().toLowerCase() !=
+                            category.key.trim().toLowerCase() &&
+                        await sl<CategoryRepository>().exists(newKey)) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(t.categoryAlreadyExists),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
                     try {
                       await sl<RenameCategoryUseCase>()(
                         category: category,
-                        newName:
-                            AppLocalizations.findNameKey(
-                              nameController.text.trim(),
-                            ) ??
-                            nameController.text.trim(),
+                        newName: newKey,
                         emoji: selectedEmoji,
                         imagePath: imagePath,
                       );

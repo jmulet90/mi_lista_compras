@@ -143,6 +143,8 @@ class AppInitializer {
 
     CrashOverlay.log('Running product key normalization...');
     _normalizeProductKeys();
+    CrashOverlay.log('Deduplicating categories...');
+    await _dedupeCategories();
     CrashOverlay.log('Running legacy category migration...');
     await _migrateLegacyCategories();
     CrashOverlay.log('Seeding defaults...');
@@ -247,6 +249,29 @@ class AppInitializer {
     }
     box.clear();
     box.putAll(merged);
+  }
+
+  /// MIGRACIÓN: fusiona por clave (sin mayúsculas) las categorías duplicadas
+  /// que un renombrado defectuoso pudo dejar atrás, dejando siempre sus claves
+  /// físicas como strings = clave (modelo sincronizado con la nube).
+  Future<void> _dedupeCategories() async {
+    final box = Hive.box<CategoryModel>(CategoryLocalDataSource.boxName);
+    final keep = <CategoryModel>[];
+    for (final slot in box.keys.toList()) {
+      final c = box.get(slot);
+      if (c == null) continue;
+      final norm = c.key.trim().toLowerCase();
+      keep.removeWhere((k) => k.key.trim().toLowerCase() == norm);
+      keep.add(c);
+    }
+    final needsFix = keep.length != box.length ||
+        box.keys.any((s) => s is! String && box.get(s) != null);
+    if (needsFix) {
+      await box.clear();
+      for (final c in keep) {
+        await box.put(c.key, c);
+      }
+    }
   }
 
   /// MIGRACIÓN: normaliza categorías legadas de versiones anteriores
@@ -430,9 +455,11 @@ class AppInitializer {
   /// pudo cargar. Son rutas reales que existen en `assets/images/emojis/products/`.
   static const Map<String, List<String>> _fallbackSeedPngs = {
     'Breakfast': [
-      'assets/images/emojis/products/breakfast/bread.png',
       'assets/images/emojis/products/breakfast/ball bread.png',
+      'assets/images/emojis/products/breakfast/bread.png',
+      'assets/images/emojis/products/breakfast/butter.png',
       'assets/images/emojis/products/breakfast/coffee.png',
+      'assets/images/emojis/products/breakfast/cream cheese.png',
       'assets/images/emojis/products/breakfast/croassaint.png',
       'assets/images/emojis/products/breakfast/milk.png',
       'assets/images/emojis/products/breakfast/mini baguette.png',
@@ -445,6 +472,12 @@ class AppInitializer {
     'Kitchen': [
       'assets/images/emojis/products/kitchen/black beans.png',
       'assets/images/emojis/products/kitchen/chickpea.png',
+      'assets/images/emojis/products/kitchen/girassol oil.png',
+      'assets/images/emojis/products/kitchen/salt.png',
+      'assets/images/emojis/products/kitchen/spaghetti.png',
+      'assets/images/emojis/products/kitchen/sugar.png',
+      'assets/images/emojis/products/kitchen/tomato puree.png',
+      'assets/images/emojis/products/kitchen/vinegar.png',
     ],
     'Meats': [
       'assets/images/emojis/products/meats/chicken.png',

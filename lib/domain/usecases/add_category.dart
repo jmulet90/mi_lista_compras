@@ -20,7 +20,10 @@ class AddCategoryUseCase {
     if (key.isEmpty) {
       throw const ValidationFailure('El nombre de la categoría es obligatorio');
     }
-    if (await _categories.exists(key)) return;
+    if (await _categories.exists(key)) {
+      throw const ValidationFailure(
+          'Ya existe una categoría con ese nombre');
+    }
 
     await _categories.add(CategoryItem(
       key: key,

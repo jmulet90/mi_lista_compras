@@ -140,6 +140,13 @@ class AppLocalizations {
       'fr': 'Nouvelle catégorie', 'de': 'Neue Kategorie', 'it': 'Nuova categoria',
       'zh': '新建分类', 'hi': 'नई श्रेणी', 'ar': 'فئة جديدة', 'ru': 'Новая категория',
     },
+    'categoryAlreadyExists': {
+      'es': 'Ya existe una categoría con ese nombre', 'en': 'A category with that name already exists',
+      'pt': 'Já existe uma categoria com esse nome', 'fr': 'Une catégorie avec ce nom existe déjà',
+      'de': 'Eine Kategorie mit diesem Namen existiert bereits', 'it': 'Esiste già una categoria con questo nome',
+      'zh': '已存在同名分类', 'hi': 'इस नाम की श्रेणी पहले से मौजूद है',
+      'ar': 'توجد فئة بهذا الاسم بالفعل', 'ru': 'Категория с таким названием уже существует',
+    },
     'newProduct': {
       'es': 'Nuevo Producto', 'en': 'New Product', 'pt': 'Novo Produto',
       'fr': 'Nouveau produit', 'de': 'Neues Produkt', 'it': 'Nuovo prodotto',
@@ -1138,6 +1145,9 @@ class AppLocalizations {
     'Eggs': {'es': 'Huevos', 'en': 'Eggs', 'pt': 'Ovos', 'fr': 'Œufs', 'de': 'Eier', 'it': 'Uova', 'zh': '鸡蛋', 'hi': 'अंडे', 'ar': 'بيض', 'ru': 'Яйца'},
     'Rice': {'es': 'Arroz', 'en': 'Rice', 'pt': 'Arroz', 'fr': 'Riz', 'de': 'Reis', 'it': 'Riso', 'zh': '大米', 'hi': 'चावल', 'ar': 'أرز', 'ru': 'Рис'},
     'Pasta': {'es': 'Pasta', 'en': 'Pasta', 'pt': 'Massa', 'fr': 'Pâtes', 'de': 'Nudeln', 'it': 'Pasta', 'zh': '意面', 'hi': 'पास्ता', 'ar': 'معكرونة', 'ru': 'Паста'},
+    'Spaghetti': {'es': 'Espaguetis', 'en': 'Spaghetti', 'pt': 'Espaguete', 'fr': 'Spaghetti', 'de': 'Spaghetti', 'it': 'Spaghetti', 'zh': '意大利面', 'hi': 'स्पेगेटी', 'ar': 'سباغيتي', 'ru': 'Спагетти'},
+    'Tomato puree': {'es': 'Puré de tomate', 'en': 'Tomato puree', 'pt': 'Polpa de tomate', 'fr': 'Purée de tomate', 'de': 'Tomatenmark', 'it': 'Passata di pomodoro', 'zh': '番茄酱', 'hi': 'टमाटर प्यूरी', 'ar': 'معجون الطماطم', 'ru': 'Томатное пюре'},
+    'Vinegar': {'es': 'Vinagre', 'en': 'Vinegar', 'pt': 'Vinagre', 'fr': 'Vinaigre', 'de': 'Essig', 'it': 'Aceto', 'zh': '醋', 'hi': 'सिरका', 'ar': 'خل', 'ru': 'Уксус'},
     'Chicken': {'es': 'Pollo', 'en': 'Chicken', 'pt': 'Frango', 'fr': 'Poulet', 'de': 'Hähnchen', 'it': 'Pollo', 'zh': '鸡肉', 'hi': 'चिकन', 'ar': 'دجاج', 'ru': 'Курица'},
     'Beef': {'es': 'Carne de res', 'en': 'Beef', 'pt': 'Carne bovina', 'fr': 'Bœuf', 'de': 'Rindfleisch', 'it': 'Manzo', 'zh': '牛肉', 'hi': 'गोमांस', 'ar': 'لحم بقري', 'ru': 'Говядина'},
     'Fish': {'es': 'Pescado', 'en': 'Fish', 'pt': 'Peixe', 'fr': 'Poisson', 'de': 'Fisch', 'it': 'Pesce', 'zh': '鱼', 'hi': 'मछली', 'ar': 'سمك', 'ru': 'Рыба'},
@@ -1158,6 +1168,7 @@ class AppLocalizations {
     'Salt': {'es': 'Sal', 'en': 'Salt', 'pt': 'Sal', 'fr': 'Sel', 'de': 'Salz', 'it': 'Sale', 'zh': '盐', 'hi': 'नमक', 'ar': 'ملح', 'ru': 'Соль'},
     'Oil': {'es': 'Aceite', 'en': 'Oil', 'pt': 'Óleo', 'fr': 'Huile', 'de': 'Öl', 'it': 'Olio', 'zh': '食用油', 'hi': 'तेल', 'ar': 'زيت', 'ru': 'Масло'},
     'Butter': {'es': 'Mantequilla', 'en': 'Butter', 'pt': 'Manteiga', 'fr': 'Beurre', 'de': 'Butter', 'it': 'Burro', 'zh': '黄油', 'hi': 'मक्खन', 'ar': 'زبدة', 'ru': 'Сливочное масло'},
+    'Cream cheese': {'es': 'Queso crema', 'en': 'Cream cheese', 'pt': 'Requeijão', 'fr': 'Fromage à tartiner', 'de': 'Frischkäse', 'it': 'Formaggio spalmabile', 'zh': '奶油奶酪', 'hi': 'क्रीम चीज़', 'ar': 'جبنة كريمية', 'ru': 'Сливочный сыр'},
     'Yogurt': {'es': 'Yogur', 'en': 'Yogurt', 'pt': 'Iogurte', 'fr': 'Yaourt', 'de': 'Joghurt', 'it': 'Yogurt', 'zh': '酸奶', 'hi': 'दही', 'ar': 'زبادي', 'ru': 'Йогурт'},
     'Honey': {'es': 'Miel', 'en': 'Honey', 'pt': 'Mel', 'fr': 'Miel', 'de': 'Honig', 'it': 'Miele', 'zh': '蜂蜜', 'hi': 'शहद', 'ar': 'عسل', 'ru': 'Мёд'},
     'Chocolate': {'es': 'Chocolate', 'en': 'Chocolate', 'pt': 'Chocolate', 'fr': 'Chocolat', 'de': 'Schokolade', 'it': 'Cioccolato', 'zh': '巧克力', 'hi': 'चॉकलेट', 'ar': 'شوكولاتة', 'ru': 'Шоколад'},
@@ -1285,6 +1296,7 @@ class AppLocalizations {
   String get gallery => _s('gallery');
   String get language => _s('language');
   String get addCategory => _s('addCategory');
+  String get categoryAlreadyExists => _s('categoryAlreadyExists');
   String get newProduct => _s('newProduct');
   String get editCategory => _s('editCategory');
   String get deleteCategory => _s('deleteCategory');

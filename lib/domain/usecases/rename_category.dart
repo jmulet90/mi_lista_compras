@@ -31,6 +31,14 @@ class RenameCategoryUseCase {
 
     final oldKey = category.key;
 
+    // No permitir renombrar a una clave que ya ocupa otra categoría: el
+    // datasource nunca debe sobrescribir silenciosamente una entrada con otra.
+    if (newKey.trim().toLowerCase() != oldKey.trim().toLowerCase() &&
+        await _categories.exists(newKey)) {
+      throw const ValidationFailure(
+          'Ya existe una categoría con ese nombre');
+    }
+
     await _categories.update(
       currentKey: oldKey,
       category: CategoryItem(key: newKey, emoji: emoji, imagePath: imagePath),
