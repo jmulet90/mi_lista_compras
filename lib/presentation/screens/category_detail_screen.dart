@@ -55,7 +55,7 @@ class CategoryDetailScreen extends StatefulWidget {
 }
 
 class _CategoryDetailScreenState extends State<CategoryDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final Map<String, GlobalKey> _productRowKeys = {};
 
   /// Subcategoría expandida en la lista: null (nada), '' ("Sin subcategoría")
@@ -70,6 +70,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
   /// ¿El abanico del "+" está desplegado?
   bool _isFabOpen = false;
   late final AnimationController _fabAnimationController;
+
+  /// ¿El abanico de vistas (lista/galería) está desplegado?
+  bool _isViewFabOpen = false;
+  late final AnimationController _viewFabController;
+  late final Animation<double> _viewExpandAnimation;
 
   List<SubcategoryItem> get _subsForCategory =>
       _subcategories[widget.category.key.trim().toLowerCase()] ?? const [];
@@ -86,6 +91,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
+    _viewFabController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _viewExpandAnimation = CurvedAnimation(
+      parent: _viewFabController,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    );
     _subcategoriesSub = sl<SubcategoryRepository>().watchAll().listen((map) {
       if (mounted) setState(() => _subcategories = map);
     });
@@ -95,6 +109,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
   void dispose() {
     _subcategoriesSub?.cancel();
     _fabAnimationController.dispose();
+    _viewFabController.dispose();
     super.dispose();
   }
 
@@ -603,6 +618,30 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     });
   }
 
+  void _toggleViewFab() {
+    setState(() {
+      _isViewFabOpen = !_isViewFabOpen;
+      if (_isViewFabOpen) {
+        _viewFabController.forward();
+      } else {
+        _viewFabController.reverse();
+      }
+    });
+  }
+
+  /// Cambia entre vista lista y galería, con las mismas restricciones que la
+  /// pantalla principal (requiere permiso de edición).
+  Future<void> _applyViewMode(bool isGridView) async {
+    HapticFeedback.selectionClick();
+    if (!PremiumLimits.checkCanEdit(context)) return;
+    final notifier = AppSettings.notifierOf(context);
+    if (isGridView && !await PremiumLimits.canUseAppearanceFeature(context)) {
+      return;
+    }
+    notifier.value = notifier.value.copyWith(isGridView: isGridView);
+    if (_isViewFabOpen) _toggleViewFab();
+  }
+
   /// Opciones del abanico del "+" según el contexto:
   /// - En el detalle de una subcategoría → solo "nuevo producto".
   /// - Nivel de categoría → "nueva subcategoría" + "nuevo producto"
@@ -880,25 +919,150 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
                       );
               },
             ),
-            if (_isFabOpen)
+            if (_isFabOpen || _isViewFabOpen)
               Positioned.fill(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: _toggleFab,
+                  onTap: () {
+                    if (_isFabOpen) _toggleFab();
+                    if (_isViewFabOpen) _toggleViewFab();
+                  },
                 ),
               ),
           ],
         ),
       ),
       floatingActionButton: AnimatedBuilder(
-        animation: _fabAnimationController,
+        animation: Listenable.merge([_fabAnimationController, _viewFabController]),
         builder: (context, child) {
           if (_selectionMode) return const SizedBox.shrink();
           final t = AppLocalizations.of(context);
+          final isDark = Theme.of(context).brightness == Brightness.dark;
           return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              // Opciones de vista: crecen pegadas al botón de vistas.
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                alignment: Alignment.bottomCenter,
+                child: _isViewFabOpen
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          FloatingActionButton.extended(
+                            heroTag: 'btn_detail_view_list',
+                            backgroundColor: isDark
+                                ? const Color(0xFF1E293B)
+                                : Colors.white,
+                            foregroundColor: isDark
+                                ? Colors.grey.shade100
+                                : Colors.blueGrey.shade800,
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              side: isDark
+                                  ? BorderSide(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                    )
+                                  : BorderSide.none,
+                            ),
+                            onPressed: () => _applyViewMode(false),
+                            icon: const Icon(Icons.view_list),
+                            label: Row(
+                              children: [
+                                Text(t.list),
+                                if (!settings.isGridView) ...[
+                                  const SizedBox(width: 6),
+                                  const Icon(
+                                    Icons.check_circle,
+                                    size: 16,
+                                    color: Colors.green,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FloatingActionButton.extended(
+                            heroTag: 'btn_detail_view_gallery',
+                            backgroundColor: isDark
+                                ? const Color(0xFF1E293B)
+                                : Colors.white,
+                            foregroundColor: isDark
+                                ? Colors.grey.shade100
+                                : Colors.blueGrey.shade800,
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              side: isDark
+                                  ? BorderSide(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                    )
+                                  : BorderSide.none,
+                            ),
+                            onPressed: () => _applyViewMode(true),
+                            icon: const Icon(Icons.grid_view),
+                            label: Row(
+                              children: [
+                                Text(t.gallery),
+                                if (settings.isGridView) ...[
+                                  const SizedBox(width: 6),
+                                  const Icon(
+                                    Icons.check_circle,
+                                    size: 16,
+                                    color: Colors.green,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 10),
+              // Botón de vistas; sube cuando se despliega el abanico de crear.
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2.0),
+                child: FloatingActionButton(
+                  heroTag: 'btn_detail_view',
+                  backgroundColor: isDark
+                      ? const Color(0xFF1E293B)
+                      : Colors.white,
+                  foregroundColor: isDark
+                      ? Colors.grey.shade100
+                      : Colors.blueGrey.shade800,
+                  elevation: 4,
+                  shape: CircleBorder(
+                    side: isDark
+                        ? BorderSide(
+                            color: Colors.white.withValues(alpha: 0.12),
+                          )
+                        : BorderSide.none,
+                  ),
+                  onPressed: () {
+                    if (!PremiumLimits.checkCanEdit(context)) return;
+                    if (_isFabOpen) _toggleFab();
+                    _toggleViewFab();
+                  },
+                  child: Transform.rotate(
+                    angle: _viewExpandAnimation.value * 0.785398,
+                    child: Icon(
+                      settings.isGridView
+                          ? Icons.grid_view
+                          : Icons.view_list,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
               // Abanico de crear: crece pegado al botón principal.
               AnimatedSize(
                 duration: const Duration(milliseconds: 250),
