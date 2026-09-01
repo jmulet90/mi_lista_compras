@@ -28,6 +28,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
   final AppLogger _logger;
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _syncSub;
+  Timer? _syncRetryTimer;
   bool _syncing = false;
 
   @override
@@ -95,6 +96,8 @@ class CategoryRepositoryImpl implements CategoryRepository {
     try {
       await _syncSub?.cancel();
       _syncSub = null;
+      _syncRetryTimer?.cancel();
+      _syncRetryTimer = null;
 
       final access = await _collaboratorRepository.resolveMyAccess();
       if (access == null) return;
@@ -154,14 +157,30 @@ class CategoryRepositoryImpl implements CategoryRepository {
         }
       }
 
-      _syncSub = _remote
-          .watchCategories(access.ownerEmail)
-          .listen(_applyRemoteChanges, onError: (Object e) {
-        _logger.error('Error escuchando cambios remotos de categorías', e);
-      });
+      _subscribeToRemote(access.ownerEmail);
     } finally {
       _syncing = false;
     }
+  }
+
+  /// Mantiene la escucha en vivo de las categorías del owner. Si Firestore
+  /// pierde la suscripción (p. ej. por un error de red transitorio), se
+  /// reprograma con reintentos para no dejar la sincronización muerta.
+  void _subscribeToRemote(String ownerEmail) {
+    _syncSub?.cancel();
+    _syncSub = _remote
+        .watchCategories(ownerEmail)
+        .listen(_applyRemoteChanges, onError: (Object e) {
+      _logger.error('Error escuchando cambios remotos de categorías', e);
+      _scheduleSyncRetry(ownerEmail);
+    });
+  }
+
+  void _scheduleSyncRetry(String ownerEmail) {
+    _syncRetryTimer?.cancel();
+    _syncRetryTimer = Timer(const Duration(seconds: 5), () {
+      _subscribeToRemote(ownerEmail);
+    });
   }
 
   /// Sube todas las categorías locales del owner a Firestore.

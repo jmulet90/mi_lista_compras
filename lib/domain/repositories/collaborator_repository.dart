@@ -1,5 +1,6 @@
 import '../entities/access_context.dart';
 import '../entities/collaborator.dart';
+import '../entities/premium_status.dart';
 
 abstract class CollaboratorRepository {
   /// Resuelve (y cachea por sesión) el contexto de acceso del usuario actual:
@@ -30,8 +31,9 @@ abstract class CollaboratorRepository {
     required String collaboratorEmail,
   });
 
-  /// Propaga el estado premium del owner a todos sus colaboradores.
-  Future<void> syncOwnerPremium({required bool isPremium});
+  /// Propaga el plan del owner a todos sus colaboradores: el colaborador
+  /// hereda el mismo nivel (premium normal o premium plus) del owner.
+  Future<void> syncOwnerTier({required AppTier tier});
 
   /// Devuelve el contexto de acceso cacheado (null si aún no se ha resuelto).
   AccessContext? get currentAccess;

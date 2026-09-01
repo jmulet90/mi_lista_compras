@@ -24,9 +24,18 @@ class PremiumLimits {
 
   static bool get isPremium => tier.isPremium;
 
-  /// Plus directo (los colaboradores se ampliarán cuando el owner
-  /// propague el plan Plus).
-  static bool get isPremiumPlusEffectiveSync => isPremiumPlus;
+  /// Plus directo o colaborador de un owner Premium Plus (síncrono).
+  /// Un colaborador de un owner con Premium (no Plus) NO hereda Plus.
+  static bool get isPremiumPlusEffectiveSync {
+    if (isPremiumPlus) return true;
+    try {
+      final access = sl<CollaboratorRepository>().currentAccess;
+      if (access == null || access.isOwner) return false;
+      return access.ownerPremiumPlus;
+    } catch (_) {
+      return false;
+    }
+  }
 
   static bool get isPremiumPlus => tier.isPremiumPlus;
 

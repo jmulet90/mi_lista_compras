@@ -40,6 +40,7 @@ class ProductRepositoryImpl implements ProductRepository {
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _syncSub;
   Timer? _imageRetryTimer;
+  Timer? _syncRetryTimer;
   String? _activeOwnerEmail;
   bool _syncing = false;
 
@@ -50,6 +51,8 @@ class ProductRepositoryImpl implements ProductRepository {
     try {
       await _syncSub?.cancel();
       _syncSub = null;
+      _syncRetryTimer?.cancel();
+      _syncRetryTimer = null;
       _imageRetryTimer?.cancel();
       _imageRetryTimer = null;
 
@@ -120,14 +123,30 @@ class ProductRepositoryImpl implements ProductRepository {
       // colaborador o imágenes pendientes de reintentos anteriores).
       unawaited(_hydrateMissingImages(access.ownerEmail));
 
-      _syncSub = _remote
-          .watchProducts(access.ownerEmail)
-          .listen(_applyRemoteChanges, onError: (Object e) {
-        _logger.error('Error escuchando cambios remotos de productos', e);
-      });
+      _subscribeToRemote(access.ownerEmail);
     } finally {
       _syncing = false;
     }
+  }
+
+  /// Mantiene la escucha en vivo de los productos del owner. Si Firestore
+  /// pierde la suscripción (p. ej. por un error de red transitorio), se
+  /// reprograma con reintentos para no dejar la sincronización muerta.
+  void _subscribeToRemote(String ownerEmail) {
+    _syncSub?.cancel();
+    _syncSub = _remote
+        .watchProducts(ownerEmail)
+        .listen(_applyRemoteChanges, onError: (Object e) {
+      _logger.error('Error escuchando cambios remotos de productos', e);
+      _scheduleSyncRetry(ownerEmail);
+    });
+  }
+
+  void _scheduleSyncRetry(String ownerEmail) {
+    _syncRetryTimer?.cancel();
+    _syncRetryTimer = Timer(const Duration(seconds: 5), () {
+      _subscribeToRemote(ownerEmail);
+    });
   }
 
   /// Sube todos los productos locales del owner a Firestore.

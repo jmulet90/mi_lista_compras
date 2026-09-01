@@ -17,6 +17,11 @@ abstract class PremiumRepository {
   /// Debe llamarse una vez al arrancar la app.
   Future<void> init();
 
+  /// Se invoca cuando el plan del usuario cambia, notificando el [AppTier]
+  /// completo (premium o premiumPlus) para que el owner pueda propagarlo a
+  /// sus colaboradores.
+  void Function(AppTier tier)? get onPremiumChanged;
+
   /// Lanza la compra del plan [tier] (Premium o Premium Plus); resuelve
   /// true solo si quedó activado (o ya estaba activo).
   Future<bool> purchase(AppTier tier);

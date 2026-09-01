@@ -35,7 +35,9 @@ class PremiumRepositoryImpl implements PremiumRepository {
   final BillingDataSource _billing;
   final Box<dynamic> _settingsBox;
   final PremiumRemoteDataSource _remote;
-  final void Function(bool isPremium)? onPremiumChanged;
+
+  @override
+  final void Function(AppTier tier)? onPremiumChanged;
 
   final _controller = StreamController<PremiumStatus>.broadcast();
 
@@ -114,7 +116,7 @@ class PremiumRepositoryImpl implements PremiumRepository {
     final changed = _status.tier != effective.tier;
     _status = effective;
     _controller.add(effective);
-    if (changed) onPremiumChanged?.call(effective.isPremium);
+    if (changed) onPremiumChanged?.call(effective.tier);
   }
 
   @override

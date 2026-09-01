@@ -3,17 +3,25 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../core/failures.dart';
 import '../../domain/entities/collaborator.dart';
+import '../../domain/entities/premium_status.dart';
 
 class CollaboratorInviteData {
   const CollaboratorInviteData({
     required this.ownerEmail,
     required this.collaboratorEmail,
     required this.role,
+    this.ownerPremium = false,
+    this.ownerPremiumPlus = false,
   });
 
   final String ownerEmail;
   final String collaboratorEmail;
   final String role;
+
+  /// Plan del owner en el momento de invitar, para que el colaborador
+  /// herede el mismo nivel (premium normal o premium plus).
+  final bool ownerPremium;
+  final bool ownerPremiumPlus;
 }
 
 /// Acceso a Firestore para la gestión de colaboradores.
@@ -78,6 +86,8 @@ class CollaboratorRemoteDataSource {
         'ownerEmail': user.email ?? invite.ownerEmail,
         'collaboratorEmail': invite.collaboratorEmail,
         'permissionRole': invite.role,
+        'ownerPremium': invite.ownerPremium,
+        'ownerPremiumPlus': invite.ownerPremiumPlus,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -127,11 +137,12 @@ class CollaboratorRemoteDataSource {
     }
   }
 
-  /// Actualiza el campo `ownerPremium` en todos los docs de colaboradores
-  /// del owner dado. Se llama cuando el premium del owner cambia.
-  Future<void> syncOwnerPremium({
+  /// Propaga el plan del owner a todos sus docs de colaboradores: escribe
+  /// `ownerPremium` (bool) y `ownerPremiumPlus` (bool) para que el
+  /// colaborador herede exactamente el nivel del owner (premium o plus).
+  Future<void> syncOwnerTier({
     required String ownerEmail,
-    required bool isPremium,
+    required AppTier tier,
   }) async {
     try {
       final snapshot = await _db
@@ -140,7 +151,10 @@ class CollaboratorRemoteDataSource {
           .get();
       final batch = _db.batch();
       for (final doc in snapshot.docs) {
-        batch.update(doc.reference, {'ownerPremium': isPremium});
+        batch.update(doc.reference, {
+          'ownerPremium': tier.isPremium,
+          'ownerPremiumPlus': tier.isPremiumPlus,
+        });
       }
       await batch.commit();
     } catch (e) {

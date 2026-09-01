@@ -497,6 +497,11 @@ class AppLocalizations {
       'de': 'Berechtigung:', 'it': 'Permesso:', 'zh': '权限：', 'hi': 'अनुमति:',
       'ar': 'الإذن:', 'ru': 'Разрешение:',
     },
+    'permissionLabel': {
+      'es': 'Permiso', 'en': 'Permission', 'pt': 'Permissão', 'fr': 'Permission',
+      'de': 'Berechtigung', 'it': 'Permesso', 'zh': '权限', 'hi': 'अनुमति',
+      'ar': 'الصلاحية', 'ru': 'Разрешение',
+    },
     'roleFull': {
       'es': 'Control Total', 'en': 'Full Control', 'pt': 'Controlo Total',
       'fr': 'Contrôle total', 'de': 'Vollzugriff', 'it': 'Controllo totale',
@@ -1145,7 +1150,7 @@ class AppLocalizations {
     'Beet': {'es': 'Remolacha', 'en': 'Beet', 'pt': 'Beterraba', 'fr': 'Betterave', 'de': 'Rote Bete', 'it': 'Barbabietola', 'zh': '甜菜', 'hi': 'चुकंदर', 'ar': 'بنجر', 'ru': 'Свёкла'},
     'Black beans': {'es': 'Frijoles negros', 'en': 'Black beans', 'pt': 'Feijão preto', 'fr': 'Haricots noirs', 'de': 'Schwarze Bohnen', 'it': 'Fagioli neri', 'zh': '黑豆', 'hi': 'काली बीन्स', 'ar': 'فاصوليا سوداء', 'ru': 'Чёрная фасоль'},
     'Chickpea': {'es': 'Garbanzos', 'en': 'Chickpea', 'pt': 'Grão-de-bico', 'fr': 'Pois chiche', 'de': 'Kichererbse', 'it': 'Ceci', 'zh': '鹰嘴豆', 'hi': 'चना', 'ar': 'حمص', 'ru': 'Нут'},
-    'Cow': {'es': 'Res', 'en': 'Cow', 'pt': 'Boi', 'fr': 'Bœuf', 'de': 'Rind', 'it': 'Manzo', 'zh': '牛肉', 'hi': 'गोमांस', 'ar': 'لحم بقر', 'ru': 'Говядина'},
+    'Cow': {'es': 'Vaca', 'en': 'Cow', 'pt': 'Boi', 'fr': 'Bœuf', 'de': 'Rind', 'it': 'Manzo', 'zh': '牛肉', 'hi': 'गोमांस', 'ar': 'لحم بقر', 'ru': 'Говядина'},
     'Croissant': {'es': 'Cruasán', 'en': 'Croissant', 'pt': 'Croissant', 'fr': 'Croissant', 'de': 'Croissant', 'it': 'Cornetto', 'zh': '牛角包', 'hi': 'क्रोइसैन', 'ar': 'كرواسون', 'ru': 'Круассан'},
     'Cucumber': {'es': 'Pepino', 'en': 'Cucumber', 'pt': 'Pepino', 'fr': 'Concombre', 'de': 'Gurke', 'it': 'Cetriolo', 'zh': '黄瓜', 'hi': 'खीरा', 'ar': 'خيار', 'ru': 'Огурец'},
     'Lettuce': {'es': 'Lechuga', 'en': 'Lettuce', 'pt': 'Alface', 'fr': 'Laitue', 'de': 'Kopfsalat', 'it': 'Lattuga', 'zh': '生菜', 'hi': 'सलाद', 'ar': 'خس', 'ru': 'Салат'},
@@ -1312,6 +1317,7 @@ class AppLocalizations {
   String get notAuthenticated => _s('notAuthenticated');
   String get noCollaborators => _s('noCollaborators');
   String get permissionPrefix => _s('permissionPrefix');
+  String get permissionLabel => _s('permissionLabel');
   String get roleFull => _s('roleFull');
   String get roleDynamic => _s('roleDynamic');
   String get roleRead => _s('roleRead');

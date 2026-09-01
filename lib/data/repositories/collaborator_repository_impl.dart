@@ -1,8 +1,11 @@
 import '../../core/failures.dart';
 import '../../domain/entities/access_context.dart';
 import '../../domain/entities/collaborator.dart';
+import '../../domain/entities/premium_status.dart';
 import '../../domain/repositories/collaborator_repository.dart';
+import '../../domain/repositories/premium_repository.dart';
 import '../datasources/collaborator_remote_data_source.dart';
+import '../../core/di.dart';
 
 class CollaboratorRepositoryImpl implements CollaboratorRepository {
   CollaboratorRepositoryImpl(this._remote);
@@ -32,6 +35,7 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
           ownerEmail: data['ownerEmail'] as String,
           role: data['permissionRole'] as String? ?? 'read',
           ownerPremium: data['ownerPremium'] as bool? ?? false,
+          ownerPremiumPlus: data['ownerPremiumPlus'] as bool? ?? false,
         );
       }
       _cachedForEmail = email;
@@ -51,10 +55,15 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
     required String collaboratorEmail,
     required String role,
   }) async {
+    // El colaborador hereda el plan actual del owner (premium o premium plus)
+    // en el momento de la invitación.
+    final tier = sl<PremiumRepository>().current().tier;
     await _remote.inviteCollaborator(CollaboratorInviteData(
       ownerEmail: ownerEmail,
       collaboratorEmail: collaboratorEmail,
       role: role,
+      ownerPremium: tier.isPremium,
+      ownerPremiumPlus: tier.isPremiumPlus,
     ));
   }
 
@@ -109,9 +118,9 @@ class CollaboratorRepositoryImpl implements CollaboratorRepository {
   }
 
   @override
-  Future<void> syncOwnerPremium({required bool isPremium}) async {
+  Future<void> syncOwnerTier({required AppTier tier}) async {
     final email = _remote.currentUserEmail;
     if (email == null) return;
-    await _remote.syncOwnerPremium(ownerEmail: email, isPremium: isPremium);
+    await _remote.syncOwnerTier(ownerEmail: email, tier: tier);
   }
 }

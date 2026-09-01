@@ -6,6 +6,7 @@ class AccessContext {
     required this.ownerEmail,
     this.role,
     this.ownerPremium = false,
+    this.ownerPremiumPlus = false,
   });
 
   final String ownerEmail;
@@ -15,6 +16,11 @@ class AccessContext {
 
   /// true si el owner tiene premium (escrito en el doc del colaborador).
   final bool ownerPremium;
+
+  /// true si el owner tiene el plan Premium Plus (escrito en el doc del
+  /// colaborador). Permite a los colaboradores heredar las funciones Plus
+  /// del owner (exportar PDF/imagen, subcategorías, notificaciones).
+  final bool ownerPremiumPlus;
 
   bool get isOwner => role == null;
 

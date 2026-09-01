@@ -311,43 +311,73 @@ class _AppDrawerState extends State<AppDrawer> {
   Future<void> _sendInvitation(BuildContext context) async {
     final t = AppLocalizations.of(context);
     final controller = TextEditingController();
+    var selectedRole = 'full';
 
     final email = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(t.addCollaborator),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              t.collaboratorPrompt,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: Text(t.addCollaborator),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.collaboratorPrompt,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(labelText: t.emailLabel),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                t.permissionLabel,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 4),
+              DropdownButtonFormField<String>(
+                initialValue: selectedRole,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: [
+                  DropdownMenuItem(value: 'full', child: Text(t.roleFull)),
+                  DropdownMenuItem(value: 'dynamic', child: Text(t.roleDynamic)),
+                  DropdownMenuItem(value: 'read', child: Text(t.roleRead)),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    selectedRole = value;
+                    setState(() {});
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'cancel'),
+              child: Text(t.cancel),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(labelText: t.emailLabel),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, controller.text.trim()),
+              child: Text(t.add),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(t.cancel),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(dialogContext, controller.text.trim()),
-            child: Text(t.add),
-          ),
-        ],
       ),
     );
 
-    if (email == null || email.isEmpty || !context.mounted) return;
+    if (email == null || email == 'cancel' || email.isEmpty || !context.mounted) {
+      return;
+    }
 
     try {
       final ownerEmail =
@@ -355,7 +385,7 @@ class _AppDrawerState extends State<AppDrawer> {
       await sl<CollaboratorRepository>().inviteCollaborator(
         ownerEmail: ownerEmail,
         collaboratorEmail: email,
-        role: 'read',
+        role: selectedRole,
       );
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
