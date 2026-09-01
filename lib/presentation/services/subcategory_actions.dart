@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../core/di.dart';
 import '../../core/failures.dart';
+import '../../domain/entities/category_item.dart';
 import '../../domain/entities/product.dart';
 import '../../domain/entities/subcategory_item.dart';
+import '../../domain/repositories/category_repository.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/subcategory_repository.dart';
 import '../../domain/usecases/update_product.dart';
@@ -328,6 +330,247 @@ class SubcategoryActions {
       if (context.mounted) showFailure(context, failure);
     } catch (e) {
       debugPrint('[MOVE] EXC $e');
+    }
+  }
+
+  /// Mueve [product] a otra categoría (desde cualquier pantalla). Limpia la
+  /// subcategoría porque cambia de categoría.
+  static Future<void> promptMoveProductToCategory(
+    BuildContext context, {
+    required Product product,
+    required String currentCategoryKey,
+    VoidCallback? onMoved,
+  }) async {
+    final t = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final List<CategoryItem> categories;
+    try {
+      categories = await sl<CategoryRepository>().getAll();
+    } on Failure catch (failure) {
+      if (context.mounted) showFailure(context, failure);
+      return;
+    }
+    final options = categories
+        .where((c) =>
+            c.key.trim().toLowerCase() !=
+            currentCategoryKey.trim().toLowerCase())
+        .toList();
+    if (options.isEmpty) return;
+
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final cat in options)
+                ListTile(
+                  leading: Icon(
+                    Icons.category_outlined,
+                    color: const Color(0xFF184878),
+                  ),
+                  title: Text(t.getCategoryName(cat.key)),
+                  onTap: () => Navigator.of(sheetContext).pop(cat.key),
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (chosen == null || chosen.isEmpty) return;
+
+    try {
+      await sl<UpdateProductUseCase>()(
+        product: product,
+        newName: product.nameKey,
+        emoji: product.emoji,
+        imagePath: product.imagePath,
+        quantity: product.quantity,
+        unit: product.unit,
+        categoryKey: chosen,
+        clearSubcategory: true,
+      );
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(t.movedProductTo(t.getCategoryName(chosen))),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        onMoved?.call();
+      }
+    } on Failure catch (failure) {
+      if (context.mounted) showFailure(context, failure);
+    }
+  }
+
+  /// Mueve varios productos de golpe hacia una subcategoría de su categoría
+  /// (o "Sin subcategoría") o hacia otra categoría. Un único sheet combina
+  /// ambos destinos para no hacer el viaje uno a uno.
+  static Future<void> promptMoveMany(
+    BuildContext context, {
+    required List<Product> products,
+    required String categoryKey,
+    required List<String> subcategories,
+    required VoidCallback onMoved,
+  }) async {
+    final t = AppLocalizations.of(context);
+    if (products.isEmpty) return;
+
+    final List<CategoryItem> categories;
+    try {
+      categories = await sl<CategoryRepository>().getAll();
+    } on Failure catch (failure) {
+      if (context.mounted) showFailure(context, failure);
+      return;
+    }
+    final otherCategories = categories
+        .where((c) =>
+            c.key.trim().toLowerCase() !=
+            categoryKey.trim().toLowerCase())
+        .toList();
+
+    final count = products.length;
+    final subs = distinct(products, known: subcategories);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: Text(
+                  t.selectedCount(count),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 4, 24, 4),
+                child: Text(
+                  t.getCategoryName(categoryKey),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                    color: Theme.of(sheetContext).colorScheme.primary,
+                  ),
+                ),
+              ),
+              for (final sub in ['', ...subs])
+                ListTile(
+                  leading: Icon(
+                    sub.isEmpty
+                        ? Icons.inbox_outlined
+                        : Icons.folder_open_outlined,
+                    color:
+                        sub.isEmpty ? Colors.grey : const Color(0xFF184878),
+                  ),
+                  title: Text(sub.isEmpty ? t.noSubcategory : sub),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _performBulkMove(
+                      context,
+                      products: products,
+                      subcategory: sub.isEmpty ? null : sub,
+                      categoryKey: null,
+                      onMoved: onMoved,
+                    );
+                  },
+                ),
+              if (otherCategories.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+                  child: Text(
+                    t.moveToCategory,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                      color: Theme.of(sheetContext).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                for (final cat in otherCategories)
+                  ListTile(
+                    leading: Icon(
+                      Icons.category_outlined,
+                      color: const Color(0xFFE8830C),
+                    ),
+                    title: Text(t.getCategoryName(cat.key)),
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _performBulkMove(
+                        context,
+                        products: products,
+                        subcategory: null,
+                        categoryKey: cat.key,
+                        onMoved: onMoved,
+                      );
+                    },
+                  ),
+              ],
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Future<void> _performBulkMove(
+    BuildContext context, {
+    required List<Product> products,
+    required String? subcategory,
+    required String? categoryKey,
+    required VoidCallback onMoved,
+  }) async {
+    final t = AppLocalizations.of(context);
+    var moved = 0;
+    for (final p in products) {
+      try {
+        await sl<UpdateProductUseCase>()(
+          product: p,
+          newName: p.nameKey,
+          emoji: p.emoji,
+          imagePath: p.imagePath,
+          quantity: p.quantity,
+          unit: p.unit,
+          subcategory: subcategory,
+          categoryKey: categoryKey,
+          clearSubcategory: categoryKey != null,
+        );
+        moved++;
+      } on Failure catch (failure) {
+        if (context.mounted) showFailure(context, failure);
+      }
+    }
+    if (!context.mounted) return;
+    if (moved > 0) {
+      final target = categoryKey != null
+          ? t.getCategoryName(categoryKey)
+          : (subcategory == null ? t.noSubcategory : subcategory);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t.movedProductsTo(moved, target)),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      onMoved();
     }
   }
 

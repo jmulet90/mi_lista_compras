@@ -13,7 +13,6 @@ import '../../domain/entities/product.dart';
 import '../../domain/entities/subcategory_item.dart';
 import '../../domain/repositories/subcategory_repository.dart';
 import '../../domain/usecases/delete_category.dart';
-import '../../domain/usecases/delete_product.dart';
 import '../../domain/usecases/rename_category.dart';
 import '../../domain/usecases/update_product.dart';
 import '../app_settings.dart';
@@ -938,42 +937,6 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
     );
   }
 
-  void _confirmDeleteProduct(BuildContext context, Product product) {
-    final t = AppLocalizations.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.delete),
-        content: Text(
-          t.deleteProductConfirm(t.getProductName(product.nameKey)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.cancel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              try {
-                await sl<DeleteProductUseCase>()(product);
-                if (context.mounted) Navigator.pop(context);
-              } on Failure catch (failure) {
-                if (context.mounted) Navigator.pop(context);
-                showFailureMessage(messenger, failure);
-              }
-            },
-            child: Text(t.delete),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final settings = AppSettings.of(context);
@@ -1547,7 +1510,6 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                             );
                           },
                           onEditProduct: _showEditProductDialog,
-                          onDeleteProduct: _confirmDeleteProduct,
                         ),
                       );
                     },

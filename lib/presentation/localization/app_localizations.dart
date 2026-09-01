@@ -417,6 +417,30 @@ class AppLocalizations {
       'zh': '移动到其他分类', 'hi': 'दूसरी श्रेणी में ले जाएँ',
       'ar': 'نقل إلى فئة أخرى', 'ru': 'Переместить в другую категорию',
     },
+    'select': {
+      'es': 'Seleccionar', 'en': 'Select', 'pt': 'Selecionar',
+      'fr': 'Sélectionner', 'de': 'Auswählen', 'it': 'Seleziona',
+      'zh': '选择', 'hi': 'चुनें', 'ar': 'تحديد', 'ru': 'Выбрать',
+    },
+    'move': {
+      'es': 'Mover', 'en': 'Move', 'pt': 'Mover',
+      'fr': 'Déplacer', 'de': 'Verschieben', 'it': 'Sposta',
+      'zh': '移动', 'hi': 'स्थानांतरित करें', 'ar': 'نقل', 'ru': 'Переместить',
+    },
+    'selectedCount': {
+      'es': '{count} seleccionados', 'en': '{count} selected',
+      'pt': '{count} selecionados', 'fr': '{count} sélectionnés',
+      'de': '{count} ausgewählt', 'it': '{count} selezionati',
+      'zh': '已选择 {count} 项', 'hi': '{count} चुने गए',
+      'ar': 'تم تحديد {count}', 'ru': 'Выбрано: {count}',
+    },
+    'movedProductsTo': {
+      'es': '{count} productos movidos a {sub}', 'en': '{count} products moved to {sub}',
+      'pt': '{count} produtos movidos para {sub}', 'fr': '{count} produits déplacés vers {sub}',
+      'de': '{count} Produkte verschoben zu {sub}', 'it': '{count} prodotti spostati in {sub}',
+      'zh': '{count} 个产品已移动到{sub}', 'hi': '{count} उत्पाद {sub} में स्थानांतरित किए गए',
+      'ar': 'تم نقل {count} منتج إلى {sub}', 'ru': '{count} товаров перемещено в {sub}',
+    },
     'shareListSub': {
       'es': 'Añadir usuario secundario', 'en': 'Add secondary user',
       'pt': 'Adicionar utilizador secundário', 'fr': 'Ajouter un utilisateur secondaire',
@@ -1170,7 +1194,6 @@ class AppLocalizations {
     'Ham': {'es': 'Jamón', 'en': 'Ham', 'pt': 'Presunto', 'fr': 'Jambon', 'de': 'Schinken', 'it': 'Prosciutto', 'zh': '火腿', 'hi': 'हैम', 'ar': 'لحم مقدد', 'ru': 'Ветчина'},
     'Hot dog': {'es': 'Salchicha', 'en': 'Hot dog', 'pt': 'Cachorro-quente', 'fr': 'Hot-dog', 'de': 'Hotdog', 'it': 'Hot dog', 'zh': '热狗', 'hi': 'हॉट डॉग', 'ar': 'هوت دوغ', 'ru': 'Хот-дог'},
     'Shrimp': {'es': 'Camarones', 'en': 'Shrimp', 'pt': 'Camarão', 'fr': 'Crevettes', 'de': 'Garnelen', 'it': 'Gamberi', 'zh': '虾', 'hi': 'झींगा', 'ar': 'جمبري', 'ru': 'Креветки'},
-    'Coca cola': {'es': 'Coca cola', 'en': 'Coca cola', 'pt': 'Coca cola', 'fr': 'Coca cola', 'de': 'Coca cola', 'it': 'Coca cola', 'zh': '可乐', 'hi': 'कोका कोला', 'ar': 'كوكا كولا', 'ru': 'Кока-кола'},
     'Blueberry': {'es': 'Arándano', 'en': 'Blueberry', 'pt': 'Mirtilo', 'fr': 'Myrtille', 'de': 'Blaubeere', 'it': 'Mirtillo', 'zh': '蓝莓', 'hi': 'ब्लूबेरी', 'ar': 'توت أزرق', 'ru': 'Черника'},
     'Kiwi': {'es': 'Kiwi', 'en': 'Kiwi', 'pt': 'Kiwi', 'fr': 'Kiwi', 'de': 'Kiwi', 'it': 'Kiwi', 'zh': '猕猴桃', 'hi': 'कीवी', 'ar': 'كيوي', 'ru': 'Киви'},
     'Mandarin': {'es': 'Mandarina', 'en': 'Mandarin', 'pt': 'Tangerina', 'fr': 'Mandarine', 'de': 'Mandarine', 'it': 'Mandarino', 'zh': '橘子', 'hi': 'संतरा', 'ar': 'يوسفي', 'ru': 'Мандарин'},
@@ -1201,11 +1224,10 @@ class AppLocalizations {
     'Pineapple juice': {'es': 'Jugo de piña', 'en': 'Pineapple juice', 'pt': 'Suco de abacaxi', 'fr': "Jus d'ananas", 'de': 'Ananassaft', 'it': "Succo d'ananas", 'zh': '菠萝汁', 'hi': 'अनानास का जूस', 'ar': 'عصير أناناس', 'ru': 'Ананасовый сок'},
     'Strawberry juice': {'es': 'Jugo de fresa', 'en': 'Strawberry juice', 'pt': 'Suco de morango', 'fr': 'Jus de fraise', 'de': 'Erdbeersaft', 'it': 'Succo di fragola', 'zh': '草莓汁', 'hi': 'स्ट्रॉबेरी का जूस', 'ar': 'عصير فراولة', 'ru': 'Клубничный сок'},
     'Guava juice': {'es': 'Jugo de guayaba', 'en': 'Guava juice', 'pt': 'Suco de goiaba', 'fr': 'Jus de goyave', 'de': 'Guavensaft', 'it': 'Succo di guava', 'zh': '番石榴汁', 'hi': 'अमरूद का जूस', 'ar': 'عصير جوافة', 'ru': 'Гуавовый сок'},
-    'Heineken': {'es': 'Heineken', 'en': 'Heineken', 'pt': 'Heineken', 'fr': 'Heineken', 'de': 'Heineken', 'it': 'Heineken', 'zh': '喜力啤酒', 'hi': 'हेनेकेन', 'ar': 'هاينكن', 'ru': 'Хайнекен'},
-    'Corona beer': {'es': 'Cerveza Corona', 'en': 'Corona beer', 'pt': 'Cerveja Corona', 'fr': 'Corona', 'de': 'Corona', 'it': 'Corona', 'zh': '科罗娜啤酒', 'hi': 'कोरोना बीयर', 'ar': 'بيرة كورونا', 'ru': 'Пиво Корона'},
-    'Carlsberg beer': {'es': 'Cerveza Carlsberg', 'en': 'Carlsberg beer', 'pt': 'Cerveja Carlsberg', 'fr': 'Carlsberg', 'de': 'Carlsberg', 'it': 'Carlsberg', 'zh': '嘉士伯啤酒', 'hi': 'कार्ल्सबर्ग बीयर', 'ar': 'بيرة كارلسبيرغ', 'ru': 'Пиво Карлсберг'},
-    'Sagres beer': {'es': 'Cerveza Sagres', 'en': 'Sagres beer', 'pt': 'Cerveja Sagres', 'fr': 'Sagres', 'de': 'Sagres', 'it': 'Sagres', 'zh': '萨格雷斯啤酒', 'hi': 'साग्रेस बीयर', 'ar': 'بيرة ساغريس', 'ru': 'Пиво Сагрес'},
-    'Super bock': {'es': 'Cerveza Super Bock', 'en': 'Super Bock', 'pt': 'Super Bock', 'fr': 'Super Bock', 'de': 'Super Bock', 'it': 'Super Bock', 'zh': '超级波克啤酒', 'hi': 'सुपर बॉक', 'ar': 'بيرة سوبر بوك', 'ru': 'Пиво Супер Бок'},
+    'Beer': {'es': 'Cerveza', 'en': 'Beer', 'pt': 'Cerveja', 'fr': 'Bière', 'de': 'Bier', 'it': 'Birra', 'zh': '啤酒', 'hi': 'बीयर', 'ar': 'بيرة', 'ru': 'Пиво'},
+    'Bottle beer': {'es': 'Cerveza de botella', 'en': 'Bottle beer', 'pt': 'Cerveja de garrafa', 'fr': 'Bière en bouteille', 'de': 'Flaschenbier', 'it': 'Birra in bottiglia', 'zh': '瓶装啤酒', 'hi': 'बोतल बीयर', 'ar': 'بيرة في زجاجة', 'ru': 'Бутылочное пиво'},
+    'Red wine': {'es': 'Vino tinto', 'en': 'Red wine', 'pt': 'Vinho tinto', 'fr': 'Vin rouge', 'de': 'Rotwein', 'it': 'Vino rosso', 'zh': '红葡萄酒', 'hi': 'रेड वाइन', 'ar': 'نبيذ أحمر', 'ru': 'Красное вино'},
+    'White wine': {'es': 'Vino blanco', 'en': 'White wine', 'pt': 'Vinho branco', 'fr': 'Vin blanc', 'de': 'Weißwein', 'it': 'Vino bianco', 'zh': '白葡萄酒', 'hi': 'व्हाइट वाइन', 'ar': 'نبيذ أبيض', 'ru': 'Белое вино'},
     'Conditioner': {'es': 'Acondicionador', 'en': 'Conditioner', 'pt': 'Condicionador', 'fr': 'Après-shampooing', 'de': 'Spülung', 'it': 'Balsamo', 'zh': '护发素', 'hi': 'कंडीशनर', 'ar': 'بلسم الشعر', 'ru': 'Кондиционер для волос'},
     'Bath gel': {'es': 'Gel de baño', 'en': 'Bath gel', 'pt': 'Gel de banho', 'fr': 'Gel douche', 'de': 'Duschgel', 'it': 'Bagnoschiuma', 'zh': '沐浴露', 'hi': 'बाथ जेल', 'ar': 'جل الاستحمام', 'ru': 'Гель для душа'},
     'Baby wipes': {'es': 'Toallitas húmedas', 'en': 'Baby wipes', 'pt': 'Toalhetes', 'fr': 'Lingettes', 'de': 'Feuchttücher', 'it': 'Salviettine', 'zh': '婴儿湿巾', 'hi': 'बेबी वाइप्स', 'ar': 'مناديل مبللة', 'ru': 'Влажные салфетки'},
@@ -1310,6 +1332,13 @@ class AppLocalizations {
   String movedProductTo(String sub) =>
       _s('movedProductTo').replaceFirst('{sub}', sub);
   String get moveToCategory => _s('moveToCategory');
+  String get select => _s('select');
+  String get move => _s('move');
+  String selectedCount(int count) =>
+      _s('selectedCount').replaceFirst('{count}', '$count');
+  String movedProductsTo(int count, String sub) => _s('movedProductsTo')
+      .replaceFirst('{count}', '$count')
+      .replaceFirst('{sub}', sub);
   String get managePermissions => _s('managePermissions');
   String get managePermissionsSub => _s('managePermissionsSub');
   String get signOut => _s('signOut');

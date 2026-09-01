@@ -13,7 +13,6 @@ import '../../domain/entities/subcategory_item.dart';
 import '../../domain/usecases/delete_product.dart';
 import '../../domain/usecases/toggle_product.dart';
 import '../../domain/usecases/update_product.dart';
-import '../../domain/repositories/category_repository.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/subcategory_repository.dart';
 import '../app_settings.dart';
@@ -75,6 +74,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
   List<SubcategoryItem> get _subsForCategory =>
       _subcategories[widget.category.key.trim().toLowerCase()] ?? const [];
 
+  /// Modo selección múltiple: marca varios productos para moverlos juntos a
+  /// una subcategoría o categoría (opción "Seleccionar" del long press).
+  bool _selectionMode = false;
+  final Set<String> _selectedIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -125,6 +129,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
       context,
       options: [
         ActionSheetOption(
+          icon: Icons.checklist_rtl,
+          label: t.select,
+          color: const Color(0xFF0E7490),
+          onTap: () {
+            Navigator.pop(context);
+            _startSelection(product);
+          },
+        ),
+        ActionSheetOption(
           icon: Icons.edit,
           label: '${t.edit} "${t.getProductName(product.nameKey)}"',
           color: const Color(0xFF52606D),
@@ -140,7 +153,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
           onTap: () {
             Navigator.pop(context);
             SubcategoryActions.promptMoveProduct(
-              this.context,
+              context,
               product: product,
               categoryKey: widget.category.key,
               subcategories: [for (final s in _subsForCategory) s.name],
@@ -156,92 +169,111 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
           color: const Color(0xFFE8830C),
           onTap: () {
             Navigator.pop(context);
-            _promptMoveToCategory(context, product);
-          },
-        ),
-        ActionSheetOption(
-          icon: Icons.delete,
-          label: '${t.delete} "${t.getProductName(product.nameKey)}"',
-          color: const Color(0xFFE11D48),
-          onTap: () {
-            Navigator.pop(context);
-            _confirmDeleteProduct(context, product);
+            SubcategoryActions.promptMoveProductToCategory(
+              context,
+              product: product,
+              currentCategoryKey: widget.category.key,
+              onMoved: () {
+                if (mounted) setState(() {});
+              },
+            );
           },
         ),
       ],
     );
   }
 
-  Future<void> _promptMoveToCategory(
-    BuildContext context,
-    Product product,
-  ) async {
-    final t = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    final List<CategoryItem> categories;
-    try {
-      categories = await sl<CategoryRepository>().getAll();
-    } on Failure catch (failure) {
-      if (context.mounted) showFailure(context, failure);
-      return;
-    }
-    final options = categories
-        .where((c) => c.key.trim().toLowerCase() !=
-            widget.category.key.trim().toLowerCase())
-        .toList();
-    if (options.isEmpty) return;
+  // ------------------------ Modo selección múltiple -----------------
 
-    final chosen = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  void _startSelection(Product product) {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds..clear()..add(product.uniqueKey);
+    });
+    HapticFeedback.lightImpact();
+  }
+
+  void _toggleSelection(Product product) {
+    setState(() {
+      if (!_selectedIds.remove(product.uniqueKey)) {
+        _selectedIds.add(product.uniqueKey);
+      }
+    });
+    HapticFeedback.selectionClick();
+  }
+
+  void _cancelSelection() {
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  bool _isSelected(Product product) => _selectedIds.contains(product.uniqueKey);
+
+  Future<void> _moveSelected() async {
+    if (!PremiumLimits.checkCanEdit(context)) return;
+    final all = await sl<ProductRepository>().getAll();
+    final selected = all
+        .where((p) =>
+            _selectedIds.contains(p.uniqueKey) &&
+            p.categoryKey == widget.category.key)
+        .toList();
+    if (selected.isEmpty) return;
+    await SubcategoryActions.promptMoveMany(
+      context,
+      products: selected,
+      categoryKey: widget.category.key,
+      subcategories: [for (final s in _subsForCategory) s.name],
+      onMoved: () {
+        if (mounted) setState(() {});
+        _cancelSelection();
+      },
+    );
+  }
+
+  Widget _buildSelectionBar(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
+    return Material(
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      elevation: 12,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
             children: [
-              for (final cat in options)
-                ListTile(
-                  leading: Icon(
-                    Icons.category_outlined,
-                    color: const Color(0xFF184878),
+              Expanded(
+                child: Text(
+                  t.selectedCount(_selectedIds.length),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: isDark
+                        ? Colors.grey.shade100
+                        : const Color(0xFF0F172A),
                   ),
-                  title: Text(t.getCategoryName(cat.key)),
-                  onTap: () => Navigator.of(sheetContext).pop(cat.key),
                 ),
-              const SizedBox(height: 8),
+              ),
+              TextButton.icon(
+                onPressed: _cancelSelection,
+                icon: const Icon(Icons.close),
+                label: Text(t.cancel),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                onPressed: _selectedIds.isEmpty ? null : _moveSelected,
+                icon: const Icon(Icons.drive_file_move_outlined, size: 18),
+                label: Text(t.move),
+                style: FilledButton.styleFrom(backgroundColor: accent),
+              ),
             ],
           ),
         ),
       ),
     );
-    if (chosen == null || chosen.isEmpty) return;
-
-    try {
-      await sl<UpdateProductUseCase>()(
-        product: product,
-        newName: product.nameKey,
-        emoji: product.emoji,
-        imagePath: product.imagePath,
-        quantity: product.quantity,
-        unit: product.unit,
-        categoryKey: chosen,
-        clearSubcategory: true,
-      );
-      if (context.mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              t.movedProductTo(t.getCategoryName(chosen)),
-            ),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        if (mounted) setState(() {});
-      }
-    } on Failure catch (failure) {
-      if (context.mounted) showFailure(context, failure);
-    }
   }
 
   void _showEditProductDialog(BuildContext context, Product product) {
@@ -394,46 +426,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
             ],
           );
         },
-      ),
-    );
-  }
-
-  void _confirmDeleteProduct(BuildContext context, Product product) {
-    final t = AppLocalizations.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(t.delete),
-        content: Text(
-          t.deleteProductConfirm(t.getProductName(product.nameKey)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(t.cancel),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              try {
-                await sl<DeleteProductUseCase>()(product);
-                HapticFeedback.mediumImpact();
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  setState(() {});
-                }
-              } on Failure catch (failure) {
-                if (context.mounted) Navigator.pop(context);
-                showFailureMessage(messenger, failure);
-              }
-            },
-            child: Text(t.delete),
-          ),
-        ],
       ),
     );
   }
@@ -901,6 +893,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
       floatingActionButton: AnimatedBuilder(
         animation: _fabAnimationController,
         builder: (context, child) {
+          if (_selectionMode) return const SizedBox.shrink();
           final t = AppLocalizations.of(context);
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -939,28 +932,30 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
           );
         },
       ),
-      bottomNavigationBar: StreamBuilder<List<Product>>(
-        stream: sl<ProductRepository>().watchAll(),
-        builder: (context, snapshot) {
-          var buyCount = 0;
-          var stockCount = 0;
-          for (final p in snapshot.data ?? const <Product>[]) {
-            if (p.categoryKey != widget.category.key) continue;
-            if (p.isToBuy) {
-              buyCount++;
-            } else {
-              stockCount++;
-            }
-          }
-          return FloatingNavBar(
-            currentIndex: isBuy ? 0 : 1,
-            buyCount: buyCount,
-            stockCount: stockCount,
-            onBuyTap: () => _goToMain(0),
-            onStockTap: () => _goToMain(1),
-          );
-        },
-      ),
+      bottomNavigationBar: _selectionMode
+          ? _buildSelectionBar(context)
+          : StreamBuilder<List<Product>>(
+              stream: sl<ProductRepository>().watchAll(),
+              builder: (context, snapshot) {
+                var buyCount = 0;
+                var stockCount = 0;
+                for (final p in snapshot.data ?? const <Product>[]) {
+                  if (p.categoryKey != widget.category.key) continue;
+                  if (p.isToBuy) {
+                    buyCount++;
+                  } else {
+                    stockCount++;
+                  }
+                }
+                return FloatingNavBar(
+                  currentIndex: isBuy ? 0 : 1,
+                  buyCount: buyCount,
+                  stockCount: stockCount,
+                  onBuyTap: () => _goToMain(0),
+                  onStockTap: () => _goToMain(1),
+                );
+              },
+            ),
     );
   }
 
@@ -993,6 +988,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
           child: const Icon(Icons.delete, color: Colors.white),
         ),
         confirmDismiss: (direction) async {
+          if (_selectionMode) return false;
           if (direction == DismissDirection.startToEnd) {
             if (!PremiumLimits.checkCanMove(context)) return false;
             final rowRect = rectOfContext(
@@ -1036,26 +1032,39 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
         },
         child: Card(
           elevation: 0,
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.white.withValues(alpha: 0.62),
+          color: _isSelected(product)
+              ? const Color(0xFF0E7490).withValues(alpha: 0.10)
+              : isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.white.withValues(alpha: 0.62),
           surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : Colors.white.withValues(alpha: 0.8),
+              color: _isSelected(product)
+                  ? const Color(0xFF0E7490)
+                  : isDark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.white.withValues(alpha: 0.8),
+              width: _isSelected(product) ? 2 : 1,
             ),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () {
               if (!PremiumLimits.checkCanEdit(context)) return;
+              if (_selectionMode) {
+                _toggleSelection(product);
+                return;
+              }
               _showQtyUnitDialog(product);
             },
             onLongPress: () {
               if (!PremiumLimits.checkCanEdit(context)) return;
+              if (_selectionMode) {
+                _toggleSelection(product);
+                return;
+              }
               _showProductOptionsBottomSheet(context, product);
             },
             child: Padding(
@@ -1555,16 +1564,21 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
       elevation: 0,
-      color: isDark
-          ? Colors.white.withValues(alpha: 0.06)
-          : Colors.white.withValues(alpha: 0.62),
+      color: _isSelected(product)
+          ? const Color(0xFF0E7490).withValues(alpha: 0.10)
+          : isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.white.withValues(alpha: 0.62),
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.12)
-              : Colors.white.withValues(alpha: 0.8),
+          color: _isSelected(product)
+              ? const Color(0xFF0E7490)
+              : isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.white.withValues(alpha: 0.8),
+          width: _isSelected(product) ? 2 : 1,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1583,6 +1597,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
           child: const Icon(Icons.delete, color: Colors.white),
         ),
         confirmDismiss: (direction) async {
+          if (_selectionMode) return false;
           if (direction == DismissDirection.startToEnd) {
             if (!PremiumLimits.checkCanMove(context)) return false;
             final rowRect = rectOfContext(
@@ -1629,10 +1644,18 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
           child: InkWell(
             onTap: () {
               if (!PremiumLimits.checkCanEdit(context)) return;
+              if (_selectionMode) {
+                _toggleSelection(product);
+                return;
+              }
               _showQtyUnitDialog(product);
             },
             onLongPress: () {
               if (!PremiumLimits.checkCanEdit(context)) return;
+              if (_selectionMode) {
+                _toggleSelection(product);
+                return;
+              }
               _showProductOptionsBottomSheet(context, product);
             },
             child: Padding(

@@ -51,7 +51,6 @@ class ExpandableCategoryCard extends StatefulWidget {
   final VoidCallback onCardTap;
   final VoidCallback onLongPressCard;
   final Function(BuildContext, Product) onEditProduct;
-  final Function(BuildContext, Product) onDeleteProduct;
 
   const ExpandableCategoryCard({
     super.key,
@@ -68,7 +67,6 @@ class ExpandableCategoryCard extends StatefulWidget {
     required this.onCardTap,
     required this.onLongPressCard,
     required this.onEditProduct,
-    required this.onDeleteProduct,
   });
 
   @override
@@ -78,6 +76,11 @@ class ExpandableCategoryCard extends StatefulWidget {
 class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
   final Map<String, GlobalKey> _productRowKeys = {};
 
+  /// Modo selección múltiple dentro de esta tarjeta: elige varios productos y
+  /// los mueve juntos a una subcategoría o categoría.
+  bool _selectionMode = false;
+  final Set<String> _selectedIds = {};
+
   GlobalKey _rowKeyFor(Product product) =>
       _productRowKeys.putIfAbsent(product.uniqueKey, () => GlobalKey());
 
@@ -86,6 +89,15 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
     ActionSheetMenu.show(
       context,
       options: [
+        ActionSheetOption(
+          icon: Icons.checklist_rtl,
+          label: t.select,
+          color: const Color(0xFF0E7490),
+          onTap: () {
+            Navigator.pop(context);
+            _startSelection(product);
+          },
+        ),
         ActionSheetOption(
           icon: Icons.edit,
           label: '${t.edit} "${t.getProductName(product.nameKey)}"',
@@ -113,15 +125,109 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
           },
         ),
         ActionSheetOption(
-          icon: Icons.delete,
-          label: '${t.delete} "${t.getProductName(product.nameKey)}"',
-          color: const Color(0xFFE11D48),
+          icon: Icons.drive_file_move_rtl_outlined,
+          label: t.moveToCategory,
+          color: const Color(0xFFE8830C),
           onTap: () {
             Navigator.pop(context);
-            widget.onDeleteProduct(context, product);
+            SubcategoryActions.promptMoveProductToCategory(
+              this.context,
+              product: product,
+              currentCategoryKey: widget.catItem.key,
+              onMoved: () {
+                if (mounted) setState(() {});
+              },
+            );
           },
         ),
       ],
+    );
+  }
+
+  // ------------------------ Modo selección múltiple -----------------
+
+  void _startSelection(Product product) {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds..clear()..add(product.uniqueKey);
+    });
+    HapticFeedback.lightImpact();
+  }
+
+  void _toggleSelection(Product product) {
+    setState(() {
+      if (!_selectedIds.remove(product.uniqueKey)) {
+        _selectedIds.add(product.uniqueKey);
+      }
+    });
+    HapticFeedback.selectionClick();
+  }
+
+  void _cancelSelection() {
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  bool _isSelected(Product product) => _selectedIds.contains(product.uniqueKey);
+
+  Future<void> _moveSelected() async {
+    if (!PremiumLimits.checkCanEdit(context)) return;
+    final selected = widget.catProducts
+        .where((p) => _selectedIds.contains(p.uniqueKey))
+        .toList();
+    if (selected.isEmpty) return;
+    await SubcategoryActions.promptMoveMany(
+      this.context,
+      products: selected,
+      categoryKey: widget.catItem.key,
+      subcategories: [for (final s in widget.subcategories) s.name],
+      onMoved: () {
+        if (mounted) setState(() {});
+        _cancelSelection();
+      },
+    );
+  }
+
+  Widget _selectionBar(BuildContext context) {
+    final t = widget.t;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = DialogKit.accentForBuy(widget.isBuyScreen);
+    return Material(
+      color: dark ? const Color(0xFF1E293B) : Colors.white,
+      elevation: 4,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                t.selectedCount(_selectedIds.length),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: dark ? Colors.grey.shade100 : const Color(0xFF0F172A),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _cancelSelection,
+              icon: const Icon(Icons.close),
+              label: Text(t.cancel),
+            ),
+            const SizedBox(width: 4),
+            FilledButton.icon(
+              onPressed: _selectedIds.isEmpty ? null : _moveSelected,
+              icon: const Icon(Icons.drive_file_move_outlined, size: 18),
+              label: Text(t.move),
+              style: FilledButton.styleFrom(backgroundColor: accent),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -238,6 +344,10 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
               if (widget.isExpanded) ...[
                 const Divider(height: 16),
                 ..._expandedChildren(context),
+                if (_selectionMode) ...[
+                  const SizedBox(height: 8),
+                  _selectionBar(context),
+                ],
               ],
             ],
           ),
@@ -572,6 +682,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       confirmDismiss: (direction) async {
+        if (_selectionMode) return false;
         if (direction == DismissDirection.startToEnd) {
           if (!PremiumLimits.checkCanMove(context)) return false;
           final rowRect = rectOfContext(
@@ -636,15 +747,34 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
       },
       child: KeyedSubtree(
         key: _rowKeyFor(product),
-        child: InkWell(
-          onTap: () {
-            if (!PremiumLimits.checkCanEdit(context)) return;
-            _showQtyUnitDialog(context, product);
-          },
-          onLongPress: () {
-            if (!PremiumLimits.checkCanEdit(context)) return;
-            _showProductOptionsBottomSheet(context, product);
-          },
+        child: Container(
+          decoration: BoxDecoration(
+            color: _isSelected(product)
+                ? const Color(0xFF0E7490).withValues(alpha: 0.10)
+                : null,
+            borderRadius: BorderRadius.circular(16),
+            border: _isSelected(product)
+                ? Border.all(color: const Color(0xFF0E7490), width: 2)
+                : null,
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              if (!PremiumLimits.checkCanEdit(context)) return;
+              if (_selectionMode) {
+                _toggleSelection(product);
+                return;
+              }
+              _showQtyUnitDialog(context, product);
+            },
+            onLongPress: () {
+              if (!PremiumLimits.checkCanEdit(context)) return;
+              if (_selectionMode) {
+                _toggleSelection(product);
+                return;
+              }
+              _showProductOptionsBottomSheet(context, product);
+            },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
@@ -697,6 +827,7 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );
