@@ -143,6 +143,8 @@ class AppInitializer {
 
     CrashOverlay.log('Running product key normalization...');
     _normalizeProductKeys();
+    CrashOverlay.log('Deduplicating products...');
+    await _dedupeProducts();
     CrashOverlay.log('Deduplicating categories...');
     await _dedupeCategories();
     CrashOverlay.log('Running legacy category migration...');
@@ -249,6 +251,47 @@ class AppInitializer {
     }
     box.clear();
     box.putAll(merged);
+  }
+
+  /// MIGRACIÓN: fusiona productos duplicados que comparten categoría y nombre
+  /// canónico (p. ej. filas legadas "Sal" y "Salt" que ambas mostraban "Sal"):
+  /// conserva la fila canónica con más datos y deja tombstones para que la
+  /// sincronización elimine las filas redundantes también en Firestore.
+  Future<void> _dedupeProducts() async {
+    final box = Hive.box<ProductModel>(ProductLocalDataSource.boxName);
+    final groups = <String, List<ProductModel>>{};
+    for (final model in box.values.toList()) {
+      final canonical =
+          AppLocalizations.canonicalName(model.nameKey).trim().toLowerCase();
+      final groupKey =
+          '${model.categoryKey.trim().toLowerCase()}|$canonical';
+      groups.putIfAbsent(groupKey, () => []).add(model);
+    }
+
+    for (final group in groups.values) {
+      if (group.length < 2) continue;
+      group.sort((a, b) {
+        int score(ProductModel m) {
+          var s = 0;
+          if (AppLocalizations.findNameKey(m.nameKey) != null) s += 2;
+          if (m.imagePath?.isNotEmpty == true || m.imageId != null) s += 1;
+          if (m.emoji?.isNotEmpty == true) s += 1;
+          return s;
+        }
+
+        final diff = score(b) - score(a);
+        return diff != 0 ? diff : a.nameKey.compareTo(b.nameKey);
+      });
+      final keep = group.first;
+      for (final dup in group.skip(1)) {
+        final dupKey = dup.nameKey.trim().toLowerCase();
+        if (dupKey.isEmpty || dupKey == keep.nameKey.trim().toLowerCase()) {
+          continue;
+        }
+        await box.delete(dupKey);
+        await deletedProductKeys.put(dupKey, dupKey);
+      }
+    }
   }
 
   /// MIGRACIÓN: fusiona por clave (sin mayúsculas) las categorías duplicadas
@@ -419,6 +462,9 @@ class AppInitializer {
     final existingNames = {
       for (final p in existingProducts) p.nameKey.trim().toLowerCase(),
     };
+    final existingByKey = {
+      for (final p in existingProducts) p.nameKey.trim().toLowerCase(): p,
+    };
 
     // Si el catálogo de PNG no se pudo cargar (p. ej. manifiesto de assets no
     // disponible), se siembra un respaldo mínimo con las rutas reales de los
@@ -436,20 +482,49 @@ class AppInitializer {
         final fileName = assetPath.split('/').last;
         final nameKey = _canonicalSeedName(fileName);
         final cleanKey = nameKey.toLowerCase();
-        if (existingNames.contains(cleanKey)) continue;
-        await products.put(
-          ProductModel(
-            nameKey: nameKey,
-            categoryKey: category,
-            isToBuy: false,
-            emoji: assetPath,
-            isBuyScreen: false,
-          ),
-          key: cleanKey,
-        );
+        if (!existingNames.contains(cleanKey)) {
+          await products.put(
+            ProductModel(
+              nameKey: nameKey,
+              categoryKey: category,
+              isToBuy: false,
+              emoji: assetPath,
+              isBuyScreen: false,
+            ),
+            key: cleanKey,
+          );
+          continue;
+        }
+        // El producto ya existe (idempotente). Si su imagen actual no es un
+        // PNG válido del catálogo ni un emoji elegido manualmente, re-apunta
+        // la imagen al PNG de assets para que no quede roto.
+        final existing = existingByKey[cleanKey];
+        final current = existing?.emoji ?? '';
+        if (current.isEmpty ||
+            (current.contains('assets/') && !_assetExists(current))) {
+          final fixed = existing == null
+              ? ProductModel(
+                  nameKey: nameKey,
+                  categoryKey: category,
+                  isToBuy: false,
+                  isBuyScreen: false,
+                  emoji: assetPath,
+                )
+              : _withEmoji(existing, assetPath);
+          await products.put(fixed, key: cleanKey);
+        }
       }
     }
   }
+
+  ProductModel _withEmoji(ProductModel p, String emojiPath) {
+    final copy = ProductModel.fromEntity(p.toEntity());
+    copy.emoji = emojiPath;
+    return copy;
+  }
+
+  bool _assetExists(String assetPath) =>
+      ProductAssetCatalog.instance.allPngs().contains(assetPath);
 
   /// Productos mínimos de respaldo usados cuando el catálogo de PNG no se
   /// pudo cargar. Son rutas reales que existen en `assets/images/emojis/products/`.
@@ -463,6 +538,16 @@ class AppInitializer {
       'assets/images/emojis/products/breakfast/croassaint.png',
       'assets/images/emojis/products/breakfast/milk.png',
       'assets/images/emojis/products/breakfast/mini baguette.png',
+      'assets/images/emojis/products/breakfast/cereal.png',
+      'assets/images/emojis/products/breakfast/small yogurt.png',
+      'assets/images/emojis/products/breakfast/yogurt.png',
+    ],
+    'Baby': [
+      'assets/images/emojis/products/baby/Formula milk.png',
+      'assets/images/emojis/products/baby/baby bath gel.png',
+      'assets/images/emojis/products/baby/baby diapers.png',
+      'assets/images/emojis/products/baby/baby shampoo.png',
+      'assets/images/emojis/products/baby/baby wipes.png',
     ],
     'Fruits': [
       'assets/images/emojis/products/fruits/apples.png',
@@ -480,10 +565,17 @@ class AppInitializer {
       'assets/images/emojis/products/kitchen/vinegar.png',
     ],
     'Meats': [
+      'assets/images/emojis/products/meats/bacon.png',
       'assets/images/emojis/products/meats/chicken.png',
       'assets/images/emojis/products/meats/cow.png',
       'assets/images/emojis/products/meats/fish.png',
+      'assets/images/emojis/products/meats/ham.png',
       'assets/images/emojis/products/meats/pork.png',
+      'assets/images/emojis/products/meats/pork chop.png',
+      'assets/images/emojis/products/meats/pork ribs.png',
+      'assets/images/emojis/products/meats/pork rolls.png',
+      'assets/images/emojis/products/meats/pork steak.png',
+      'assets/images/emojis/products/meats/beef steak.png',
       'assets/images/emojis/products/meats/Salmon.png',
     ],
     'Cleaning': [
@@ -498,6 +590,9 @@ class AppInitializer {
     'Personal care': [
       'assets/images/emojis/products/personal_care/bath gel.png',
       'assets/images/emojis/products/personal_care/condiotioner.png',
+      'assets/images/emojis/products/personal_care/daily liner.png',
+      'assets/images/emojis/products/personal_care/deodorant.png',
+      'assets/images/emojis/products/personal_care/sanitary pads.png',
       'assets/images/emojis/products/personal_care/shampoo.png',
       'assets/images/emojis/products/personal_care/soap.png',
       'assets/images/emojis/products/personal_care/toilet paper.png',
@@ -522,9 +617,14 @@ class AppInitializer {
     'Vegetables': [
       'assets/images/emojis/products/vegetables/avocado.png',
       'assets/images/emojis/products/vegetables/beet.png',
+      'assets/images/emojis/products/vegetables/broccoli.png',
       'assets/images/emojis/products/vegetables/carrot.png',
+      'assets/images/emojis/products/vegetables/cassava.png',
       'assets/images/emojis/products/vegetables/cucumber.png',
       'assets/images/emojis/products/vegetables/lettuce.png',
+      'assets/images/emojis/products/vegetables/potato.png',
+      'assets/images/emojis/products/vegetables/spinach.png',
+      'assets/images/emojis/products/vegetables/sweet potato.png',
       'assets/images/emojis/products/vegetables/tomatoes.png',
     ],
   };

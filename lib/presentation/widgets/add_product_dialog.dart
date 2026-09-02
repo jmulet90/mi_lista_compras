@@ -6,6 +6,7 @@ import '../../core/failures.dart';
 import '../../core/utils/image_storage.dart';
 import '../../core/utils/product_asset_catalog.dart';
 import '../../domain/usecases/add_product.dart';
+import '../../domain/repositories/product_repository.dart';
 import '../localization/app_localizations.dart';
 import 'dialog_kit.dart';
 import 'category_visuals.dart';
@@ -38,6 +39,7 @@ class _AddProductDialogState extends State<AddProductDialog> {
   String? _subcategory;
   bool _userPicked = false;
   String? _pngFilterCategory;
+  String? _autoFilledName;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -96,6 +98,26 @@ class _AddProductDialogState extends State<AddProductDialog> {
       }
     }
     return null;
+  }
+
+  /// Nombre localizado de un PNG: deriva su clave canónica del diccionario
+  /// (aplicando alias de fallos ortográficos) y traduce al idioma activo.
+  String _nameForPng(String asset) {
+    final base = asset.substring(asset.lastIndexOf('/') + 1);
+    final stemText =
+        base.endsWith('.png') ? base.substring(0, base.length - 4) : base;
+    final raw = stemText
+        .split(RegExp(r'[\s_]+'))
+        .map((w) => w.isEmpty ? w : w[0].toUpperCase() + w.substring(1))
+        .join(' ');
+    const aliases = {
+      'Croassaint': 'Croissant',
+      'Girassol Oil': 'Sunflower oil',
+      'Condiotioner': 'Conditioner',
+    };
+    final resolved =
+        AppLocalizations.findNameKey(aliases[raw] ?? raw) ?? (aliases[raw] ?? raw);
+    return AppLocalizations.of(context).getProductName(resolved);
   }
 
   @override
@@ -243,10 +265,20 @@ class _AddProductDialogState extends State<AddProductDialog> {
                 assets: pngs,
                 selected: _selectedEmoji,
                 onSelect: (asset) {
+                  final autoName = _nameForPng(asset);
+                  final currentText = _nameController.text;
+                  final editable =
+                      currentText.trim().isEmpty || currentText == _autoFilledName;
                   setState(() {
                     _selectedEmoji = asset;
                     _imagePath = null;
                     _userPicked = true;
+                    if (editable) {
+                      _nameController.text = autoName;
+                      _nameController.selection = TextSelection.collapsed(
+                          offset: _nameController.text.length);
+                      _autoFilledName = autoName;
+                    }
                   });
                 },
               ),
@@ -274,13 +306,33 @@ class _AddProductDialogState extends State<AddProductDialog> {
           onPressed: () async {
             final trimmedName = _nameController.text.trim();
             if (trimmedName.isNotEmpty && _selectedCategory.isNotEmpty) {
+              final catKey = _selectedCategory.trim().toLowerCase();
+              final canonical =
+                  AppLocalizations.canonicalName(trimmedName).toLowerCase();
+              final existing = await sl<ProductRepository>().getAll();
+              final alreadyExists = existing.any(
+                (p) =>
+                    p.categoryKey.trim().toLowerCase() == catKey &&
+                    AppLocalizations.canonicalName(p.nameKey)
+                            .toLowerCase() ==
+                        canonical,
+              );
+              if (alreadyExists) {
+                if (context.mounted) {
+                  showFailure(
+                    context,
+                    ValidationFailure(t.productAlreadyExists),
+                  );
+                }
+                return;
+              }
               if (!await PremiumLimits.canAddProduct(
                   context, _selectedCategory)) {
                 return;
               }
               try {
                 await sl<AddProductUseCase>()(
-                  name: AppLocalizations.findNameKey(trimmedName) ?? trimmedName,
+                  name: AppLocalizations.canonicalName(trimmedName),
                   categoryKey: _selectedCategory,
                   isBuyScreen: widget.isBuyScreen,
                   emoji: _selectedEmoji,

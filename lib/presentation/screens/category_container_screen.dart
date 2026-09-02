@@ -760,8 +760,6 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
 
     String? selectedEmoji = product.emoji;
     String? imagePath = product.imagePath;
-    double? quantity = product.quantity;
-    String? unit = product.unit;
     String? subcategory = product.subcategory;
 
     final isPlus = PremiumLimits.isPremiumPlusEffectiveSync;
@@ -808,15 +806,6 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                     decoration: DialogKit.input(context, accent, label: t.edit),
                   ),
                   const SizedBox(height: 16),
-                  DialogKit.quantityUnitRow(
-                    context: context,
-                    accent: accent,
-                    quantity: quantity,
-                    unit: unit,
-                    onQuantityChanged: (val) =>
-                        setDialogState(() => quantity = val),
-                    onUnitChanged: (val) => setDialogState(() => unit = val),
-                  ),
                   if (isPlus) ...[
                     const SizedBox(height: 16),
                     SubcategorySelector(
@@ -928,8 +917,8 @@ class _CategoryContainerScreenState extends State<CategoryContainerScreen>
                             nameController.text.trim(),
                         emoji: selectedEmoji,
                         imagePath: imagePath,
-                        quantity: quantity,
-                        unit: unit,
+                        quantity: product.quantity,
+                        unit: product.unit,
                         subcategory: subcategory,
                       );
 

@@ -46,6 +46,7 @@ import '../domain/usecases/toggle_product.dart';
 import '../domain/usecases/update_product.dart';
 import '../presentation/services/local_notification_service.dart';
 import '../presentation/services/shopping_reminder_coordinator.dart';
+import '../presentation/localization/app_localizations.dart';
 import 'di.dart';
 import 'session_status.dart';
 
@@ -124,7 +125,8 @@ Future<void> bootstrap() async {
   final guard = sl<AccessGuard>();
 
   sl.registerLazySingleton(
-      () => AddProductUseCase(sl<ProductRepository>(), guard));
+      () => AddProductUseCase(sl<ProductRepository>(), guard,
+          canonicalize: AppLocalizations.canonicalName));
   sl.registerLazySingleton(
       () => UpdateProductUseCase(sl<ProductRepository>(), guard));
   sl.registerLazySingleton(

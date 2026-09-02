@@ -299,8 +299,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
     );
     String? selectedEmoji = product.emoji;
     String? imagePath = product.imagePath;
-    double? quantity = product.quantity;
-    String? unit = product.unit;
     final pngs = ProductAssetCatalog.instance.pngsFor(product.categoryKey);
     if (pngs.isNotEmpty && !pngs.contains(selectedEmoji)) {
       selectedEmoji = imagePath == null ? pngs.first : null;
@@ -324,16 +322,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
                     controller: nameController,
                     autofocus: true,
                     decoration: DialogKit.input(context, accent, label: t.edit),
-                  ),
-                  const SizedBox(height: 16),
-                  DialogKit.quantityUnitRow(
-                    context: context,
-                    accent: accent,
-                    quantity: quantity,
-                    unit: unit,
-                    onQuantityChanged: (val) =>
-                        setDialogState(() => quantity = val),
-                    onUnitChanged: (val) => setDialogState(() => unit = val),
                   ),
                   const SizedBox(height: 16),
                   Center(
@@ -423,8 +411,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
                         newName: nameController.text.trim(),
                         emoji: selectedEmoji,
                         imagePath: imagePath,
-                        quantity: quantity,
-                        unit: unit,
+                        quantity: product.quantity,
+                        unit: product.unit,
                       );
 
                       if (context.mounted) {
@@ -541,8 +529,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen>
                     newName: product.nameKey,
                     emoji: product.emoji,
                     imagePath: product.imagePath,
-                    quantity: qty ?? 0,
-                    unit: unit,
+                    quantity: qty,
+                    unit: qty != null ? unit : null,
                   );
                   if (mounted) setState(() {});
                   if (qty != null && mounted) {

@@ -628,21 +628,21 @@ class _ExpandableCategoryCardState extends State<ExpandableCategoryCard> {
               onPressed: () => Navigator.pop(ctx),
               child: Text(t.cancel),
             ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final messenger = ScaffoldMessenger.of(context);
-                try {
-                  await sl<UpdateProductUseCase>()(
-                    product: product,
-                    newName: product.nameKey,
-                    emoji: product.emoji,
-                    imagePath: product.imagePath,
-                    quantity: qty ?? 0,
-                    unit: unit,
-                  );
-                  if (mounted) setState(() {});
-                  if (qty != null && mounted) {
+TextButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final messenger = ScaffoldMessenger.of(context);
+                  try {
+                    await sl<UpdateProductUseCase>()(
+                      product: product,
+                      newName: product.nameKey,
+                      emoji: product.emoji,
+                      imagePath: product.imagePath,
+                      quantity: qty,
+                      unit: qty != null ? unit : null,
+                    );
+                    if (mounted) setState(() {});
+                    if (qty != null && mounted) {
                     messenger.showSnackBar(
                       SnackBar(
                         content: Text(

@@ -311,6 +311,18 @@ class _ShoppingSuggestionScreenState extends State<ShoppingSuggestionScreen> {
     final t = AppLocalizations.of(context);
     try {
       for (final item in _items) {
+        final canonical = AppLocalizations.canonicalName(item.productKey)
+            .trim()
+            .toLowerCase();
+        final alreadyExists = _existingByKey.values.any(
+          (p) =>
+              p.categoryKey == item.categoryKey &&
+              AppLocalizations.canonicalName(p.nameKey)
+                      .trim()
+                      .toLowerCase() ==
+                  canonical,
+        );
+        if (alreadyExists) continue;
         final existing = _existingFor(item.productKey, item.categoryKey);
         await sl<AddProductUseCase>()(
           name: existing?.nameKey ?? item.productKey,

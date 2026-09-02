@@ -18,7 +18,7 @@ class AppLocalizations {
   static const List<AppLanguage> supportedLanguages = [
     AppLanguage('es', 'Español', '🇪🇸'),
     AppLanguage('en', 'English', '🇬🇧'),
-    AppLanguage('pt', 'Português', '🇧🇷'),
+    AppLanguage('pt', 'Português', '🇵🇹'),
     AppLanguage('fr', 'Français', '🇫🇷'),
     AppLanguage('de', 'Deutsch', '🇩🇪'),
     AppLanguage('it', 'Italiano', '🇮🇹'),
@@ -104,7 +104,7 @@ class AppLocalizations {
       'it': 'Dispensa', 'zh': '储藏室', 'hi': 'पैंट्री', 'ar': 'المؤن', 'ru': 'Запасы',
     },
     'settings': {
-      'es': 'Ajustes', 'en': 'Settings', 'pt': 'Configurações', 'fr': 'Paramètres',
+      'es': 'Ajustes', 'en': 'Settings', 'pt': 'Definições', 'fr': 'Paramètres',
       'de': 'Einstellungen', 'it': 'Impostazioni', 'zh': '设置', 'hi': 'सेटिंग्स',
       'ar': 'الإعدادات', 'ru': 'Настройки',
     },
@@ -147,6 +147,17 @@ class AppLocalizations {
       'zh': '已存在同名分类', 'hi': 'इस नाम की श्रेणी पहले से मौजूद है',
       'ar': 'توجد فئة بهذا الاسم بالفعل', 'ru': 'Категория с таким названием уже существует',
     },
+    'productAlreadyExists': {
+      'es': 'Ya existe un producto con ese nombre en esta categoría',
+      'en': 'A product with that name already exists in this category',
+      'pt': 'Já existe um produto com esse nome nesta categoria',
+      'fr': 'Un produit avec ce nom existe déjà dans cette catégorie',
+      'de': 'Ein Produkt mit diesem Namen existiert bereits in dieser Kategorie',
+      'it': 'Esiste già un prodotto con questo nome in questa categoria',
+      'zh': '该分类中已存在同名商品', 'hi': 'इस श्रेणी में इस नाम का उत्पाद पहले से मौजूद है',
+      'ar': 'يوجد منتج بهذا الاسم في هذه الفئة بالفعل',
+      'ru': 'Товар с таким названием уже существует в этой категории',
+    },
     'newProduct': {
       'es': 'Nuevo Producto', 'en': 'New Product', 'pt': 'Novo Produto',
       'fr': 'Nouveau produit', 'de': 'Neues Produkt', 'it': 'Nuovo prodotto',
@@ -167,7 +178,7 @@ class AppLocalizations {
       'it': 'Annulla', 'zh': '取消', 'hi': 'रद्द करें', 'ar': 'إلغاء', 'ru': 'Отмена',
     },
     'save': {
-      'es': 'Guardar', 'en': 'Save', 'pt': 'Salvar', 'fr': 'Enregistrer', 'de': 'Speichern',
+      'es': 'Guardar', 'en': 'Save', 'pt': 'Guardar', 'fr': 'Enregistrer', 'de': 'Speichern',
       'it': 'Salva', 'zh': '保存', 'hi': 'सहेजें', 'ar': 'حفظ', 'ru': 'Сохранить',
     },
     'add': {
@@ -197,7 +208,7 @@ class AppLocalizations {
     'emptyCategoriesSubtitle': {
       'es': 'Crea tu primera categoría para empezar a organizar tus listas.',
       'en': 'Create your first category to start organizing your lists.',
-      'pt': 'Crie sua primeira categoria para começar a organizar suas listas.',
+      'pt': 'Crie a sua primeira categoria para começar a organizar as suas listas.',
       'fr': 'Créez votre première catégorie pour organiser vos listes.',
       'de': 'Erstelle deine erste Kategorie, um deine Listen zu organisieren.',
       'it': 'Crea la prima categoria per iniziare a organizzare i tuoi elenchi.',
@@ -256,7 +267,7 @@ class AppLocalizations {
       'ru': 'Визуальное оформление:',
     },
     'camera': {
-      'es': 'Cámara', 'en': 'Camera', 'pt': 'Câmera', 'fr': 'Appareil photo',
+      'es': 'Cámara', 'en': 'Camera', 'pt': 'Câmara', 'fr': 'Appareil photo',
       'de': 'Kamera', 'it': 'Fotocamera', 'zh': '相机', 'hi': 'कैमरा',
       'ar': 'الكاميرا', 'ru': 'Камера',
     },
@@ -482,7 +493,7 @@ class AppLocalizations {
     },
     'notAuthenticated': {
       'es': 'Usuario no autenticado', 'en': 'User not authenticated',
-      'pt': 'Usuário não autenticado', 'fr': 'Utilisateur non authentifié',
+      'pt': 'Utilizador não autenticado', 'fr': 'Utilisateur non authentifié',
       'de': 'Benutzer nicht angemeldet', 'it': 'Utente non autenticato',
       'zh': '用户未登录', 'hi': 'उपयोगकर्ता प्रमाणित नहीं है',
       'ar': 'المستخدم غير مصادق عليه', 'ru': 'Пользователь не авторизован',
@@ -490,7 +501,7 @@ class AppLocalizations {
     'noCollaborators': {
       'es': 'No tienes colaboradores añadidos todavía.',
       'en': 'You have no collaborators yet.',
-      'pt': 'Você ainda não tem colaboradores.',
+      'pt': 'Ainda não tem colaboradores.',
       'fr': "Vous n'avez pas encore de collaborateurs.",
       'de': 'Sie haben noch keine Mitarbeiter.',
       'it': 'Non hai ancora collaboratori.',
@@ -569,7 +580,7 @@ class AppLocalizations {
     'collaboratorsPremiumPlusLimit': {
       'es': 'Con Premium tienes 1 colaborador. Premium Plus te permite hasta 4.',
       'en': 'With Premium you have 1 collaborator. Premium Plus allows up to 4.',
-      'pt': 'Com o Premium você tem 1 colaborador. O Premium Plus permite até 4.',
+      'pt': 'Com o Premium tem 1 colaborador. O Premium Plus permite até 4.',
       'fr': 'Avec Premium vous avez 1 collaborateur. Premium Plus permet jusqu’à 4.',
       'de': 'Mit Premium hast du 1 Mitarbeiter. Premium Plus erlaubt bis zu 4.',
       'it': 'Con Premium hai 1 collaboratore. Premium Plus consente fino a 4.',
@@ -596,7 +607,7 @@ class AppLocalizations {
       'zh': '电子邮箱', 'hi': 'ईमेल पता', 'ar': 'البريد الإلكتروني', 'ru': 'Электронная почта',
     },
     'savedSuccessfully': {
-      'es': 'guardado con éxito', 'en': 'saved successfully', 'pt': 'salvo com sucesso',
+      'es': 'guardado con éxito', 'en': 'saved successfully', 'pt': 'guardado com sucesso',
       'fr': 'enregistré avec succès', 'de': 'erfolgreich gespeichert',
       'it': 'salvato con successo', 'zh': '保存成功', 'hi': 'सफलतापूर्वक सहेजा गया',
       'ar': 'تم الحفظ بنجاح', 'ru': 'успешно сохранён',
@@ -628,7 +639,7 @@ class AppLocalizations {
     'authTagline': {
       'es': 'Tu despensa y tu lista, siempre sincronizadas',
       'en': 'Your pantry and list, always in sync',
-      'pt': 'Sua despensa e lista, sempre sincronizadas',
+      'pt': 'A sua despensa e lista, sempre sincronizadas',
       'fr': 'Votre réserve et votre liste, toujours synchronisées',
       'de': 'Vorrat und Liste, immer synchron',
       'it': 'Dispensa e lista, sempre sincronizzate',
@@ -637,7 +648,7 @@ class AppLocalizations {
       'ru': 'Запасы и список всегда синхронны',
     },
     'authPasswordLabel': {
-      'es': 'Contraseña', 'en': 'Password', 'pt': 'Senha',
+      'es': 'Contraseña', 'en': 'Password', 'pt': 'Palavra-passe',
       'fr': 'Mot de passe', 'de': 'Passwort', 'it': 'Password',
       'zh': '密码', 'hi': 'पासवर्ड', 'ar': 'كلمة المرور', 'ru': 'Пароль',
     },
@@ -694,7 +705,7 @@ class AppLocalizations {
     },
     'errorWrongPassword': {
       'es': 'Contraseña incorrecta', 'en': 'Incorrect password',
-      'pt': 'Senha incorreta', 'fr': 'Mot de passe incorrect',
+      'pt': 'Palavra-passe incorreta', 'fr': 'Mot de passe incorrect',
       'de': 'Falsches Passwort', 'it': 'Password errata',
       'zh': '密码错误', 'hi': 'गलत पासवर्ड', 'ar': 'كلمة المرور غير صحيحة',
       'ru': 'Неверный пароль',
@@ -724,7 +735,7 @@ class AppLocalizations {
     'errorWeakPassword': {
       'es': 'La contraseña debe tener al menos 6 caracteres',
       'en': 'Password must be at least 6 characters',
-      'pt': 'A senha deve ter pelo menos 6 caracteres',
+      'pt': 'A palavra-passe deve ter pelo menos 6 caracteres',
       'fr': 'Le mot de passe doit faire au moins 6 caractères',
       'de': 'Das Passwort muss mindestens 6 Zeichen haben',
       'it': 'La password deve avere almeno 6 caratteri',
@@ -736,7 +747,7 @@ class AppLocalizations {
     'errorNetwork': {
       'es': 'Sin conexión. Revisa tu red e inténtalo de nuevo',
       'en': 'No connection. Check your network and try again',
-      'pt': 'Sem conexão. Verifique sua rede e tente de novo',
+      'pt': 'Sem ligação. Verifique a sua rede e tente novamente',
       'fr': 'Pas de connexion. Vérifiez le réseau et réessayez',
       'de': 'Keine Verbindung. Netzwerk prüfen und erneut versuchen',
       'it': 'Nessuna connessione. Controlla la rete e riprova',
@@ -760,7 +771,7 @@ class AppLocalizations {
     'authTermsNote': {
       'es': 'Al continuar aceptas los Términos y la Política de Privacidad',
       'en': 'By continuing you accept the Terms and Privacy Policy',
-      'pt': 'Ao continuar você aceita os Termos e a Política de Privacidade',
+      'pt': 'Ao continuar aceita os Termos e a Política de Privacidade',
       'fr':
           "En continuant, vous acceptez les Conditions et la Confidentialité",
       'de':
@@ -835,7 +846,7 @@ class AppLocalizations {
       'zh': '恢复购买', 'hi': 'खरीद पुनर्स्थापित करें', 'ar': 'استعادة الشراء', 'ru': 'Восстановить покупку',
     },
     'premiumActive': {
-      'es': 'Ya tienes Premium', 'en': 'You already have Premium', 'pt': 'Você já tem Premium',
+      'es': 'Ya tienes Premium', 'en': 'You already have Premium', 'pt': 'Já tem Premium',
       'fr': 'Vous avez déjà Premium', 'de': 'Du hast bereits Premium', 'it': 'Hai già Premium',
       'zh': '你已是高级版', 'hi': 'आपके पास पहले से प्रीमियम है', 'ar': 'لديك النسخة المميزة بالفعل',
       'ru': 'У вас уже есть Premium',
@@ -905,7 +916,7 @@ class AppLocalizations {
     'premiumLimitCollaborators': {
       'es': 'Con Premium puedes invitar y gestionar colaboradores.',
       'en': 'With Premium you can invite and manage collaborators.',
-      'pt': 'Com o Premium você pode convidar e gerenciar colaboradores.',
+      'pt': 'Com o Premium pode convidar e gerir colaboradores.',
       'fr': 'Avec Premium, vous pouvez inviter et gérer des collaborateurs.',
       'de': 'Mit Premium kannst du Mitarbeiter einladen und verwalten.',
       'it': 'Con Premium puoi invitare e gestire i collaboratori.',
@@ -936,7 +947,7 @@ class AppLocalizations {
       'it': '2,99 €', 'zh': '2.99欧元', 'hi': '2.99 यूरो', 'ar': '2.99 يورو', 'ru': '2,99 евро',
     },
     'plusActive': {
-      'es': 'Ya tienes Premium Plus', 'en': 'You already have Premium Plus', 'pt': 'Você já tem Premium Plus',
+      'es': 'Ya tienes Premium Plus', 'en': 'You already have Premium Plus', 'pt': 'Já tem Premium Plus',
       'fr': 'Vous avez déjà Premium Plus', 'de': 'Du hast bereits Premium Plus', 'it': 'Hai già Premium Plus',
       'zh': '你已是 Premium Plus', 'hi': 'आपके पास पहले से प्रीमियम प्लस है', 'ar': 'لديك Premium Plus بالفعل',
       'ru': 'У вас уже есть Premium Plus',
@@ -1025,14 +1036,14 @@ class AppLocalizations {
     },
     'forgotPassword': {
       'es': '¿Olvidaste la contraseña?', 'en': 'Forgot password?',
-      'pt': 'Esqueceu a senha?', 'fr': 'Mot de passe oublié ?',
+      'pt': 'Esqueceu a palavra-passe?', 'fr': 'Mot de passe oublié ?',
       'de': 'Passwort vergessen?', 'it': 'Password dimenticata?',
       'zh': '忘记密码？', 'hi': 'पासवर्ड भूल गए?',
       'ar': 'نسيت كلمة المرور؟', 'ru': 'Забыли пароль?',
     },
     'resetPasswordTitle': {
       'es': 'Restablecer contraseña', 'en': 'Reset password',
-      'pt': 'Redefinir senha', 'fr': 'Réinitialiser le mot de passe',
+      'pt': 'Redefinir palavra-passe', 'fr': 'Réinitialiser le mot de passe',
       'de': 'Passwort zurücksetzen', 'it': 'Reimposta password',
       'zh': '重置密码', 'hi': 'पासवर्ड रीसेट करें',
       'ar': 'إعادة تعيين كلمة المرور', 'ru': 'Сбросить пароль',
@@ -1040,7 +1051,7 @@ class AppLocalizations {
     'resetPasswordSubtitle': {
       'es': 'Te enviaremos un correo con un enlace para crear una nueva contraseña.',
       'en': "We'll email you a link to create a new password.",
-      'pt': 'Enviaremos um e-mail com um link para criar uma nova senha.',
+      'pt': 'Enviaremos um e-mail com um link para criar uma nova palavra-passe.',
       'fr': "Nous vous enverrons un lien par e-mail pour créer un nouveau mot de passe.",
       'de': 'Wir senden Ihnen einen Link per E-Mail, um ein neues Passwort zu erstellen.',
       'it': "Ti invieremo un'email con un link per creare una nuova password.",
@@ -1059,7 +1070,7 @@ class AppLocalizations {
     'resetPasswordSuccess': {
       'es': 'Correo enviado. Revisa tu bandeja de entrada.',
       'en': 'Email sent. Check your inbox.',
-      'pt': 'E-mail enviado. Verifique sua caixa de entrada.',
+      'pt': 'E-mail enviado. Verifique a sua caixa de entrada.',
       'fr': 'E-mail envoyé. Vérifiez votre boîte de réception.',
       'de': 'E-Mail gesendet. Überprüfen Sie Ihren Posteingang.',
       'it': "Email inviata. Controlla la tua casella di posta.",
@@ -1071,7 +1082,7 @@ class AppLocalizations {
     'permissionDenied': {
       'es': 'No tienes permiso para esta acción.',
       'en': 'You don\'t have permission for this action.',
-      'pt': 'Você não tem permissão para esta ação.',
+      'pt': 'Não tem permissão para esta ação.',
       'fr': 'Vous n\'avez pas la permission pour cette action.',
       'de': 'Sie haben keine Berechtigung für diese Aktion.',
       'it': 'Non hai il permesso per questa azione.',
@@ -1143,6 +1154,9 @@ class AppLocalizations {
     'Bread': {'es': 'Pan', 'en': 'Bread', 'pt': 'Pão', 'fr': 'Pain', 'de': 'Brot', 'it': 'Pane', 'zh': '面包', 'hi': 'ब्रेड', 'ar': 'خبز', 'ru': 'Хлеб'},
     'Cheese': {'es': 'Queso', 'en': 'Cheese', 'pt': 'Queijo', 'fr': 'Fromage', 'de': 'Käse', 'it': 'Formaggio', 'zh': '奶酪', 'hi': 'चीज़', 'ar': 'جبن', 'ru': 'Сыр'},
     'Eggs': {'es': 'Huevos', 'en': 'Eggs', 'pt': 'Ovos', 'fr': 'Œufs', 'de': 'Eier', 'it': 'Uova', 'zh': '鸡蛋', 'hi': 'अंडे', 'ar': 'بيض', 'ru': 'Яйца'},
+    'Egg': {'es': 'Huevo', 'en': 'Egg', 'pt': 'Ovo', 'fr': 'Œuf', 'de': 'Ei', 'it': 'Uovo', 'zh': '鸡蛋', 'hi': 'अंडा', 'ar': 'بيضة', 'ru': 'Яйцо'},
+    'Cereal': {'es': 'Cereal', 'en': 'Cereal', 'pt': 'Cereal', 'fr': 'Céréales', 'de': 'Müsli', 'it': 'Cereali', 'zh': '麦片', 'hi': 'सीरियल', 'ar': 'حبوب إفطار', 'ru': 'Хлопья'},
+    'Small yogurt': {'es': 'Yogur pequeño', 'en': 'Small yogurt', 'pt': 'Iogurte pequeno', 'fr': 'Petit yaourt', 'de': 'Kleiner Joghurt', 'it': 'Yogurt piccolo', 'zh': '小酸奶', 'hi': 'छोटा दही', 'ar': 'زبادي صغير', 'ru': 'Маленький йогурт'},
     'Rice': {'es': 'Arroz', 'en': 'Rice', 'pt': 'Arroz', 'fr': 'Riz', 'de': 'Reis', 'it': 'Riso', 'zh': '大米', 'hi': 'चावल', 'ar': 'أرز', 'ru': 'Рис'},
     'Pasta': {'es': 'Pasta', 'en': 'Pasta', 'pt': 'Massa', 'fr': 'Pâtes', 'de': 'Nudeln', 'it': 'Pasta', 'zh': '意面', 'hi': 'पास्ता', 'ar': 'معكرونة', 'ru': 'Паста'},
     'Spaghetti': {'es': 'Espaguetis', 'en': 'Spaghetti', 'pt': 'Espaguete', 'fr': 'Spaghetti', 'de': 'Spaghetti', 'it': 'Spaghetti', 'zh': '意大利面', 'hi': 'स्पेगेटी', 'ar': 'سباغيتي', 'ru': 'Спагетти'},
@@ -1157,6 +1171,10 @@ class AppLocalizations {
     'Lemon': {'es': 'Limón', 'en': 'Lemon', 'pt': 'Limão', 'fr': 'Citron', 'de': 'Zitrone', 'it': 'Limone', 'zh': '柠檬', 'hi': 'नींबू', 'ar': 'ليمون', 'ru': 'Лимон'},
     'Tomato': {'es': 'Tomate', 'en': 'Tomato', 'pt': 'Tomate', 'fr': 'Tomate', 'de': 'Tomate', 'it': 'Pomodoro', 'zh': '番茄', 'hi': 'टमाटर', 'ar': 'طماطم', 'ru': 'Помидор'},
     'Potato': {'es': 'Patata', 'en': 'Potato', 'pt': 'Batata', 'fr': 'Pomme de terre', 'de': 'Kartoffel', 'it': 'Patata', 'zh': '土豆', 'hi': 'आलू', 'ar': 'بطاطس', 'ru': 'Картофель'},
+    'Sweet potato': {'es': 'Boniato', 'en': 'Sweet potato', 'pt': 'Batata-doce', 'fr': 'Patate douce', 'de': 'Süßkartoffel', 'it': 'Patata dolce', 'zh': '红薯', 'hi': 'शकरकंद', 'ar': 'بطاطا حلوة', 'ru': 'Батат'},
+    'Broccoli': {'es': 'Brócoli', 'en': 'Broccoli', 'pt': 'Brócolis', 'fr': 'Brocoli', 'de': 'Brokkoli', 'it': 'Broccoli', 'zh': '西兰花', 'hi': 'ब्रोकोली', 'ar': 'بروكلي', 'ru': 'Брокколи'},
+    'Cassava': {'es': 'Yuca', 'en': 'Cassava', 'pt': 'Mandioca', 'fr': 'Manioc', 'de': 'Maniok', 'it': 'Yuca', 'zh': '木薯', 'hi': 'कसावा', 'ar': 'الكسافا', 'ru': 'Маниок'},
+    'Spinach': {'es': 'Espinacas', 'en': 'Spinach', 'pt': 'Espinafre', 'fr': 'Épinards', 'de': 'Spinat', 'it': 'Spinaci', 'zh': '菠菜', 'hi': 'पालक', 'ar': 'سبانخ', 'ru': 'Шпинат'},
     'Onion': {'es': 'Cebolla', 'en': 'Onion', 'pt': 'Cebola', 'fr': 'Oignon', 'de': 'Zwiebel', 'it': 'Cipolla', 'zh': '洋葱', 'hi': 'प्याज़', 'ar': 'بصل', 'ru': 'Лук'},
     'Carrot': {'es': 'Zanahoria', 'en': 'Carrot', 'pt': 'Cenoura', 'fr': 'Carotte', 'de': 'Karotte', 'it': 'Carota', 'zh': '胡萝卜', 'hi': 'गाजर', 'ar': 'جزر', 'ru': 'Морковь'},
     'Strawberry': {'es': 'Fresa', 'en': 'Strawberry', 'pt': 'Morango', 'fr': 'Fraise', 'de': 'Erdbeere', 'it': 'Fragola', 'zh': '草莓', 'hi': 'स्ट्रॉबेरी', 'ar': 'فراولة', 'ru': 'Клубника'},
@@ -1180,8 +1198,10 @@ class AppLocalizations {
     'Detergent': {'es': 'Detergente', 'en': 'Detergent', 'pt': 'Detergente', 'fr': 'Détergent', 'de': 'Waschmittel', 'it': 'Detersivo', 'zh': '洗涤剂', 'hi': 'डिटर्जेंट', 'ar': 'منظف', 'ru': 'Стиральный порошок'},
     'Garbage bag': {'es': 'Bolsa de basura', 'en': 'Garbage bag', 'pt': 'Saco de lixo', 'fr': 'Sac poubelle', 'de': 'Müllbeutel', 'it': 'Sacchetto per la spazzatura', 'zh': '垃圾袋', 'hi': 'कचरा बैग', 'ar': 'كيس قمامة', 'ru': 'Мусорный пакет'},
     'Paper towels': {'es': 'Toallas de papel', 'en': 'Paper towels', 'pt': 'Toalhas de papel', 'fr': 'Essuie-tout', 'de': 'Küchenpapier', 'it': 'Carta assorbente', 'zh': '厨房纸巾', 'hi': 'पेपर टॉवल', 'ar': 'مناشف ورقية', 'ru': 'Бумажные полотенца'},
-    'Shampoo': {'es': 'Champú', 'en': 'Shampoo', 'pt': 'Shampoo', 'fr': 'Shampooing', 'de': 'Shampoo', 'it': 'Shampoo', 'zh': '洗发水', 'hi': 'शैम्पू', 'ar': 'شامبو', 'ru': 'Шампунь'},
+    'Shampoo': {'es': 'Champú', 'en': 'Shampoo', 'pt': 'Champô', 'fr': 'Shampooing', 'de': 'Shampoo', 'it': 'Shampoo', 'zh': '洗发水', 'hi': 'शैम्पू', 'ar': 'شامبو', 'ru': 'Шампунь'},
     'Toothpaste': {'es': 'Pasta de dientes', 'en': 'Toothpaste', 'pt': 'Creme dental', 'fr': 'Dentifrice', 'de': 'Zahnpasta', 'it': 'Dentifricio', 'zh': '牙膏', 'hi': 'टूथपेस्ट', 'ar': 'معجون أسنان', 'ru': 'Зубная паста'},
+    'Daily liner': {'es': 'Protector diario', 'en': 'Daily liner', 'pt': 'Protetor diário', 'fr': 'Protège-slip quotidien', 'de': 'Tägliche Slipeinlage', 'it': 'Salvaslip quotidiano', 'zh': '日用护垫', 'hi': 'डेली लाइनर', 'ar': 'الحفاظ اليومي', 'ru': 'Ежедневная прокладка'},
+    'Sanitary pads': {'es': 'Compresas', 'en': 'Sanitary pads', 'pt': 'Pensos higiénicos', 'fr': 'Serviettes hygiéniques', 'de': 'Binden', 'it': 'Assorbenti', 'zh': '卫生巾', 'hi': 'सैनिटरी पैड', 'ar': 'فوط صحية', 'ru': 'Гигиенические прокладки'},
     'Apples': {'es': 'Manzanas', 'en': 'Apples', 'pt': 'Maçãs', 'fr': 'Pommes', 'de': 'Äpfel', 'it': 'Mele', 'zh': '苹果', 'hi': 'सेब', 'ar': 'تفاح', 'ru': 'Яблоки'},
     'Ball bread': {'es': 'Pan de bola', 'en': 'Ball bread', 'pt': 'Pão de bola', 'fr': 'Pain boule', 'de': 'Kugelbrot', 'it': 'Pane a sfera', 'zh': '圆面包', 'hi': 'गोल ब्रेड', 'ar': 'خبز كروي', 'ru': 'Шаровой хлеб'},
     'Beet': {'es': 'Remolacha', 'en': 'Beet', 'pt': 'Beterraba', 'fr': 'Betterave', 'de': 'Rote Bete', 'it': 'Barbabietola', 'zh': '甜菜', 'hi': 'चुकंदर', 'ar': 'بنجر', 'ru': 'Свёкла'},
@@ -1193,6 +1213,11 @@ class AppLocalizations {
     'Lettuce': {'es': 'Lechuga', 'en': 'Lettuce', 'pt': 'Alface', 'fr': 'Laitue', 'de': 'Kopfsalat', 'it': 'Lattuga', 'zh': '生菜', 'hi': 'सलाद', 'ar': 'خس', 'ru': 'Салат'},
     'Mini baguette': {'es': 'Mini bagueta', 'en': 'Mini baguette', 'pt': 'Mini baguete', 'fr': 'Mini baguette', 'de': 'Mini-Baguette', 'it': 'Mini baguette', 'zh': '小法棍', 'hi': 'मिनी बैगेट', 'ar': 'baguette صغيرة', 'ru': 'Мини-багет'},
     'Pork': {'es': 'Cerdo', 'en': 'Pork', 'pt': 'Porco', 'fr': 'Porc', 'de': 'Schweinefleisch', 'it': 'Maiale', 'zh': '猪肉', 'hi': 'सूअर का मांस', 'ar': 'لحم خنزير', 'ru': 'Свинина'},
+    'Pork chop': {'es': 'Chuleta de cerdo', 'en': 'Pork chop', 'pt': 'Costeleta de porco', 'fr': 'Côtelette de porc', 'de': 'Schweinekotelett', 'it': 'Costoletta di maiale', 'zh': '猪排', 'hi': 'पोर्क चॉप', 'ar': 'قطعة لحم خنزير', 'ru': 'Отбивная из свинины'},
+    'Pork ribs': {'es': 'Costillas de cerdo', 'en': 'Pork ribs', 'pt': 'Costeletas de porco', 'fr': 'Côtes de porc', 'de': 'Schweinerippchen', 'it': 'Costolette di maiale', 'zh': '猪肋排', 'hi': 'पोर्क रिब्स', 'ar': 'أضلاع الخنزير', 'ru': 'Свиные рёбра'},
+    'Pork rolls': {'es': 'Bollitos de cerdo', 'en': 'Pork rolls', 'pt': 'Rolos de porco', 'fr': 'Roulés de porc', 'de': 'Schweinefleischröllchen', 'it': 'Involtini di maiale', 'zh': '猪肉卷', 'hi': 'पोर्क रोल', 'ar': 'لفائف لحم الخنزير', 'ru': 'Свиные рулеты'},
+    'Pork steak': {'es': 'Filete de cerdo', 'en': 'Pork steak', 'pt': 'Bife de porco', 'fr': 'Steak de porc', 'de': 'Schweinesteak', 'it': 'Bistecca di maiale', 'zh': '猪肉排', 'hi': 'पोर्क स्टेक', 'ar': 'شريحة لحم خنزير', 'ru': 'Свиная отбивная'},
+    'Beef steak': {'es': 'Bistec de res', 'en': 'Beef steak', 'pt': 'Bife de vaca', 'fr': 'Steak de bœuf', 'de': 'Rindersteak', 'it': 'Bistecca di manzo', 'zh': '牛排', 'hi': 'बीफ स्टेक', 'ar': 'شريحة لحم بقري', 'ru': 'Говяжий стейк'},
     'Salmon': {'es': 'Salmón', 'en': 'Salmon', 'pt': 'Salmão', 'fr': 'Saumon', 'de': 'Lachs', 'it': 'Salmone', 'zh': '三文鱼', 'hi': 'सैल्मन', 'ar': 'سلمون', 'ru': 'Лосось'},
     'Tomatoes': {'es': 'Tomates', 'en': 'Tomatoes', 'pt': 'Tomates', 'fr': 'Tomates', 'de': 'Tomaten', 'it': 'Pomodori', 'zh': '番茄', 'hi': 'टमाटर', 'ar': 'طماطم', 'ru': 'Помидоры'},
     'White grapes': {'es': 'Uvas blancas', 'en': 'White grapes', 'pt': 'Uvas brancas', 'fr': 'Raisins blancs', 'de': 'Weiße Trauben', 'it': 'Uve bianche', 'zh': '白葡萄', 'hi': 'सफेद अंगूर', 'ar': 'عنب أبيض', 'ru': 'Белый виноград'},
@@ -1205,7 +1230,7 @@ class AppLocalizations {
     'Bacon': {'es': 'Tocino', 'en': 'Bacon', 'pt': 'Bacon', 'fr': 'Bacon', 'de': 'Speck', 'it': 'Pancetta', 'zh': '培根', 'hi': 'बेकन', 'ar': 'لحم مقدد', 'ru': 'Бекон'},
     'Chorizo': {'es': 'Chorizo', 'en': 'Chorizo', 'pt': 'Chouriço', 'fr': 'Chorizo', 'de': 'Chorizo', 'it': 'Salsiccia', 'zh': '香肠', 'hi': 'चोरिज़ो', 'ar': 'شوريزو', 'ru': 'Чоризо'},
     'Ham': {'es': 'Jamón', 'en': 'Ham', 'pt': 'Presunto', 'fr': 'Jambon', 'de': 'Schinken', 'it': 'Prosciutto', 'zh': '火腿', 'hi': 'हैम', 'ar': 'لحم مقدد', 'ru': 'Ветчина'},
-    'Hot dog': {'es': 'Salchicha', 'en': 'Hot dog', 'pt': 'Cachorro-quente', 'fr': 'Hot-dog', 'de': 'Hotdog', 'it': 'Hot dog', 'zh': '热狗', 'hi': 'हॉट डॉग', 'ar': 'هوت دوغ', 'ru': 'Хот-дог'},
+    'Hot dog': {'es': 'Perrito caliente', 'en': 'Hot dog', 'pt': 'Cachorro-quente', 'fr': 'Hot-dog', 'de': 'Hotdog', 'it': 'Hot dog', 'zh': '热狗', 'hi': 'हॉट डॉग', 'ar': 'هوت دوغ', 'ru': 'Хот-дог'},
     'Shrimp': {'es': 'Camarones', 'en': 'Shrimp', 'pt': 'Camarão', 'fr': 'Crevettes', 'de': 'Garnelen', 'it': 'Gamberi', 'zh': '虾', 'hi': 'झींगा', 'ar': 'جمبري', 'ru': 'Креветки'},
     'Blueberry': {'es': 'Arándano', 'en': 'Blueberry', 'pt': 'Mirtilo', 'fr': 'Myrtille', 'de': 'Blaubeere', 'it': 'Mirtillo', 'zh': '蓝莓', 'hi': 'ब्लूबेरी', 'ar': 'توت أزرق', 'ru': 'Черника'},
     'Kiwi': {'es': 'Kiwi', 'en': 'Kiwi', 'pt': 'Kiwi', 'fr': 'Kiwi', 'de': 'Kiwi', 'it': 'Kiwi', 'zh': '猕猴桃', 'hi': 'कीवी', 'ar': 'كيوي', 'ru': 'Киви'},
@@ -1229,24 +1254,38 @@ class AppLocalizations {
     'Powder coffee': {'es': 'Café soluble', 'en': 'Instant coffee', 'pt': 'Café solúvel', 'fr': 'Café soluble', 'de': 'Löslicher Kaffee', 'it': 'Caffè solubile', 'zh': '速溶咖啡', 'hi': 'इंस्टेंट कॉफ़ी', 'ar': 'قهوة فورية', 'ru': 'Растворимый кофе'},
     'Powder chocolate': {'es': 'Chocolate en polvo', 'en': 'Powdered chocolate', 'pt': 'Chocolate em pó', 'fr': 'Chocolat en poudre', 'de': 'Kakaopulver', 'it': 'Cioccolato in polvere', 'zh': '巧克力粉', 'hi': 'चॉकलेट पाउडर', 'ar': 'مسحوق الشوكولاتة', 'ru': 'Какао-порошок'},
     'Barley powder': {'es': 'Polvo de cebada', 'en': 'Barley powder', 'pt': 'Pó de cevada', 'fr': "Poudre d'orge", 'de': 'Gerstenpulver', 'it': "Polvere d'orzo", 'zh': '大麦粉', 'hi': 'जौ पाउडर', 'ar': 'مسحوق الشعير', 'ru': 'Ячменный порошок'},
-    'Orange juice': {'es': 'Jugo de naranja', 'en': 'Orange juice', 'pt': 'Suco de laranja', 'fr': "Jus d'orange", 'de': 'Orangensaft', 'it': "Succo d'arancia", 'zh': '橙汁', 'hi': 'संतरे का जूस', 'ar': 'عصير برتقال', 'ru': 'Апельсиновый сок'},
-    'Mango juice': {'es': 'Jugo de mango', 'en': 'Mango juice', 'pt': 'Suco de manga', 'fr': 'Jus de mangue', 'de': 'Mangosaft', 'it': 'Succo di mango', 'zh': '芒果汁', 'hi': 'आम का जूस', 'ar': 'عصير مانجو', 'ru': 'Манговый сок'},
-    'Apple juice': {'es': 'Jugo de manzana', 'en': 'Apple juice', 'pt': 'Suco de maçã', 'fr': 'Jus de pomme', 'de': 'Apfelsaft', 'it': 'Succo di mela', 'zh': '苹果汁', 'hi': 'सेब का जूस', 'ar': 'عصير تفاح', 'ru': 'Яблочный сок'},
-    'Pear juice': {'es': 'Jugo de pera', 'en': 'Pear juice', 'pt': 'Suco de pera', 'fr': 'Jus de poire', 'de': 'Birnensaft', 'it': 'Succo di pera', 'zh': '梨汁', 'hi': 'नाशपाती का जूस', 'ar': 'عصير كمثرى', 'ru': 'Грушевый сок'},
-    'Peach juice': {'es': 'Jugo de durazno', 'en': 'Peach juice', 'pt': 'Suco de pêssego', 'fr': 'Jus de pêche', 'de': 'Pfirsichsaft', 'it': 'Succo di pesca', 'zh': '桃汁', 'hi': 'आड़ू का जूस', 'ar': 'عصير خوخ', 'ru': 'Персиковый сок'},
-    'Pineapple juice': {'es': 'Jugo de piña', 'en': 'Pineapple juice', 'pt': 'Suco de abacaxi', 'fr': "Jus d'ananas", 'de': 'Ananassaft', 'it': "Succo d'ananas", 'zh': '菠萝汁', 'hi': 'अनानास का जूस', 'ar': 'عصير أناناس', 'ru': 'Ананасовый сок'},
-    'Strawberry juice': {'es': 'Jugo de fresa', 'en': 'Strawberry juice', 'pt': 'Suco de morango', 'fr': 'Jus de fraise', 'de': 'Erdbeersaft', 'it': 'Succo di fragola', 'zh': '草莓汁', 'hi': 'स्ट्रॉबेरी का जूस', 'ar': 'عصير فراولة', 'ru': 'Клубничный сок'},
-    'Guava juice': {'es': 'Jugo de guayaba', 'en': 'Guava juice', 'pt': 'Suco de goiaba', 'fr': 'Jus de goyave', 'de': 'Guavensaft', 'it': 'Succo di guava', 'zh': '番石榴汁', 'hi': 'अमरूद का जूस', 'ar': 'عصير جوافة', 'ru': 'Гуавовый сок'},
+    'Orange juice': {'es': 'Jugo de naranja', 'en': 'Orange juice', 'pt': 'Sumo de laranja', 'fr': "Jus d'orange", 'de': 'Orangensaft', 'it': "Succo d'arancia", 'zh': '橙汁', 'hi': 'संतरे का जूस', 'ar': 'عصير برتقال', 'ru': 'Апельсиновый сок'},
+    'Mango juice': {'es': 'Jugo de mango', 'en': 'Mango juice', 'pt': 'Sumo de manga', 'fr': 'Jus de mangue', 'de': 'Mangosaft', 'it': 'Succo di mango', 'zh': '芒果汁', 'hi': 'आम का जूस', 'ar': 'عصير مانجو', 'ru': 'Манговый сок'},
+    'Apple juice': {'es': 'Jugo de manzana', 'en': 'Apple juice', 'pt': 'Sumo de maçã', 'fr': 'Jus de pomme', 'de': 'Apfelsaft', 'it': 'Succo di mela', 'zh': '苹果汁', 'hi': 'सेब का जूस', 'ar': 'عصير تفاح', 'ru': 'Яблочный сок'},
+    'Pear juice': {'es': 'Jugo de pera', 'en': 'Pear juice', 'pt': 'Sumo de pera', 'fr': 'Jus de poire', 'de': 'Birnensaft', 'it': 'Succo di pera', 'zh': '梨汁', 'hi': 'नाशपाती का जूस', 'ar': 'عصير كمثرى', 'ru': 'Грушевый сок'},
+    'Peach juice': {'es': 'Jugo de durazno', 'en': 'Peach juice', 'pt': 'Sumo de pêssego', 'fr': 'Jus de pêche', 'de': 'Pfirsichsaft', 'it': 'Succo di pesca', 'zh': '桃汁', 'hi': 'आड़ू का जूस', 'ar': 'عصير خوخ', 'ru': 'Персиковый сок'},
+    'Pineapple juice': {'es': 'Jugo de piña', 'en': 'Pineapple juice', 'pt': 'Sumo de ananás', 'fr': "Jus d'ananas", 'de': 'Ananassaft', 'it': "Succo d'ananas", 'zh': '菠萝汁', 'hi': 'अनानास का जूस', 'ar': 'عصير أناناس', 'ru': 'Ананасовый сок'},
+    'Strawberry juice': {'es': 'Jugo de fresa', 'en': 'Strawberry juice', 'pt': 'Sumo de morango', 'fr': 'Jus de fraise', 'de': 'Erdbeersaft', 'it': 'Succo di fragola', 'zh': '草莓汁', 'hi': 'स्ट्रॉबेरी का जूस', 'ar': 'عصير فراولة', 'ru': 'Клубничный сок'},
+    'Guava juice': {'es': 'Jugo de guayaba', 'en': 'Guava juice', 'pt': 'Sumo de goiaba', 'fr': 'Jus de goyave', 'de': 'Guavensaft', 'it': 'Succo di guava', 'zh': '番石榴汁', 'hi': 'अमरूद का जूस', 'ar': 'عصير جوافة', 'ru': 'Гуавовый сок'},
     'Beer': {'es': 'Cerveza', 'en': 'Beer', 'pt': 'Cerveja', 'fr': 'Bière', 'de': 'Bier', 'it': 'Birra', 'zh': '啤酒', 'hi': 'बीयर', 'ar': 'بيرة', 'ru': 'Пиво'},
     'Bottle beer': {'es': 'Cerveza de botella', 'en': 'Bottle beer', 'pt': 'Cerveja de garrafa', 'fr': 'Bière en bouteille', 'de': 'Flaschenbier', 'it': 'Birra in bottiglia', 'zh': '瓶装啤酒', 'hi': 'बोतल बीयर', 'ar': 'بيرة في زجاجة', 'ru': 'Бутылочное пиво'},
     'Red wine': {'es': 'Vino tinto', 'en': 'Red wine', 'pt': 'Vinho tinto', 'fr': 'Vin rouge', 'de': 'Rotwein', 'it': 'Vino rosso', 'zh': '红葡萄酒', 'hi': 'रेड वाइन', 'ar': 'نبيذ أحمر', 'ru': 'Красное вино'},
     'White wine': {'es': 'Vino blanco', 'en': 'White wine', 'pt': 'Vinho branco', 'fr': 'Vin blanc', 'de': 'Weißwein', 'it': 'Vino bianco', 'zh': '白葡萄酒', 'hi': 'व्हाइट वाइन', 'ar': 'نبيذ أبيض', 'ru': 'Белое вино'},
     'Conditioner': {'es': 'Acondicionador', 'en': 'Conditioner', 'pt': 'Condicionador', 'fr': 'Après-shampooing', 'de': 'Spülung', 'it': 'Balsamo', 'zh': '护发素', 'hi': 'कंडीशनर', 'ar': 'بلسم الشعر', 'ru': 'Кондиционер для волос'},
+    'Deodorant': {'es': 'Desodorante', 'en': 'Deodorant', 'pt': 'Desodorante', 'fr': 'Déodorant', 'de': 'Deodorant', 'it': 'Deodorante', 'zh': '除臭剂', 'hi': 'दुर्गन्ध नाशक', 'ar': 'مزيل العرق', 'ru': 'Дезодорант'},
+    'Formula milk': {'es': 'Leche de fórmula', 'en': 'Formula milk', 'pt': 'Fórmula infantil', 'fr': 'Lait maternisé', 'de': 'Säuglingsmilch', 'it': 'Latte formulato', 'zh': '配方奶粉', 'hi': 'फॉर्मूला दूध', 'ar': 'حليب صناعي', 'ru': 'Детская смесь'},
     'Bath gel': {'es': 'Gel de baño', 'en': 'Bath gel', 'pt': 'Gel de banho', 'fr': 'Gel douche', 'de': 'Duschgel', 'it': 'Bagnoschiuma', 'zh': '沐浴露', 'hi': 'बाथ जेल', 'ar': 'جل الاستحمام', 'ru': 'Гель для душа'},
     'Baby wipes': {'es': 'Toallitas húmedas', 'en': 'Baby wipes', 'pt': 'Toalhetes', 'fr': 'Lingettes', 'de': 'Feuchttücher', 'it': 'Salviettine', 'zh': '婴儿湿巾', 'hi': 'बेबी वाइप्स', 'ar': 'مناديل مبللة', 'ru': 'Влажные салфетки'},
+    'Baby bath gel': {'es': 'Gel de baño para bebés', 'en': 'Baby bath gel', 'pt': 'Gel de banho para bebé', 'fr': 'Gel de bain bébé', 'de': 'Baby-Duschgel', 'it': 'Gel doccia per bebè', 'zh': '婴儿沐浴露', 'hi': 'बेबी बाथ जेल', 'ar': 'جل استحمام للأطفال', 'ru': 'Детский гель для душа'},
+    'Baby shampoo': {'es': 'Champú para bebés', 'en': 'Baby shampoo', 'pt': 'Champô para bebé', 'fr': 'Shampooing bébé', 'de': 'Baby-Shampoo', 'it': 'Shampoo per bebè', 'zh': '婴儿洗发水', 'hi': 'बेबी शैम्पू', 'ar': 'شامبو للأطفال', 'ru': 'Детский шампунь'},
     'Wet wipes': {'es': 'Toallitas húmedas', 'en': 'Wet wipes', 'pt': 'Toalhetes húmidos', 'fr': 'Lingettes humides', 'de': 'Feuchttücher', 'it': 'Salviettine umidificate', 'zh': '湿巾', 'hi': 'वेट वाइप्स', 'ar': 'مناديل مبللة', 'ru': 'Влажные салфетки'},
     'Baby diapers': {'es': 'Pañales', 'en': 'Baby diapers', 'pt': 'Fraldas', 'fr': 'Couches', 'de': 'Windeln', 'it': 'Pannolini', 'zh': '婴儿纸尿裤', 'hi': 'बेबी डायपर', 'ar': 'حفاضات للأطفال', 'ru': 'Подгузники'},
     'Sausage': {'es': 'Salchicha', 'en': 'Sausage', 'pt': 'Salsicha', 'fr': 'Saucisse', 'de': 'Wurst', 'it': 'Salsiccia', 'zh': '香肠', 'hi': 'सॉसेज', 'ar': 'سجق', 'ru': 'Колбаса'},
+  };
+
+  /// Nombres de archivo/filas guardadas históricamente con fallos ortográficos u
+  /// otro idioma; se traducen contra su clave canónica del diccionario.
+  static const Map<String, String> _nameAliases = {
+    'Croassaint': 'Croissant',
+    'Girassol Oil': 'Sunflower oil',
+    'Condiotioner': 'Conditioner',
+    'Dishwasher': 'Dish washer',
+    'Fabric softener': 'Softener',
   };
 
   String getName(String key) {
@@ -1254,7 +1293,8 @@ class AppLocalizations {
     if (direct != null) return direct;
     // Clave guardada con formato libre ("Leche", "tomates", otra lengua...):
     // resolver contra el diccionario antes de mostrar el texto crudo.
-    final resolvedKey = findNameKey(key);
+    final alias = _nameAliases[key];
+    final resolvedKey = findNameKey(alias ?? key);
     if (resolvedKey != null) return _names[resolvedKey]![langCode]!;
     return key;
   }
@@ -1276,15 +1316,28 @@ class AppLocalizations {
       candidates.add(normalizedInput.substring(0, normalizedInput.length - 1));
     }
 
+    final normalizedKeys = <String, String>{
+      for (final key in _names.keys) _normalize(key): key,
+    };
     final normalizedValues = <String, String>{
       for (final entry in _names.entries)
         for (final value in entry.value.values) _normalize(value): entry.key,
     };
     for (final candidate in candidates) {
+      final byKey = normalizedKeys[candidate];
+      if (byKey != null) return byKey;
       final resolved = normalizedValues[candidate];
       if (resolved != null) return resolved;
     }
     return null;
+  }
+
+  /// Nombre canónico (clave del diccionario en inglés) para [text], o el propio
+  /// texto recortado si no existe en el diccionario. Se usa como identidad
+  /// única de productos y categorías.
+  static String canonicalName(String text) {
+    final trimmed = text.trim();
+    return findNameKey(trimmed) ?? trimmed;
   }
 
   String get buyTitle => _s('buyTitle');
@@ -1300,6 +1353,7 @@ class AppLocalizations {
   String get language => _s('language');
   String get addCategory => _s('addCategory');
   String get categoryAlreadyExists => _s('categoryAlreadyExists');
+  String get productAlreadyExists => _s('productAlreadyExists');
   String get newProduct => _s('newProduct');
   String get editCategory => _s('editCategory');
   String get deleteCategory => _s('deleteCategory');
