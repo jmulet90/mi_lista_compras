@@ -124,44 +124,52 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
 
               // Sección: preferencias.
-              _GlassSection(
-                isDark: isDark,
-                children: [
-                  ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    leading: _iconChip(Icons.language, DrawerAccents.brand),
-                    title: Text(t.language, style: _titleStyle(titleColor)),
-                    subtitle: Text(
-                      '${t.currentLanguage.flag} ${t.currentLanguage.nativeName}',
-                      style: TextStyle(color: subColor, fontSize: 12.5),
+              Builder(
+                builder: (groupContext) => _GlassSection(
+                  isDark: isDark,
+                  children: [
+                    Builder(
+                      builder: (tileContext) => ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 2),
+                        leading:
+                            _iconChip(Icons.language, DrawerAccents.brand),
+                        title:
+                            Text(t.language, style: _titleStyle(titleColor)),
+                        subtitle: Text(
+                          '${t.currentLanguage.flag} ${t.currentLanguage.nativeName}',
+                          style: TextStyle(
+                              color: subColor, fontSize: 12.5),
+                        ),
+                        trailing:
+                            Icon(Icons.arrow_drop_down, color: subColor),
+                        onTap: () => _openLanguageSheet(
+                            tileContext, settings, notifier),
+                      ),
                     ),
-                    trailing: Icon(Icons.arrow_drop_down, color: subColor),
-                    onTap: () =>
-                        _openLanguageSheet(context, settings, notifier),
-                  ),
-                  SwitchListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    secondary:
-                        _iconChip(Icons.dark_mode_outlined, DrawerAccents.brand),
-                    title: Text(t.darkMode, style: _titleStyle(titleColor)),
-                    value: settings.themeMode == ThemeMode.dark,
-                    activeThumbColor: DrawerAccents.brand,
-                    onChanged: (value) async {
-                      if (!PremiumLimits.checkCanEdit(context)) return;
-                      if (value &&
-                          !await PremiumLimits.canUseAppearanceFeature(
-                              context)) {
-                        return;
-                      }
-                      notifier.value = notifier.value.copyWith(
-                        themeMode:
-                            value ? ThemeMode.dark : ThemeMode.light,
-                      );
-                    },
-                  ),
-                ],
+                    SwitchListTile(
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      secondary:
+                          _iconChip(Icons.dark_mode_outlined, DrawerAccents.brand),
+                      title: Text(t.darkMode, style: _titleStyle(titleColor)),
+                      value: settings.themeMode == ThemeMode.dark,
+                      activeThumbColor: DrawerAccents.brand,
+                      onChanged: (value) async {
+                        if (!PremiumLimits.checkCanEdit(context)) return;
+                        if (value &&
+                            !await PremiumLimits.canUseAppearanceFeature(
+                                context)) {
+                          return;
+                        }
+                        notifier.value = notifier.value.copyWith(
+                          themeMode:
+                              value ? ThemeMode.dark : ThemeMode.light,
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
 
@@ -405,74 +413,82 @@ class _AppDrawerState extends State<AppDrawer> {
     }
   }
 
-  void _openLanguageSheet(
+  Future<void> _openLanguageSheet(
     BuildContext context,
     AppSettingsData settings,
     ValueNotifier<AppSettingsData> notifier,
-  ) {
+  ) async {
     final t = AppLocalizations.of(context);
-    showModalBottomSheet<void>(
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // El menú sale justo debajo de la fila de "Idioma" (no de la tarjeta) y
+    // adopta su tono de fondo (beige en claro / cacao en oscuro).
+    // menuWidthDelta: ajuste incremental del ancho (0 = ancho del tile Idioma).
+    const double menuWidthDelta = 28.0;
+    final tileBottomLeft = box.localToGlobal(
+      Offset(0, box.size.height),
+      ancestor: overlay,
+    );
+    final tileWidth = box.size.width;
+    final menuWidth = (tileWidth + menuWidthDelta).clamp(120.0, double.infinity);
+    final textColor = isDark ? const Color(0xFFE2E8F0) : DrawerAccents.ink;
+    final brand = DrawerAccents.brand;
+    final selected = await showMenu<String>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(
+          // Pequeño margen para separarlo visualmente de la fila de Idioma.
+          tileBottomLeft.translate(0, 6),
+          tileBottomLeft.translate(menuWidth, 6 + box.size.height),
+        ),
+        Offset.zero & overlay.size,
       ),
-      builder: (context) {
-        final current = t.currentLanguage;
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      color: isDark
+          ? const Color(0xFF342B1E).withValues(alpha: 0.98)
+          : const Color(0xFFF7EFDD).withValues(alpha: 0.98),
+      items: [
+        for (final lang in AppLocalizations.supportedLanguages)
+          PopupMenuItem<String>(
+            value: lang.code,
+            height: 44,
+            padding: EdgeInsets.zero,
+            child: SizedBox(
+              width: menuWidth,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
-                    Text(current.flag,
-                        style: const TextStyle(fontSize: 26)),
+                    Text(lang.flag, style: const TextStyle(fontSize: 18)),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(current.nativeName,
-                          style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
+                      child: Text(
+                        lang.nativeName,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: lang.code == t.currentLanguage.code
+                          ? FontWeight.w700
+                          : FontWeight.w400,
+                      color: textColor,
                     ),
-                    Text(
-                      t.selectLanguage,
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600),
-                    ),
-                  ],
+                  ),
+                ),
+                if (lang.code == t.currentLanguage.code)
+                  Icon(Icons.check, size: 16, color: DrawerAccents.brand),
+              ],
                 ),
               ),
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final lang
-                        in AppLocalizations.supportedLanguages)
-                      ListTile(
-                        leading: Text(lang.flag,
-                            style: const TextStyle(fontSize: 24)),
-                        title: Text(lang.nativeName),
-                        trailing: lang.code == current.code
-                            ? const Icon(Icons.check_circle,
-                                color: DrawerAccents.brand)
-                            : null,
-                        onTap: () {
-                          notifier.value = notifier.value.copyWith(
-                              language: lang.code);
-                          Navigator.pop(context);
-                        },
-                      ),
-                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
+            ),
+      ],
     );
+    if (selected == null || selected == t.currentLanguage.code) return;
+    notifier.value = notifier.value.copyWith(language: selected);
   }
 }
 

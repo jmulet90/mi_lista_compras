@@ -131,11 +131,7 @@ class SubcategoryActions {
       await repo.rename(
         categoryKey,
         from,
-        SubcategoryItem(
-          name: to,
-          emoji: old?.emoji,
-          imagePath: old?.imagePath,
-        ),
+        SubcategoryItem(name: to, emoji: old?.emoji, imagePath: old?.imagePath),
       );
     } on Failure catch (failure) {
       if (context.mounted) showFailure(context, failure);
@@ -184,9 +180,11 @@ class SubcategoryActions {
       final all = await sl<ProductRepository>().getAll();
       final normalizedCategory = categoryKey.trim().toLowerCase();
       targets = all
-          .where((p) =>
-              p.categoryKey.trim().toLowerCase() == normalizedCategory &&
-              subOf(p) == matching)
+          .where(
+            (p) =>
+                p.categoryKey.trim().toLowerCase() == normalizedCategory &&
+                subOf(p) == matching,
+          )
           .toList();
     } on Failure catch (failure) {
       if (context.mounted) showFailure(context, failure);
@@ -229,8 +227,11 @@ class SubcategoryActions {
     final all = await sl<ProductRepository>().getAll();
     debugPrint('[MOVE] getAll=${all.length}');
     final catProducts = all
-        .where((p) =>
-            p.categoryKey.trim().toLowerCase() == categoryKey.trim().toLowerCase())
+        .where(
+          (p) =>
+              p.categoryKey.trim().toLowerCase() ==
+              categoryKey.trim().toLowerCase(),
+        )
         .toList();
     final options = distinct(catProducts, known: subcategories);
     final targetList = <String>['', ...options];
@@ -239,54 +240,126 @@ class SubcategoryActions {
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final dark = Theme.of(sheetContext).brightness == Brightness.dark;
+        final navy = const Color(0xFF184878);
+        final amber = const Color(0xFFE8830C);
+        final ink = dark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A);
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
                   child: Text(
-                    '${t.moveProduct}: ${t.getProductName(product.nameKey)}',
+                    t.moveProduct,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    t.getProductName(product.nameKey),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: navy,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-              for (final sub in targetList)
-                ListTile(
-                  leading: Icon(
-                    sub.isEmpty ? Icons.inbox_outlined : Icons.folder_open_outlined,
-                    color:
-                        sub.isEmpty ? Colors.grey : const Color(0xFF184878),
+                const SizedBox(height: 12),
+                for (final sub in targetList) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Material(
+                      color: dark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          final target = sub;
+                          debugPrint('[MOVE] tap tapped=$target');
+                          Navigator.of(sheetContext).pop();
+                          _performMove(
+                            context,
+                            product: product,
+                            t: t,
+                            current: current,
+                            chosen: target,
+                            onMoved: onMoved,
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: (sub.isEmpty ? Colors.grey : navy)
+                                      .withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  sub.isEmpty
+                                      ? Icons.inbox_outlined
+                                      : Icons.folder_open_outlined,
+                                  color: sub.isEmpty ? Colors.grey : navy,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  sub.isEmpty ? t.noSubcategory : sub,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: ink,
+                                  ),
+                                ),
+                              ),
+                              sub == normalizedCurrent
+                                  ? Icon(
+                                      Icons.check_circle,
+                                      size: 20,
+                                      color: Colors.green,
+                                    )
+                                  : Icon(
+                                      Icons.chevron_right,
+                                      size: 20,
+                                      color: dark
+                                          ? Colors.grey.shade500
+                                          : Colors.grey.shade400,
+                                    ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  title: Text(sub.isEmpty ? t.noSubcategory : sub),
-                  trailing: sub == normalizedCurrent
-                      ? const Icon(Icons.check, size: 18, color: Colors.green)
-                      : null,
-                  onTap: () {
-                    final target = sub;
-                    debugPrint('[MOVE] tap tapped=$target');
-                    Navigator.of(sheetContext).pop();
-                    _performMove(
-                      context,
-                      product: product,
-                      t: t,
-                      current: current,
-                      chosen: target,
-                      onMoved: onMoved,
-                    );
-                  },
-                ),
-              const SizedBox(height: 8),
-            ],
+                ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -301,7 +374,9 @@ class SubcategoryActions {
     if (!context.mounted) return;
     final normalizedCurrent = current ?? '';
     if (chosen == normalizedCurrent) return;
-    debugPrint('[MOVE] chosen=$chosen normalized=$normalizedCurrent calling update');
+    debugPrint(
+      '[MOVE] chosen=$chosen normalized=$normalizedCurrent calling update',
+    );
     try {
       await sl<UpdateProductUseCase>()(
         product: product,
@@ -351,34 +426,102 @@ class SubcategoryActions {
       return;
     }
     final options = categories
-        .where((c) =>
-            c.key.trim().toLowerCase() !=
-            currentCategoryKey.trim().toLowerCase())
+        .where(
+          (c) =>
+              c.key.trim().toLowerCase() !=
+              currentCategoryKey.trim().toLowerCase(),
+        )
         .toList();
     if (options.isEmpty) return;
 
     final chosen = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final cat in options)
-                ListTile(
-                  leading: Icon(
-                    Icons.category_outlined,
-                    color: const Color(0xFF184878),
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final dark = Theme.of(sheetContext).brightness == Brightness.dark;
+        final navy = const Color(0xFF184878);
+        final amber = const Color(0xFFE8830C);
+        final ink = dark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A);
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Text(
+                    t.moveToCategory,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                  title: Text(t.getCategoryName(cat.key)),
-                  onTap: () => Navigator.of(sheetContext).pop(cat.key),
                 ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 12),
+                for (final cat in options)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Material(
+                      color: dark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () => Navigator.of(sheetContext).pop(cat.key),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: amber.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.category_outlined,
+                                  color: amber,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  t.getCategoryName(cat.key),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: ink,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 20,
+                                color: dark
+                                    ? Colors.grey.shade500
+                                    : Colors.grey.shade400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
     if (chosen == null || chosen.isEmpty) return;
 
@@ -429,9 +572,9 @@ class SubcategoryActions {
       return;
     }
     final otherCategories = categories
-        .where((c) =>
-            c.key.trim().toLowerCase() !=
-            categoryKey.trim().toLowerCase())
+        .where(
+          (c) => c.key.trim().toLowerCase() != categoryKey.trim().toLowerCase(),
+        )
         .toList();
 
     final count = products.length;
@@ -441,93 +584,177 @@ class SubcategoryActions {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-                child: Text(
-                  t.selectedCount(count),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+      builder: (sheetContext) {
+        final dark = Theme.of(sheetContext).brightness == Brightness.dark;
+        final navy = const Color(0xFF184878);
+        final amber = const Color(0xFFE8830C);
+        final ink = dark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A);
+
+        Widget sectionHeader(String label, Color color) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+            child: Text(
+              label.toUpperCase(),
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: color,
+              ),
+            ),
+          );
+        }
+
+        Widget optionRow({
+          required IconData icon,
+          required String label,
+          required Color color,
+          required Widget? trailing,
+          required VoidCallback onTap,
+        }) {
+          return Material(
+            color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, color: color, size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: ink,
+                        ),
+                      ),
+                    ),
+                    if (trailing != null) trailing,
+                    Icon(
+                      Icons.chevron_right,
+                      size: 20,
+                      color: dark ? Colors.grey.shade500 : Colors.grey.shade400,
+                    ),
+                  ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 4, 24, 4),
-                child: Text(
-                  t.getCategoryName(categoryKey),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
-                    color: Theme.of(sheetContext).colorScheme.primary,
-                  ),
-                ),
-              ),
-              for (final sub in ['', ...subs])
-                ListTile(
-                  leading: Icon(
-                    sub.isEmpty
-                        ? Icons.inbox_outlined
-                        : Icons.folder_open_outlined,
-                    color:
-                        sub.isEmpty ? Colors.grey : const Color(0xFF184878),
-                  ),
-                  title: Text(sub.isEmpty ? t.noSubcategory : sub),
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    _performBulkMove(
-                      context,
-                      products: products,
-                      subcategory: sub.isEmpty ? null : sub,
-                      categoryKey: null,
-                      onMoved: onMoved,
-                    );
-                  },
-                ),
-              if (otherCategories.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 4),
+            ),
+          );
+        }
+
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
                   child: Text(
-                    t.moveToCategory,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                      color: Theme.of(sheetContext).colorScheme.primary,
+                    t.selectedCount(count),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                for (final cat in otherCategories)
-                  ListTile(
-                    leading: Icon(
-                      Icons.category_outlined,
-                      color: const Color(0xFFE8830C),
+                Center(
+                  child: Text(
+                    t.getCategoryName(categoryKey),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: navy,
                     ),
-                    title: Text(t.getCategoryName(cat.key)),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                sectionHeader(t.subcategory, navy),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: optionRow(
+                    icon: Icons.inbox_outlined,
+                    label: t.noSubcategory,
+                    color: Colors.grey,
+                    trailing: null,
                     onTap: () {
                       Navigator.of(sheetContext).pop();
                       _performBulkMove(
                         context,
                         products: products,
                         subcategory: null,
-                        categoryKey: cat.key,
+                        categoryKey: null,
                         onMoved: onMoved,
                       );
                     },
                   ),
+                ),
+                for (final sub in subs) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: optionRow(
+                      icon: Icons.folder_open_outlined,
+                      label: sub,
+                      color: navy,
+                      trailing: null,
+                      onTap: () {
+                        Navigator.of(sheetContext).pop();
+                        _performBulkMove(
+                          context,
+                          products: products,
+                          subcategory: sub,
+                          categoryKey: null,
+                          onMoved: onMoved,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                if (otherCategories.isNotEmpty) ...[
+                  sectionHeader(t.moveToCategory, amber),
+                  for (final cat in otherCategories)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: optionRow(
+                        icon: Icons.category_outlined,
+                        label: t.getCategoryName(cat.key),
+                        color: amber,
+                        trailing: null,
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          _performBulkMove(
+                            context,
+                            products: products,
+                            subcategory: null,
+                            categoryKey: cat.key,
+                            onMoved: onMoved,
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ],
-              const SizedBox(height: 8),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -647,11 +874,7 @@ class SubcategoryActions {
         ),
       );
       if (ok == true && context.mounted) {
-        final done = await delete(
-          context,
-          categoryKey: categoryKey,
-          sub: sub,
-        );
+        final done = await delete(context, categoryKey: categoryKey, sub: sub);
         if (done && context.mounted) onDeleted();
       }
     }
